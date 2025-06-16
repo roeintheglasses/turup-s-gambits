@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { GameManager } from "@/app/lib/game-manager";
+import { GameManager } from "@/lib/game-manager";
 import { GameRoom, Player } from "@/app/types/game";
 
 const gameManager = GameManager.getInstance();
