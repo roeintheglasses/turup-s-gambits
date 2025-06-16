@@ -305,12 +305,23 @@ async function simulateCardPlay() {
 
 // Run the test
 async function runTest() {
+  let exitCode = 0;
   try {
     // Create test room
-    await createTestRoom();
+    const room = await createTestRoom();
+    if (!room) {
+      console.error("Failed to create test room");
+      exitCode = 1;
+      return;
+    }
 
     // Add players to room
-    await addPlayersToRoom();
+    const added = await addPlayersToRoom();
+    if (!added) {
+      console.error("Failed to add players to test room");
+      exitCode = 1;
+      return;
+    }
 
     // Simulate trump voting
     const winningSuit = await simulateTrumpVoting();
@@ -321,6 +332,7 @@ async function runTest() {
     console.log("Test completed successfully!");
   } catch (error) {
     console.error("Test failed:", error);
+    exitCode = 1;
   } finally {
     // Clean up - delete the test room
     try {
@@ -338,7 +350,7 @@ async function runTest() {
       console.error("Error during cleanup:", error);
     }
 
-    process.exit(0);
+    process.exit(exitCode);
   }
 }
 
