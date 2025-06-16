@@ -38,8 +38,8 @@ A modern card game built with Next.js, featuring real-time multiplayer gameplay 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/SkwdStudios/turup-s-gambit.git
-cd turup-s-gambit
+git clone https://github.com/SkwdStudios/turup-s-gambits.git
+cd turup-s-gambits
 ```
 
 2. Install dependencies:
