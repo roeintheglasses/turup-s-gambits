@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useMemo } from "react";
+import React, { useState, useEffect, Suspense, useMemo, use } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { detectBotsByName } from "./bot-voting-helper";
 import { GameBoard } from "@/components/game-board";
@@ -798,7 +798,7 @@ function GameRoomInitializer({
 }
 
 export default function GameRoomPage({ params }: GameRoomPageProps) {
-  const resolvedParams = React.use(params);
+  const resolvedParams = use(params);
   const roomId = resolvedParams.roomId;
 
   return (
