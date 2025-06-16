@@ -612,9 +612,6 @@ export const createRealtimeFunctions = (
               // Update the game state in the database
               get().syncGameStateToDatabase();
 
-              // Update the game state in the database
-              get().syncGameStateToDatabase();
-
               // Process trick completion logic
               if (updatedTrick.length === 4) {
                 console.log("[GameStore] Trick complete, resolving winner");
