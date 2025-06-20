@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Use the same Supabase instance for authentication
 export const supabaseAuth = supabase;
 
-export type OAuthProvider = "discord" | "google";
+export type OAuthProvider = "discord";
 
 export const signInWithOAuth = async (provider: OAuthProvider) => {
   console.log(`[Auth] Starting OAuth sign in with ${provider}`);

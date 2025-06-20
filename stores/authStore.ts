@@ -27,7 +27,6 @@ function supabaseUserToUser(supabaseUser: any): User {
   // Handle different provider data structures
   const provider = supabaseUser.app_metadata?.provider;
   const isDiscord = provider === "discord";
-  const isGoogle = provider === "google";
   const isAnonymous = !provider && !supabaseUser.email;
 
   // Get the best username based on provider
@@ -58,15 +57,6 @@ function supabaseUserToUser(supabaseUser: any): User {
     } else {
       avatar = userData.avatar_url || userData.picture;
     }
-  } else if (isGoogle) {
-    // Google-specific data extraction
-    username =
-      userData.name ||
-      userData.full_name ||
-      userData.email?.split("@")[0] ||
-      "User";
-    name = userData.name || userData.full_name || username;
-    avatar = userData.picture || userData.avatar_url;
   } else if (isAnonymous) {
     // Special handling for anonymous users - prioritize username from metadata
     // This prevents the temporary "User" display before updating to the real username
