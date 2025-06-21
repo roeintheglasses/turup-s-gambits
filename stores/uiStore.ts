@@ -5,6 +5,7 @@ interface UIState {
   // Modal states
   showLoginModal: boolean;
   showTrumpPopup: boolean;
+  showBiddingPanel: boolean;
   showReplay: boolean;
 
   // Loading states
@@ -23,6 +24,7 @@ interface UIState {
   // Actions
   setShowLoginModal: (show: boolean) => void;
   setShowTrumpPopup: (show: boolean) => void;
+  setShowBiddingPanel: (show: boolean) => void;
   setShowReplay: (show: boolean) => void;
 
   setIsLoading: (isLoading: boolean) => void;
@@ -44,6 +46,7 @@ export const useUIStore = create<UIState>()(
     // Default state
     showLoginModal: false,
     showTrumpPopup: false,
+    showBiddingPanel: false,
     showReplay: false,
 
     isLoading: false,
@@ -60,6 +63,8 @@ export const useUIStore = create<UIState>()(
     setShowLoginModal: (showLoginModal) => set({ showLoginModal }),
 
     setShowTrumpPopup: (showTrumpPopup) => set({ showTrumpPopup }),
+
+    setShowBiddingPanel: (showBiddingPanel) => set({ showBiddingPanel }),
 
     setShowReplay: (showReplay) => set({ showReplay }),
 
