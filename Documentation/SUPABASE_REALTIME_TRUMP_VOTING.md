@@ -1,10 +1,18 @@
 # Supabase Realtime Trump Voting System
 
-This document explains the implementation of the trump voting system using Supabase Realtime for Turup's Gambit.
+This document explains the implementation of the trump voting system using the refactored modular Supabase Realtime architecture for Turup's Gambit.
 
 ## Overview
 
-The trump voting system allows players to vote for their preferred trump suit during the initial deal phase of the game. The implementation uses Supabase Realtime for real-time updates across all connected clients, ensuring synchronized voting experiences.
+The trump voting system allows players to vote for their preferred trump suit during the initial deal phase of the game. The implementation uses the new modular realtime system with enhanced connection management, automatic reconnection, and improved error handling for real-time updates across all connected clients.
+
+### Refactored Implementation Benefits
+
+- **Enhanced Reliability**: Auto-reconnection with exponential backoff
+- **Better Performance**: Debounced operations and connection pooling
+- **Improved Error Handling**: Graceful fallbacks and comprehensive validation
+- **Strong Typing**: TypeScript interfaces for all trump voting payloads
+- **Modular Architecture**: Organized handlers in dedicated modules
 
 ## Components
 
@@ -38,12 +46,12 @@ CREATE TABLE public.trump_votes (
 
 Row Level Security (RLS) policies are applied to ensure players can only vote as themselves and see votes for rooms they're in.
 
-## Integration with Game Store
+## Integration with Refactored Game Store
 
-The trump voting system is integrated with the game store using Zustand:
+The trump voting system is integrated with the refactored modular realtime system:
 
 ```typescript
-// In gameStore.ts
+// Enhanced trump voting with refactored realtime system
 interface GameState {
   // Other state properties
   trumpVotes: Record<string, string>; // playerId -> suit
@@ -56,44 +64,69 @@ interface GameState {
   resetVotingState: () => void;
 }
 
-// Implementation
+// Implementation with new modular realtime system
 const useGameStore = create<GameState>((set, get) => ({
   // Initial state
   trumpVotes: {},
   trumpSuit: null,
   votingComplete: false,
 
-  // Actions
-  handleTrumpVote: (suit: string) => {
-    const { sendMessage } = useSupabaseRealtime.getState();
+  // Actions with enhanced error handling
+  handleTrumpVote: async (suit: string) => {
+    const { sendMessage } = get().realtimeFunctions;
 
-    // Send trump vote message
-    sendMessage({
-      type: "game:select-trump",
-      payload: {
-        roomId: get().roomId,
-        playerId: get().userId,
-        suit,
-      },
-    });
+    try {
+      // Send trump vote message with enhanced payload validation
+      const success = await sendMessage({
+        type: "game:select-trump",
+        payload: {
+          roomId: get().roomId,
+          playerId: get().userId,
+          playerName: get().currentUser?.username,
+          suit,
+          timestamp: Date.now(),
+        },
+      });
 
-    // Update local state
-    set((state) => ({
-      trumpVotes: {
-        ...state.trumpVotes,
-        [get().userId]: suit,
-      },
-    }));
+      if (success) {
+        // Update local state
+        set((state) => ({
+          trumpVotes: {
+            ...state.trumpVotes,
+            [get().userId]: suit,
+          },
+        }));
 
-    // Check if voting is complete
-    if (Object.keys(get().trumpVotes).length === get().players.length) {
-      set({ votingComplete: true });
-      get().determineFinalTrumpSuit();
+        // Check if voting is complete
+        if (Object.keys(get().trumpVotes).length === get().players.length) {
+          set({ votingComplete: true });
+          get().determineFinalTrumpSuit();
+        }
+      } else {
+        // Handle send failure with user notification
+        useUIStore.getState().showToast("Failed to send trump vote. Please try again.", "error");
+      }
+    } catch (error) {
+      console.error("Error sending trump vote:", error);
+      useUIStore.getState().showToast("Error voting for trump suit.", "error");
     }
   },
 
-  handleForceBotVotes: () => {
-    // Implementation for host forcing bots to vote
+  handleForceBotVotes: async () => {
+    // Enhanced implementation with retry logic
+    const { sendMessage } = get().realtimeFunctions;
+    
+    try {
+      await sendMessage({
+        type: "game:force-bot-votes",
+        payload: {
+          roomId: get().roomId,
+          hostId: get().userId,
+        },
+      });
+    } catch (error) {
+      console.error("Error forcing bot votes:", error);
+    }
   },
 
   resetVotingState: () => {
@@ -105,7 +138,20 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   determineFinalTrumpSuit: () => {
-    // Algorithm to determine final trump suit based on votes
+    // Enhanced algorithm with validation
+    const votes = Object.values(get().trumpVotes);
+    const suitCounts = votes.reduce((acc, suit) => {
+      acc[suit] = (acc[suit] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Determine winning suit
+    const winningsuit = Object.entries(suitCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0];
+
+    if (winningsuit) {
+      set({ trumpSuit: winningsuit });
+    }
   },
 }));
 ```
@@ -179,24 +225,61 @@ export const TrumpSelectionPopup = () => {
 };
 ```
 
-## Realtime Implementation
+## Refactored Realtime Implementation
 
-### Channel Setup
+### Enhanced Connection Management
+
+The trump voting system now uses the `ConnectionManager` class for improved reliability:
 
 ```typescript
-const setupTrumpVotingChannel = (roomId) => {
-  const channelName = `trump-voting:${roomId}`;
+// Enhanced trump voting with ConnectionManager
+const setupTrumpVotingSystem = (roomId: string, get: () => GameStoreState, set: SetStateFn) => {
+  const connectionManager = new ConnectionManager(supabase);
 
-  const channel = supabase.channel(channelName, {
-    config: {
-      broadcast: { self: true },
-      presence: { key: "user_id" },
-    },
-  });
+  // Setup enhanced realtime subscription with auto-reconnection
+  connectionManager.subscribeToRealtime(roomId, get, set);
 
-  channel
-    .on("broadcast", { event: "message" }, (payload) => {
-      const message = payload.payload;
+  // Trump voting message handler (now in handlers.ts)
+  const handleTrumpSelection: MessageHandler = (message, get, set) => {
+    const { suit: selectedSuit, playerId, playerName } = message.payload as TrumpSelectionPayload;
+    
+    if (!selectedSuit) {
+      logger.warn("Received trump selection without suit");
+      return;
+    }
+
+    logger.info(`Trump suit selected by ${playerName}: ${selectedSuit}`);
+
+    set({
+      trumpSuit: selectedSuit,
+      votingComplete: true,
+      trumpVotes: {
+        ...get().trumpVotes,
+        [playerId]: selectedSuit,
+      },
+    });
+
+    showToast(`${playerName} voted for ${selectedSuit}`, "info");
+  };
+
+  // Enhanced message sending with retry logic
+  const sendTrumpVote = async (suit: string) => {
+    const message = {
+      type: "game:select-trump",
+      payload: {
+        roomId,
+        playerId: getCurrentUser()?.id,
+        playerName: getCurrentUser()?.username,
+        suit,
+        timestamp: Date.now(),
+      },
+    };
+
+    return await connectionManager.sendMessage(message, get, set);
+  };
+
+  return { sendTrumpVote, cleanup: () => connectionManager.disconnect() };
+};
 
       if (message.type === "game:select-trump") {
         const { playerId, suit } = message.payload;

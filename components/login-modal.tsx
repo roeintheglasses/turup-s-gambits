@@ -31,8 +31,8 @@ import {
   signUpWithEmail,
   signInWithOAuth,
   type OAuthProvider,
-} from "@/lib/supabase-auth";
-import { supabase } from "@/lib/supabase";
+} from "@/lib/services/supabase-auth";
+import { supabase } from "@/lib/services/supabase";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),

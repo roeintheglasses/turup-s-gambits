@@ -6,12 +6,22 @@ Turup's Gambit is a modern card game built with Next.js 15, featuring real-time 
 
 ## Architecture Overview
 
-The application follows a layered architecture pattern:
+The application follows a layered architecture pattern with a refactored modular realtime system:
 
 1. **Presentation Layer**: React components and UI elements
 2. **Business Logic Layer**: Custom hooks and game state management using Zustand
-3. **Data Layer**: Supabase Realtime for WebSocket connections and database interactions
+3. **Data Layer**: Refactored modular Supabase Realtime system with enhanced connection management
 4. **Infrastructure Layer**: Authentication, routing, and utility functions
+
+### Realtime System Architecture
+
+The realtime system has been completely refactored into a modular architecture:
+
+- **6 Specialized Modules**: Split from a single 1191-line file into focused modules
+- **ConnectionManager Class**: Centralized connection handling with auto-reconnection
+- **Enhanced Performance**: Debounced operations, connection pooling, and retry logic
+- **Strong Typing**: Comprehensive TypeScript interfaces for all payloads
+- **Improved Reliability**: Graceful fallbacks and comprehensive error recovery
 
 ## Game Flow
 
@@ -178,7 +188,18 @@ The game follows a structured flow with distinct phases:
    - Card dealing logic
    - Trump suit selection handling
    - Game scoring and tracking
-   - Realtime communication coordination
+   - Integration with refactored modular realtime system
+
+### Realtime Store Architecture
+
+The realtime functionality is now organized in `stores/gameStore/realtime/`:
+
+1. **constants.ts** - Configuration values, timing constants, and message types
+2. **types.ts** - TypeScript interfaces and type definitions
+3. **utils.ts** - Utility functions, validation, and helpers
+4. **handlers.ts** - Message handlers organized by category (player management, game flow, etc.)
+5. **connection.ts** - ConnectionManager class for Supabase management
+6. **index.ts** - Main API that combines all modules with enhanced error handling
 
 2. **UI Store (uiStore.ts)**
 

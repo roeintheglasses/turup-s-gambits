@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/services/supabase";
 import { GameRoom, GameState, Player, Suit } from "@/app/types/game";
 
 /**

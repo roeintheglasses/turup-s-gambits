@@ -4,7 +4,7 @@ import { Suit } from "@/app/types/game";
 import { useGameStore } from "@/stores";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/services/supabase";
 import { SupabaseDatabase } from "@/lib/services/supabase-database";
 
 // Define a type for trump votes

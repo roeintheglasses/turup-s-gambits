@@ -107,12 +107,24 @@ If tables are missing, you can create them using the SQL file:
 
 ## Realtime Data Storage
 
-The application uses Supabase Realtime for synchronizing game state between players:
+The application uses a refactored modular Supabase Realtime system for synchronizing game state between players:
 
-- Game state changes are broadcasted to all connected clients
-- Trump selection votes are recorded in real-time
-- Player actions are synchronized through the database and Supabase Realtime
-- Game phase transitions are managed through database triggers
+### Enhanced Realtime Architecture
+
+- **Modular Connection Management**: ConnectionManager class handles all Supabase connections with auto-reconnection
+- **Organized Message Handlers**: Message handlers are categorized by functionality (player management, game flow, etc.)
+- **Enhanced Performance**: Debounced database sync prevents excessive calls (300ms debounce)
+- **Improved Reliability**: Automatic fallback to API when WebSocket connections fail
+- **Better Error Handling**: Comprehensive validation and graceful error recovery
+
+### Data Synchronization Features
+
+- Game state changes are broadcasted to all connected clients with enhanced validation
+- Trump selection votes are recorded in real-time with proper TypeScript interfaces
+- Player actions are synchronized through the database and modular realtime system
+- Game phase transitions are managed through database triggers and connection pooling
+- Presence tracking for real-time player connection status monitoring
+- Automatic retry logic with exponential backoff for failed operations
 
 ## Database Functions and Triggers
 
@@ -171,8 +183,19 @@ When making schema changes:
 
 - The database schema uses snake_case for table names and columns following Supabase conventions
 - Column names are converted to camelCase in application code
-- The database is accessed using Supabase's JavaScript SDK
+- The database is accessed using Supabase's JavaScript SDK through the refactored modular realtime system
 - All timestamps are stored in UTC
 - Foreign key relationships ensure data integrity
 - Indexes are created automatically for optimal query performance
-- The application uses Zustand for client-side state management, which syncs with the database via Supabase Realtime
+- The application uses Zustand for client-side state management, which syncs with the database via the enhanced modular Supabase Realtime system
+
+### Realtime System Integration
+
+The database integrates seamlessly with the refactored realtime architecture:
+
+- **Connection Pooling**: Database connections are pooled and reused efficiently through the ConnectionManager
+- **Enhanced Sync**: Database state synchronization uses debounced operations to prevent excessive calls
+- **Type Safety**: All database operations use proper TypeScript interfaces defined in the realtime/types.ts module
+- **Error Recovery**: Failed database operations automatically retry with exponential backoff
+- **Monitoring**: Real-time connection status tracking for database subscriptions
+- **Graceful Fallbacks**: API fallback mechanisms when realtime database subscriptions fail

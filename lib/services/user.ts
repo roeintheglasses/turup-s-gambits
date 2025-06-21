@@ -1,4 +1,4 @@
-import { db } from "./supabase-database";
+import { supabase } from "./supabase";
 
 class UserService {
   private static instance: UserService;
@@ -35,7 +35,11 @@ class UserService {
     if (!isAnonymous) {
       // Check if user with email already exists
       if (email) {
-        const existingUser = await db.getUserByEmail(email);
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single();
         if (existingUser) {
           return existingUser; // Return existing user instead of throwing error
         }
@@ -43,7 +47,11 @@ class UserService {
 
       // Check if user with Discord ID already exists
       if (discordId) {
-        const existingDiscordUser = await db.getUserByDiscordId(discordId);
+        const { data: existingDiscordUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('discord_id', discordId)
+          .single();
         if (existingDiscordUser) {
           return existingDiscordUser; // Return existing user instead of throwing error
         }
@@ -58,17 +66,22 @@ class UserService {
     while (attempts < maxAttempts) {
       try {
         // Try to create the user with the current username
-        const user = await db.createUser({
-          username: finalUsername,
-          email,
-          password,
-          avatar,
-          isAnonymous,
-          discordId,
-          discordUsername,
-          discordAvatar,
-        });
+        const { data: user, error } = await supabase
+          .from('users')
+          .insert({
+            username: finalUsername,
+            email,
+            password,
+            avatar,
+            is_anonymous: isAnonymous,
+            discord_id: discordId,
+            discord_username: discordUsername,
+            discord_avatar: discordAvatar,
+          })
+          .select()
+          .single();
 
+        if (error) throw error;
         return user;
       } catch (error: any) {
         // If the error is about duplicate username, try again with a modified username
@@ -94,27 +107,43 @@ class UserService {
   }
 
   async getUserById(id: string) {
-    const user = await db.getUserById(id);
-    if (!user) throw new Error("User not found");
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error || !user) throw new Error("User not found");
     return user;
   }
 
   async getUserByEmail(email: string) {
-    const user = await db.getUserByEmail(email);
-    if (!user) throw new Error("User not found");
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    if (error || !user) throw new Error("User not found");
     return user;
   }
 
   async getUserByDiscordId(discordId: string) {
-    const user = await db.getUserByDiscordId(discordId);
-    if (!user) throw new Error("User not found");
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('discord_id', discordId)
+      .single();
+    if (error || !user) throw new Error("User not found");
     return user;
   }
 
   async getUserGames(userId: string) {
-    const user = await db.getUserById(userId);
-    if (!user) throw new Error("User not found");
-    return user.gamesCreated;
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*, games_created:games(*)')
+      .eq('id', userId)
+      .single();
+    if (error || !user) throw new Error("User not found");
+    return user.games_created;
   }
 
   async createAnonymousUser(username: string) {
