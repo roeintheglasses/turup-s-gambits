@@ -204,7 +204,7 @@ export class GameManager {
       }
     }
 
-    return this.shuffleDeck(deck);
+    return deck;
   }
 
   private shuffleDeck(deck: Card[]): Card[] {
@@ -220,8 +220,19 @@ export class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
+    // Reset players' hands to start fresh each game
+    for (const player of room.players) {
+      player.hand = [];
+    }
+
+    // Clear any leftover voting or deck information
+    room.gameState.trumpVotes = {};
+    room.gameState.playersVoted = [];
+    delete room.gameState.remainingDeck;
+
     // Generate and shuffle a new deck
     const deck = this.shuffleDeck(this.generateDeck());
+    room.deck = deck; // store deck for reference during this game
 
     // Assign teams (partners sit opposite each other)
     room.gameState.teams = {
@@ -433,8 +444,9 @@ export class GameManager {
       this.sortPlayerHand(player);
     }
 
-    // Clear the remaining deck
+    // Clear the remaining deck and stored deck reference
     delete room.gameState.remainingDeck;
+    delete room.deck;
 
     // After dealing all cards, start the playing phase
     this.startPlayingPhase(roomId);
