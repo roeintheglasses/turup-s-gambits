@@ -18,6 +18,8 @@ import { GameModeSelector } from "@/components/game-mode-selector";
 import { VisualEffects } from "@/components/visual-effects";
 import { LoginModal } from "@/components/login-modal";
 import { useAuthStore } from "@/stores/authStore";
+import { useGameStore } from "@/stores";
+import { SupabaseDatabase } from "@/lib/services/supabase-database";
 
 export default function GamePage() {
   const [roomId, setRoomId] = useState("");
@@ -27,6 +29,7 @@ export default function GamePage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { leaveRoom } = useGameStore();
 
   // Check if user is logged in
   useEffect(() => {
@@ -35,22 +38,80 @@ export default function GamePage() {
     }
   }, [user]);
 
-  function handleCreateGame() {
+  // Clean up game state when entering the lobby
+  useEffect(() => {
+    console.log("[GamePage] Cleaning up previous game state");
+    
+    // Clear game state in the store
+    leaveRoom();
+    
+    // Clear localStorage game data
+    localStorage.removeItem("game-storage");
+    
+    // Also clear any other game-related localStorage keys that might exist
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('game-') || key.startsWith('room-') || key.startsWith('player-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    console.log("[GamePage] Game state cleanup completed");
+  }, []); // Run only once when component mounts
+
+  async function handleCreateGame() {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
 
     setIsCreatingGame(true);
-    // Simulate API call to create game
-    setTimeout(() => {
+    
+    try {
+      // Generate a unique room ID
       const newRoomId = Math.random()
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
+
+      console.log("Creating room with ID:", newRoomId, "for user:", user.id);
+
+      // Actually create the room in the database
+      const createdRoom = await SupabaseDatabase.createGameRoom(
+        newRoomId,
+        user.id,
+        gameMode
+      );
+
+      if (createdRoom) {
+        console.log("Room created successfully:", createdRoom);
+        
+        // Wait a bit to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify the room exists before redirecting
+        const verifyRoom = await SupabaseDatabase.getGameRoom(newRoomId);
+        if (verifyRoom) {
+          console.log("Room verified, redirecting to:", newRoomId);
+          router.push(`/game/${newRoomId}?mode=${gameMode}`);
+        } else {
+          console.error("Room creation verified but room not found on verification");
+          throw new Error("Room not found after creation");
+        }
+      } else {
+        throw new Error("Failed to create room - no room returned");
+      }
+    } catch (error) {
+      console.error("Error creating game:", error);
+      
+      let errorMessage = "Failed to create game. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = `Failed to create game: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    } finally {
       setIsCreatingGame(false);
-      router.push(`/game/${newRoomId}?mode=${gameMode}`);
-    }, 1500);
+    }
   }
 
   function handleJoinGame() {
@@ -62,11 +123,11 @@ export default function GamePage() {
     if (!roomId) return;
 
     setIsJoiningGame(true);
-    // Simulate API call to join game
+    // Navigate to room - the room initializer will handle validation
     setTimeout(() => {
       setIsJoiningGame(false);
       router.push(`/game/${roomId}`);
-    }, 1500);
+    }, 500);
   }
 
   if (!user) {

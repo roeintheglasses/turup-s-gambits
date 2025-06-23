@@ -1,3 +1,5 @@
+import { SupabaseDatabase } from "@/lib/services/supabase-database";
+
 // Function to fetch room state from Supabase
 export const fetchRoomStateFromSupabase = async (roomId: string) => {
   if (!roomId) return null;
@@ -7,11 +9,15 @@ export const fetchRoomStateFromSupabase = async (roomId: string) => {
   );
 
   try {
-    // In a real implementation, this would query Supabase for the room state
-    // For now, let's simulate a delay and return a mock state based on what's stored
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // Fetch room data from Supabase
+    const roomData = await SupabaseDatabase.getGameRoomWithPlayers(roomId);
+    
+    if (!roomData) {
+      console.log(`[GameStore] No room found with ID ${roomId}`);
+      return null;
+    }
 
-    // Get stored game status from local storage if available
+    // Get stored game status from local storage if available as backup
     const storedState = localStorage.getItem("game-storage");
     let savedStatus = "waiting";
     let savedTrumpSuit = null;
@@ -34,22 +40,15 @@ export const fetchRoomStateFromSupabase = async (roomId: string) => {
       }
     }
 
-    console.log(`[GameStore] Recovered saved game status: ${savedStatus}`);
-    console.log(
-      `[GameStore] Recovered team assignments:`,
-      savedTeamAssignments
-    );
-    console.log(`[GameStore] Recovered players:`, savedPlayers);
-
-    // Use the saved status to create a properly shaped response
-    const gameState = {
+    // Use room data from Supabase as primary source
+    const gameState = roomData.gameState || {
       currentTurn: null,
       trumpSuit: savedTrumpSuit,
       currentBid: 0,
       currentBidder: null,
       trickCards: {},
       roundNumber: 0,
-      gamePhase: savedStatus,
+      gamePhase: roomData.status || savedStatus,
       teams: {
         royals: [],
         rebels: [],
@@ -64,17 +63,19 @@ export const fetchRoomStateFromSupabase = async (roomId: string) => {
       trumpCaller: null,
     };
 
+    console.log(`[GameStore] Fetched room data from Supabase:`, roomData);
+    console.log(`[GameStore] Recovered saved game status: ${gameState.gamePhase}`);
+    console.log(
+      `[GameStore] Recovered team assignments:`,
+      savedTeamAssignments
+    );
+    console.log(`[GameStore] Room players:`, roomData.players || []);
+
     return {
-      roomState: {
-        id: roomId,
-        createdAt: Date.now() - 3600000, // Simulate room created 1 hour ago
-        lastActivity: Date.now(),
-        gameState: gameState,
-        players: savedPlayers, // Use recovered players instead of empty array
-      },
-      gameStatus: savedStatus,
+      roomState: roomData, // The roomData is already a properly formatted GameRoom object
+      gameStatus: gameState.gamePhase || roomData.status || "waiting",
       teamAssignments: savedTeamAssignments,
-      players: savedPlayers, // Return players separately
+      players: roomData.players || [], // Return players from Supabase
     };
   } catch (error) {
     console.error("[GameStore] Error fetching room state:", error);

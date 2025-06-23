@@ -173,9 +173,26 @@
 
   .medieval-input {
     @apply bg-card border-2 border-primary/30 rounded-md px-4 py-2 focus:border-primary focus:ring-1 focus:ring-primary;
-    background-image: url("/assets/parchment-texture.png");
-    background-size: cover;
-    background-blend-mode: overlay;
+    background: linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(160, 82, 45, 0.05) 100%);
+    position: relative;
+  }
+
+  .medieval-input::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.03) 2px,
+      rgba(139, 69, 19, 0.03) 4px
+    );
+    pointer-events: none;
+    border-radius: inherit;
   }
 
   .scroll-bg {

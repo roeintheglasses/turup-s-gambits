@@ -652,31 +652,45 @@ export async function POST(req: Request) {
           }`
         );
 
-        // Start the game
-        gameManager.startGame(roomId);
-        const updatedRoom = gameManager.getRoom(roomId);
+        try {
+          // Start the game (now async)
+          await gameManager.startGame(roomId);
+          const updatedRoom = gameManager.getRoom(roomId);
 
-        if (updatedRoom) {
-          // Update game mode if provided
-          if (gameMode && updatedRoom.gameState) {
-            updatedRoom.gameState.gameMode = gameMode;
+          if (updatedRoom) {
+            // Update game mode if provided
+            if (gameMode && updatedRoom.gameState) {
+              updatedRoom.game_mode = gameMode;
+            }
+
+            console.log(
+              `[Realtime API] Broadcasting game:started for room ${roomId}`
+            );
+
+            // Send game:started message with the full room data
+            await broadcastToRoom(roomId, {
+              type: "game:started",
+              payload: updatedRoom,
+            });
+
+            // Send game:state-updated message with just the game state
+            await broadcastToRoom(roomId, {
+              type: "game:state-updated",
+              payload: updatedRoom.gameState,
+            });
+          } else {
+            console.error(`[Realtime API] Updated room not found after starting game ${roomId}`);
+            return NextResponse.json(
+              { error: "Failed to start game - room not found after initialization" },
+              { status: 500 }
+            );
           }
-
-          console.log(
-            `[Realtime API] Broadcasting game:started for room ${roomId}`
+        } catch (error) {
+          console.error(`[Realtime API] Error starting game in room ${roomId}:`, error);
+          return NextResponse.json(
+            { error: `Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}` },
+            { status: 500 }
           );
-
-          // Send game:started message with the full room data
-          await broadcastToRoom(roomId, {
-            type: "game:started",
-            payload: updatedRoom,
-          });
-
-          // Send game:state-updated message with just the game state
-          await broadcastToRoom(roomId, {
-            type: "game:state-updated",
-            payload: updatedRoom.gameState,
-          });
         }
 
         return NextResponse.json({ success: true });

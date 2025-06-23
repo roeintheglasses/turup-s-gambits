@@ -72,12 +72,16 @@ export const signInAnonymously = async (username: string) => {
   console.log("[Auth] Starting anonymous sign in");
 
   try {
-    // First check if the username already exists
-    const { data: existingUser } = await supabase
-      .from("users")
+    // First check if the username already exists using the new view
+    const { data: existingUser, error: checkError } = await supabase
+      .from("username_availability")
       .select("username")
       .eq("username", username)
-      .single();
+      .maybeSingle();
+
+    if (checkError) {
+      console.warn("[Auth] Username check failed, proceeding anyway:", checkError);
+    }
 
     if (existingUser) {
       console.error("[Auth] Username already exists:", username);
@@ -85,33 +89,22 @@ export const signInAnonymously = async (username: string) => {
     }
 
     // Username is available, proceed with anonymous sign up
-    const { data, error } = await supabaseAuth.auth.signInAnonymously();
+    const { data, error } = await supabaseAuth.auth.signInAnonymously({
+      options: {
+        data: {
+          username,
+          name: username,
+          is_anonymous: true
+        }
+      }
+    });
 
     if (error) {
       console.error("[Auth] Anonymous sign in error:", error);
       throw error;
     }
 
-    // Update the user's metadata to include the provided username
-    if (data.user) {
-      await supabaseAuth.auth.updateUser({
-        data: {
-          username,
-          name: username,
-        },
-      });
-
-      // Add the username directly to the returned user object so it's immediately available
-      // This ensures the UI has the username from the beginning
-      if (data.user.user_metadata) {
-        data.user.user_metadata.username = username;
-        data.user.user_metadata.name = username;
-      } else {
-        data.user.user_metadata = { username, name: username };
-      }
-    }
-
-    console.log("[Auth] Anonymous sign in successful");
+    console.log("[Auth] Anonymous sign in successful with user:", data.user?.id);
     return data;
   } catch (err) {
     console.error("[Auth] Unexpected error during anonymous sign in:", err);

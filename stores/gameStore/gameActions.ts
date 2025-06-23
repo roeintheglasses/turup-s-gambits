@@ -30,6 +30,8 @@ const MESSAGES = {
     NOT_YOUR_TURN: "Not your turn to play",
     CARD_ALREADY_PLAYED: "Card already played in current trick",
     INSUFFICIENT_PLAYERS: "Not enough players to start game",
+    AUTH_REQUIRED: "Authentication is required to perform this action",
+    ROOM_NOT_FOUND: "Room not found",
   },
   PHASE: {
     initial_deal: "Please wait for the initial 5 cards to be dealt and select a trump suit first.",
@@ -238,27 +240,41 @@ export const createGameActions = (
     // Room management
     async joinRoom(roomId: string, playerName: string): Promise<void> {
       const user = useAuthStore.getState().user;
-      if (!GameValidator.validateUser(user)) return;
-
-      const state = get();
       
-      // Prevent duplicate joins
-      if (state.currentRoom && state.players.some(p => p.id === user!.id)) {
-        GameLogger.warn("User already in room, skipping join");
-        return;
+      if (!GameValidator.validateUser(user)) {
+        throw new Error(MESSAGES.ERROR.AUTH_REQUIRED);
       }
 
+      set({ isLoading: true });
+      
       try {
-        set({ isLoading: true });
-        
         const db = await DatabaseService.getSupabaseDatabase();
-        const roomState = await db.getGameRoom(roomId);
+        const roomState = await db.getGameRoomWithPlayers(roomId);
         
         if (!roomState) {
-          throw new Error("Room not found");
+          throw new Error(MESSAGES.ERROR.ROOM_NOT_FOUND);
         }
 
-        const currentUserPlayer = PlayerService.createPlayer(user!, false);
+        // Check if user is already in the room
+        const existingPlayer = roomState.players?.find(p => 
+          p.user_id === user!.id || p.id === user!.id
+        );
+        
+        if (existingPlayer) {
+          console.log(`[GameStore] User ${playerName} already in room ${roomId}`);
+          const updatedRoom = { ...roomState };
+          stateManager.updateRoomAndPlayers(updatedRoom);
+          return;
+        }
+
+        // Check if user should be host (room creator)
+        const shouldBeHost = roomState.host_id === user!.id || 
+                           roomState.created_by === user!.id ||
+                           roomState.players.length === 0;
+
+        console.log(`[GameStore] User ${user!.id} joining room ${roomId}, shouldBeHost: ${shouldBeHost}, roomHostId: ${roomState.host_id}`);
+
+        const currentUserPlayer = PlayerService.createPlayer(user!, shouldBeHost);
         const updatedPlayers = [...(roomState.players || []), currentUserPlayer];
         
         if (updatedPlayers.length > CONFIG.GAME.MAX_PLAYERS) {
@@ -270,7 +286,7 @@ export const createGameActions = (
         const updatedRoom = { ...roomState, players: updatedPlayers };
         stateManager.updateRoomAndPlayers(updatedRoom);
         
-        GameLogger.log(`User ${playerName} joined room ${roomId}`);
+        GameLogger.log(`User ${playerName} joined room ${roomId} as ${shouldBeHost ? 'host' : 'player'}`);
         NotificationService.showSuccess(`Joined room ${roomId}`);
         
       } catch (error) {
@@ -450,17 +466,38 @@ export const createGameActions = (
           .slice(0, botsNeeded)
           .map((name, index) => PlayerService.createBotPlayer(name, index));
 
+        console.log(`[GameStore] Adding ${newBots.length} bots:`, newBots.map(b => `${b.name} (${b.id})`));
+
+        // Update local state first
         const updatedPlayers = [...state.players, ...newBots];
-        
         set({ players: updatedPlayers });
         
-        // Update database
+        // Add bots to database one by one with better error handling
         const db = await DatabaseService.getSupabaseDatabase();
+        const failedBots: string[] = [];
+        
         for (const bot of newBots) {
-          await db.addPlayerToRoom(state.roomId!, bot);
+          try {
+            console.log(`[GameStore] Adding bot ${bot.name} to database...`);
+            const success = await db.addPlayerToRoom(state.roomId!, bot);
+            if (!success) {
+              console.error(`[GameStore] Failed to add bot ${bot.name} to database`);
+              failedBots.push(bot.name);
+            } else {
+              console.log(`[GameStore] Successfully added bot ${bot.name} to database`);
+            }
+          } catch (error) {
+            console.error(`[GameStore] Error adding bot ${bot.name}:`, error);
+            failedBots.push(bot.name);
+          }
         }
 
-        stateManager.showStatusMessage(`Added ${newBots.length} bot(s)`);
+        if (failedBots.length > 0) {
+          console.warn(`[GameStore] Some bots failed to be added to database:`, failedBots);
+          NotificationService.showWarning(`Added ${newBots.length - failedBots.length}/${newBots.length} bots successfully`);
+        } else {
+          stateManager.showStatusMessage(`Added ${newBots.length} bot(s)`);
+        }
         
         // Broadcast update
         await this.sendMessage({
@@ -472,11 +509,19 @@ export const createGameActions = (
           },
         });
 
-        GameLogger.log(`Added ${newBots.length} bots`);
+        GameLogger.log(`Added ${newBots.length} bots (${failedBots.length} failed)`);
         
       } catch (error) {
         GameLogger.error("Failed to add bots", error);
-        NotificationService.showError("Failed to add bots. Please try again.");
+        NotificationService.showError(`Failed to add bots: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        // Revert local state on error
+        const currentState = get();
+        const originalPlayers = currentState.players.filter(p => !p.isBot || 
+          currentState.players.indexOf(p) < currentState.players.length - 
+          (CONFIG.GAME.MAX_PLAYERS - currentState.players.length));
+        set({ players: originalPlayers });
+        
       } finally {
         set({ isAddingBots: false });
       }
@@ -530,8 +575,24 @@ export const createGameActions = (
     },
 
     leaveRoom: () => {
+      // Reset game state in store
       stateManager.resetGameState();
-      GameLogger.log("Left room");
+      
+      // Clear localStorage game data
+      try {
+        localStorage.removeItem("game-storage");
+        
+        // Clear any other game-related localStorage keys
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('game-') || key.startsWith('room-') || key.startsWith('player-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn("[GameStore] Failed to clear localStorage:", error);
+      }
+      
+      GameLogger.log("Left room and cleared all game data");
     },
 
     selectTrump: (suit: Suit) => {

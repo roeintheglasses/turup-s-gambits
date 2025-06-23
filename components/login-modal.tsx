@@ -130,7 +130,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   // Check if username exists
   const checkUsername = async (username: string) => {
-    if (username.length < 3) {
+    if (!username || username.length < 3) {
       setUsernameExists(false);
       return;
     }
@@ -145,15 +145,23 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     // Set a new timeout to check username after typing stops
     usernameCheckTimeout.current = setTimeout(async () => {
       try {
-        const { data } = await supabase
-          .from("users")
+        // Use the new username_availability view for checking
+        const { data, error } = await supabase
+          .from("username_availability")
           .select("username")
           .eq("username", username)
-          .single();
+          .maybeSingle();
 
-        setUsernameExists(!!data);
+        if (error) {
+          console.warn("Username check error:", error);
+          // If there's an error, assume username is available to not block the user
+          setUsernameExists(false);
+        } else {
+          setUsernameExists(!!data);
+        }
       } catch (error) {
-        // If error is "No rows returned by the query", username is available
+        console.warn("Username check failed:", error);
+        // If error occurs, assume username is available to not block the user
         setUsernameExists(false);
       } finally {
         setIsCheckingUsername(false);

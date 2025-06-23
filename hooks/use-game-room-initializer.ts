@@ -28,6 +28,8 @@ export function useGameRoomInitializer(roomId: string): GameRoomInitializerRetur
   const hasJoinedRef = useRef(false);
   const hasRestoredStateRef = useRef(false);
   const initializationErrorRef = useRef<Error | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   // Memoized dependencies to prevent unnecessary effect re-runs
   const storeActions = useMemo(() => ({
@@ -92,7 +94,7 @@ export function useGameRoomInitializer(roomId: string): GameRoomInitializerRetur
     }
   }, [storeActions]);
 
-  // Join room function
+  // Join room function with retry logic
   const joinGameRoom = useCallback(async (roomId: string, username: string) => {
     try {
       if (currentRoom) {
@@ -100,16 +102,32 @@ export function useGameRoomInitializer(roomId: string): GameRoomInitializerRetur
         return true;
       }
 
-      console.log("[GameRoomInitializer] Joining room as", username);
+      console.log(`[GameRoomInitializer] Joining room as ${username} (attempt ${retryCountRef.current + 1})`);
       await joinRoom(roomId, username);
       hasJoinedRef.current = true;
+      retryCountRef.current = 0; // Reset retry count on success
       return true;
     } catch (error) {
       console.error("[GameRoomInitializer] Error joining room:", error);
+      
+      // If room not found and we haven't exceeded retry count, try again after a delay
+      if (retryCountRef.current < maxRetries && 
+          (error as Error).message.includes("Room not found")) {
+        retryCountRef.current++;
+        console.log(`[GameRoomInitializer] Room not found, retrying in 1 second... (${retryCountRef.current}/${maxRetries})`);
+        
+        // Wait and retry
+        setTimeout(() => {
+          joinGameRoom(roomId, username);
+        }, 1000);
+        
+        return false; // Don't set error yet, we're retrying
+      }
+      
       initializationErrorRef.current = error as Error;
       return false;
     }
-  }, [currentRoom, joinRoom]);
+  }, [currentRoom, joinRoom, maxRetries]);
 
   // Main initialization effect
   useEffect(() => {
@@ -145,6 +163,7 @@ export function useGameRoomInitializer(roomId: string): GameRoomInitializerRetur
       hasJoinedRef.current = false;
       hasRestoredStateRef.current = false;
       initializationErrorRef.current = null;
+      retryCountRef.current = 0;
     };
   }, []);
 
