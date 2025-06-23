@@ -96,7 +96,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 pt-20">
+    <div className="min-h-screen flex items-start justify-center p-4">
       <VisualEffects enableGrain />
 
       <div className="absolute inset-0 -z-10">

@@ -6,6 +6,7 @@ export const GAME_STATUS_PRIORITY: Record<string, number> = {
   final_deal: 3,
   playing: 4,
   finished: 5,
+  ended: 6,
 } as const;
 
 // Timing constants
@@ -61,6 +62,7 @@ export const MESSAGE_TYPES = {
   GAME_SELECT_TRUMP: 'game:select-trump',
   GAME_TRUMP_VOTE: 'game:trump-vote',
   GAME_TRUMP_SELECTED: 'game:trump-selected',
+  GAME_FORCE_BOT_VOTES: 'game:force-bot-votes',
   
   // Game phases
   GAME_FINAL_DEAL: 'game:final-deal',
@@ -72,6 +74,10 @@ export const MESSAGE_TYPES = {
   
   // Social features
   GAME_EMOTE: 'game:emote',
+  
+  // Frenzy mode powers
+  GAME_FRENZY_POWER: 'game:frenzy-power',
+  GAME_FRENZY_EFFECT: 'game:frenzy-effect',
   
   // Presence tracking
   PRESENCE_SYNC: 'presence:sync',

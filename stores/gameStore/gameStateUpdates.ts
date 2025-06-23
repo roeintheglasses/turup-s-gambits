@@ -32,12 +32,12 @@ export const createGameStateUpdates = (
       // Process special update fields
       if (newState.updateField === "game_end") {
         console.log(
-          "[GameStore] Game end signal received, updating game status to finished"
+          "[GameStore] Game end signal received, updating game status to ended"
         );
-        updatedState.gameStatus = "finished";
+        updatedState.gameStatus = "ended" as GameStatus;
         // Also set it in gamePhase for consistency
         if (updatedRoom) {
-          updatedRoom.gameState.gamePhase = "finished";
+          updatedRoom.gameState.gamePhase = "ended";
         }
       }
 

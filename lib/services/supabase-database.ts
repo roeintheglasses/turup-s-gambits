@@ -18,6 +18,12 @@ export class SupabaseDatabase {
     hostId: string,
     gameMode: string = "classic"
   ): Promise<GameRoom | null> {
+    // Check if supabase client is initialized
+    if (!supabase) {
+      console.error("[SupabaseDatabase] Supabase client not initialized");
+      return null;
+    }
+
     try {
       const initialGameState: GameState = {
         currentTurn: null,
@@ -105,14 +111,49 @@ export class SupabaseDatabase {
         return null;
       }
 
-      // Convert database record to GameRoom type
-      return {
-        id: data.id,
-        players: [],
-        gameState: data.game_state,
-        createdAt: new Date(data.created_at).getTime(),
-        lastActivity: new Date(data.last_updated).getTime(),
+      // Check if data exists and has required fields
+      if (!data) {
+        console.error("[SupabaseDatabase] No data returned after creating room:", roomId);
+        return null;
+      }
+
+      // Ensure game_state exists with default structure
+      const gameState = data.game_state || {
+        currentTurn: null,
+        trumpSuit: null,
+        currentBid: 0,
+        currentBidder: null,
+        trickCards: {},
+        roundNumber: 0,
+        gamePhase: "waiting",
+        teams: { royals: [], rebels: [] },
+        scores: { royals: 0, rebels: 0 },
+        consecutiveTricks: { royals: 0, rebels: 0 },
+        lastTrickWinner: null,
+        dealerIndex: 0,
+        trumpCaller: null,
+        players: []
       };
+
+      // Convert database record to GameRoom type with safe date parsing
+      try {
+        return {
+          id: data.id,
+          players: gameState.players || [],
+          gameState: gameState,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
+          lastActivity: data.last_updated ? new Date(data.last_updated).getTime() : Date.now(),
+        };
+      } catch (dateError) {
+        console.error("[SupabaseDatabase] Error parsing dates in createGameRoom:", dateError);
+        return {
+          id: data.id,
+          players: gameState.players || [],
+          gameState: gameState,
+          createdAt: Date.now(),
+          lastActivity: Date.now(),
+        };
+      }
     } catch (error) {
       console.error("[SupabaseDatabase] Error creating game room:", error);
       return null;
@@ -125,6 +166,12 @@ export class SupabaseDatabase {
    * @returns The game room or null if not found
    */
   static async getGameRoom(roomId: string): Promise<GameRoom | null> {
+    // Check if supabase client is initialized
+    if (!supabase) {
+      console.error("[SupabaseDatabase] Supabase client not initialized");
+      return null;
+    }
+
     try {
       // Try to get the room
       const { data, error } = await supabase
@@ -141,14 +188,49 @@ export class SupabaseDatabase {
         return null;
       }
 
-      // Convert database record to GameRoom type
-      return {
-        id: data.id,
-        players: data.game_state.players || [],
-        gameState: data.game_state,
-        createdAt: new Date(data.created_at).getTime(),
-        lastActivity: new Date(data.last_updated).getTime(),
+      // Check if data exists and has required fields
+      if (!data) {
+        console.error("[SupabaseDatabase] No data returned for room:", roomId);
+        return null;
+      }
+
+      // Ensure game_state exists, create default if not 
+      const gameState = data.game_state || {
+        currentTurn: null,
+        trumpSuit: null,
+        currentBid: 0,
+        currentBidder: null,
+        trickCards: {},
+        roundNumber: 0,
+        gamePhase: "waiting",
+        teams: { royals: [], rebels: [] },
+        scores: { royals: 0, rebels: 0 },
+        consecutiveTricks: { royals: 0, rebels: 0 },
+        lastTrickWinner: null,
+        dealerIndex: 0,
+        trumpCaller: null,
+        players: []
       };
+
+      // Convert database record to GameRoom type with safe date parsing
+      try {
+        return {
+          id: data.id,
+          players: gameState.players || [],
+          gameState: gameState,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
+          lastActivity: data.last_updated ? new Date(data.last_updated).getTime() : Date.now(),
+        };
+      } catch (dateError) {
+        console.error("[SupabaseDatabase] Error parsing dates in getGameRoom:", dateError);
+        return {
+          id: data.id,
+          players: gameState.players || [],
+          gameState: gameState,
+          createdAt: Date.now(),
+          lastActivity: Date.now(),
+        };
+      }
     } catch (error) {
       console.error("[SupabaseDatabase] Error fetching game room:", error);
       return null;
@@ -209,7 +291,29 @@ export class SupabaseDatabase {
         return false;
       }
 
-      const gameState = data.game_state;
+      // Check if data exists
+      if (!data) {
+        console.error("[SupabaseDatabase] No data returned when adding player to room:", roomId);
+        return false;
+      }
+
+      // Ensure game_state exists with default structure
+      const gameState = data.game_state || {
+        currentTurn: null,
+        trumpSuit: null,
+        currentBid: 0,
+        currentBidder: null,
+        trickCards: {},
+        roundNumber: 0,
+        gamePhase: "waiting",
+        teams: { royals: [], rebels: [] },
+        scores: { royals: 0, rebels: 0 },
+        consecutiveTricks: { royals: 0, rebels: 0 },
+        lastTrickWinner: null,
+        dealerIndex: 0,
+        trumpCaller: null,
+        players: []
+      };
 
       // Add player to the game state
       const players = gameState.players || [];
@@ -270,7 +374,29 @@ export class SupabaseDatabase {
         return false;
       }
 
-      const gameState = data.game_state;
+      // Check if data exists
+      if (!data) {
+        console.error("[SupabaseDatabase] No data returned when removing player from room:", roomId);
+        return false;
+      }
+
+      // Ensure game_state exists with default structure
+      const gameState = data.game_state || {
+        currentTurn: null,
+        trumpSuit: null,
+        currentBid: 0,
+        currentBidder: null,
+        trickCards: {},
+        roundNumber: 0,
+        gamePhase: "waiting",
+        teams: { royals: [], rebels: [] },
+        scores: { royals: 0, rebels: 0 },
+        consecutiveTricks: { royals: 0, rebels: 0 },
+        lastTrickWinner: null,
+        dealerIndex: 0,
+        trumpCaller: null,
+        players: []
+      };
 
       // Remove player from the game state
       const players = gameState.players || [];

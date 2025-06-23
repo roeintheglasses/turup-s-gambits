@@ -24,12 +24,55 @@ import { determineTrickWinner } from "../cardUtils";
 import { TIMING, GAME_STATUS_PRIORITY } from "./constants";
 import { useUIStore } from "../../uiStore";
 
+// Common utility functions for handlers
+const createStateUpdater = (updates: Partial<GameStoreState>) => (state: GameStoreState): GameStoreState => ({
+  ...state,
+  ...updates
+});
+
+const updateCurrentRoom = (updates: any) => (state: GameStoreState): GameStoreState => ({
+  ...state,
+  currentRoom: {
+    ...state.currentRoom,
+    ...updates
+  } as any
+});
+
+const updateGameState = (gameStateUpdates: any) => (state: GameStoreState): GameStoreState => ({
+  ...state,
+  currentRoom: {
+    ...state.currentRoom,
+    gameState: {
+      ...state.currentRoom?.gameState,
+      ...gameStateUpdates
+    }
+  } as any
+});
+
+const showStatusMessage = (message: string, set: SetStateFn, duration = TIMING.STATUS_MESSAGE_CLEAR_DELAY) => {
+  set({ statusMessage: message });
+  setTimeout(() => set({ statusMessage: null }), duration);
+};
+
+const validatePayload = (payload: any, requiredFields: string[]): boolean => {
+  if (!payload) {
+    logger.warn("Received message with empty payload");
+    return false;
+  }
+  
+  for (const field of requiredFields) {
+    if (!payload[field]) {
+      logger.error(`Missing required field: ${field}`, payload);
+      return false;
+    }
+  }
+  
+  return true;
+};
+
 // Player Management Handlers
 const handlePlayerJoined: MessageHandler = (message, get, set) => {
-  if (!message.payload) {
-    logger.warn("Received player:joined message with empty payload:", message);
-    return;
-  }
+  if (!validatePayload(message.payload, [])) return;
 
   const playerObject = extractPlayerObject(message.payload);
   if (!playerObject?.id) {
@@ -39,18 +82,14 @@ const handlePlayerJoined: MessageHandler = (message, get, set) => {
 
   logger.info(`Player ${playerObject.name} joined the game`);
   
-  // Handle team assignment
   const { teamAssignments } = get();
+  
+  // Handle team assignment
   if (Object.keys(teamAssignments).length > 0 && !teamAssignments[playerObject.name]) {
     const team = determineTeamForPlayer(playerObject.name, teamAssignments);
-    
-    set((state) => ({
-      teamAssignments: {
-        ...state.teamAssignments,
-        [playerObject.name]: team,
-      },
+    set(createStateUpdater({
+      teamAssignments: { ...teamAssignments, [playerObject.name]: team }
     }));
-
     logger.info(`Assigned player ${playerObject.name} to team ${team}`);
   }
 
@@ -63,33 +102,29 @@ const handlePlayerJoined: MessageHandler = (message, get, set) => {
       return state;
     }
 
-    const updatedState: Partial<GameStoreState> = {
+    const updates: Partial<GameStoreState> = {
       players: [...currentPlayers, playerObject],
     };
 
     // Handle preserved state for rejoining players
     const { preservedState, currentGameStatus } = message.payload;
-    if (preservedState && currentGameStatus) {
-      if (shouldUpdateGameStatus(state.gameStatus, currentGameStatus)) {
-        logger.info(`Updating game status from ${state.gameStatus} to ${currentGameStatus}`);
-        updatedState.gameStatus = currentGameStatus;
-      }
+    if (preservedState && currentGameStatus && shouldUpdateGameStatus(state.gameStatus, currentGameStatus)) {
+      logger.info(`Updating game status from ${state.gameStatus} to ${currentGameStatus}`);
+      updates.gameStatus = currentGameStatus;
     }
 
-    return updatedState;
+    return { ...state, ...updates };
   });
 };
 
 const handlePlayerLeft: MessageHandler = (message, get, set) => {
-  const playerId = message.payload?.playerId;
-  if (!playerId) {
-    logger.error("Missing playerId in player:left message:", message);
-    return;
-  }
-
+  if (!validatePayload(message.payload, ['playerId'])) return;
+  
+  const { playerId } = message.payload;
   logger.info(`Player with ID ${playerId} left the game`);
   
   set((state) => ({
+    ...state,
     players: (state.players || []).filter(p => p?.id !== playerId),
   }));
 };
@@ -98,17 +133,19 @@ const handlePlayerLeft: MessageHandler = (message, get, set) => {
 const handleGameStart: MessageHandler = (message, get, set) => {
   logger.info("Game starting...");
   
-  set({
+  const updates: Partial<GameStoreState> = {
     gameStatus: "initial_deal",
     showShuffleAnimation: true,
     initialCardsDeal: true,
     statusMessage: "Game starting... Dealing initial cards",
-  });
+  };
 
-  if (message.payload.teamAssignments) {
+  if (message.payload?.teamAssignments) {
     logger.info("Received team assignments from host:", message.payload.teamAssignments);
-    set({ teamAssignments: message.payload.teamAssignments });
+    updates.teamAssignments = message.payload.teamAssignments;
   }
+
+  set(createStateUpdater(updates));
 };
 
 const handleGameStarted: MessageHandler = (message, get, set) => {
@@ -119,7 +156,7 @@ const handleGameStarted: MessageHandler = (message, get, set) => {
 
   logger.info("Received game:started message:", message.payload);
 
-  const stateUpdate = {
+  const baseUpdates = {
     gameStatus: "initial_deal" as const,
     showShuffleAnimation: true,
     initialCardsDeal: true,
@@ -128,20 +165,10 @@ const handleGameStarted: MessageHandler = (message, get, set) => {
   };
 
   if (message.payload.gameState) {
-    set((state: GameStoreState) => ({
-      ...state,
-      ...stateUpdate,
-      currentRoom: message.payload,
-    }));
+    set(createStateUpdater({ ...baseUpdates, currentRoom: message.payload }));
   } else if (message.payload.game) {
-    set((state: GameStoreState) => ({
-      ...state,
-      ...stateUpdate,
-      currentRoom: {
-        ...state.currentRoom,
-        gameState: message.payload.game,
-      } as any,
-    }));
+    set(updateCurrentRoom({ gameState: message.payload.game }));
+    set(createStateUpdater(baseUpdates));
   } else {
     logger.error("Received invalid game:started message format:", message.payload);
   }
@@ -153,71 +180,53 @@ const handleGameOver: MessageHandler = (message, get, set) => {
   
   logger.info(`Game over! Winner: ${winnerText}`);
   
-  set({
+  const message_text = winner ? `Game over! ${winnerText} win!` : "Game over!";
+  set(createStateUpdater({
     gameStatus: "finished",
-    statusMessage: winner ? `Game over! ${winnerText} win!` : "Game over!",
-  });
+    statusMessage: message_text,
+  }));
 
-  showToast(`Game over! ${winnerText} win!`, "success");
+  showToast(message_text, "success");
 };
 
 // Bidding Phase Handlers
 const handleBidPlaced: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['playerId', 'bid', 'playerName'])) return;
+  
   const { playerId, bid, playerName } = message.payload as BidPlacedPayload;
   
-  if (!bid || bid < 7 || bid > 13) {
+  if (bid < 7 || bid > 13) {
     logger.error("Invalid bid received:", bid);
     return;
   }
 
   logger.info(`Player ${playerName} placed bid: ${bid}`);
   
-  set((state) => ({
-    statusMessage: `${playerName} bid ${bid} tricks`,
-    currentRoom: {
-      ...state.currentRoom,
-      gameState: {
-        ...state.currentRoom?.gameState,
-        currentBid: bid,
-        currentBidder: playerId,
-      },
-    } as any,
-  }));
-
-  showToast(`${playerName} bid ${bid} tricks`, "info");
-  
-  // Clear status message after delay
-  setTimeout(() => {
-    set({ statusMessage: null });
-  }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+  const statusMsg = `${playerName} bid ${bid} tricks`;
+  set(updateGameState({ currentBid: bid, currentBidder: playerId }));
+  showStatusMessage(statusMsg, set);
+  showToast(statusMsg, "info");
 };
 
 const handleBiddingComplete: MessageHandler = (message, get, set) => {
-  const { finalBid, winningBidder } = message.payload;
+  if (!validatePayload(message.payload, ['finalBid', 'winningBidder'])) return;
   
+  const { finalBid, winningBidder } = message.payload;
   logger.info(`Bidding complete. Winning bid: ${finalBid} by ${winningBidder}`);
   
-  set({
-    gameStatus: "final_deal",
-    statusMessage: `Bidding complete! ${winningBidder} won with ${finalBid} tricks`,
-  });
-
+  const statusMsg = `Bidding complete! ${winningBidder} won with ${finalBid} tricks`;
+  set(createStateUpdater({ gameStatus: "final_deal", statusMessage: statusMsg }));
   showToast("Bidding complete! Final deal starting...", "success");
   
-  setTimeout(() => {
-    set({ statusMessage: null });
-  }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+  setTimeout(() => set({ statusMessage: null }), TIMING.STATUS_MESSAGE_CLEAR_DELAY);
 };
 
 // Card Play Handlers
 const handleCardPlayed: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['card', 'playerId', 'playerName'])) return;
+  
   const { card: playedCard, playerId, playerName } = message.payload as CardPlayedPayload;
   
-  if (!playedCard) {
-    logger.error("Received card played message without card:", message);
-    return;
-  }
-
   if (isCardAlreadyPlayed(playedCard, get().currentTrick)) {
     logger.info("Duplicate card play detected, ignoring:", playedCard);
     return;
@@ -263,10 +272,7 @@ const updateGameStateForCardPlay = (
       return p;
     });
 
-    return {
-      currentTrick: updatedTrick,
-      players: updatedPlayers,
-    };
+    return { ...state, currentTrick: updatedTrick, players: updatedPlayers };
   });
 
   if (isCurrentUserPlaying) {
@@ -282,23 +288,19 @@ const handleTrickCompletion = (updatedTrick: any[], get: () => GameStoreState, s
   const trickWinner = determineTrickWinner(updatedTrick, get().trumpSuit);
   
   setTimeout(() => {
-    set({
-      currentTrick: [],
-      statusMessage: `${trickWinner.playerName} won the trick!`,
-    });
+    const statusMsg = `${trickWinner.playerName} won the trick!`;
+    set(createStateUpdater({ currentTrick: [], statusMessage: statusMsg }));
 
     const currentUser = getCurrentUser();
     const nextPlayerName = currentUser?.username || "";
 
     setTimeout(() => {
-      set({
+      set(createStateUpdater({
         currentPlayer: nextPlayerName,
         statusMessage: "Your turn to play!",
-      });
+      }));
 
-      setTimeout(() => {
-        set({ statusMessage: null });
-      }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+      setTimeout(() => set({ statusMessage: null }), TIMING.STATUS_MESSAGE_CLEAR_DELAY);
     }, TIMING.TRICK_RESOLUTION_DELAY);
   }, TIMING.TRICK_RESOLUTION_DELAY);
 };
@@ -306,65 +308,54 @@ const handleTrickCompletion = (updatedTrick: any[], get: () => GameStoreState, s
 const updateCurrentPlayerAfterCardPlay = (get: () => GameStoreState, set: SetStateFn) => {
   const currentUser = getCurrentUser();
   
-  set({
+  set(createStateUpdater({
     gameStatus: "playing",
     statusMessage: "Game started! Your turn to play...",
     currentPlayer: currentUser?.username || "",
-  });
+  }));
 };
 
 // Trick Management Handlers
 const handleTrickComplete: MessageHandler = (message, get, set) => {
-  const { trickCards, winner } = message.payload as TrickCompletePayload;
+  if (!validatePayload(message.payload, ['winner'])) return;
   
+  const { trickCards, winner } = message.payload as TrickCompletePayload;
   logger.info(`Trick completed. Winner: ${winner}`);
   
-  set({
-    currentTrick: [],
-    statusMessage: `${winner} won the trick!`,
-  });
+  const statusMsg = `${winner} won the trick!`;
+  set(createStateUpdater({ currentTrick: [], statusMessage: statusMsg }));
 
   // Update scores
   const { teamAssignments, scores } = get();
   const winnerTeam = teamAssignments[winner];
   
   if (winnerTeam) {
-    const newScores = {
-      ...scores,
-      [winnerTeam]: scores[winnerTeam] + 1,
-    };
-    
+    const newScores = { ...scores, [winnerTeam]: scores[winnerTeam] + 1 };
     set({ scores: newScores });
     
     // Check for game end
     if (newScores[winnerTeam] >= 7) {
       setTimeout(() => {
-        set({
+        const teamName = winnerTeam === "royals" ? "Royals" : "Rebels";
+        set(createStateUpdater({
           gameStatus: "finished",
-          statusMessage: `Game over! ${winnerTeam === "royals" ? "Royals" : "Rebels"} win!`,
-        });
+          statusMessage: `Game over! ${teamName} win!`,
+        }));
       }, TIMING.TRICK_RESOLUTION_DELAY);
     }
   }
 
-  setTimeout(() => {
-    set({ statusMessage: null });
-  }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+  setTimeout(() => set({ statusMessage: null }), TIMING.STATUS_MESSAGE_CLEAR_DELAY);
 };
 
 const handleTrickWinner: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['winner'])) return;
+  
   const { winner, team, trickCount } = message.payload;
   
   showToast(`${winner} (${team}) won the trick!`, "success");
-  
-  set({
-    statusMessage: `${winner} won the trick!`,
-    currentPlayer: winner,
-  });
-  
-  setTimeout(() => {
-    set({ statusMessage: null });
-  }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+  showStatusMessage(`${winner} won the trick!`, set);
+  set({ currentPlayer: winner });
 };
 
 // Trump Selection Handlers
@@ -378,27 +369,40 @@ const handleTrumpSelection: MessageHandler = (message, get, set) => {
 
   logger.info(`Trump suit selected: ${selectedSuit}`);
 
-  set({
+  const updates: Partial<GameStoreState> = {
     trumpSuit: selectedSuit,
     votingComplete: true,
-    ...(message.type === "game:trump-selected" && { gameStatus: "bidding" }),
-  });
+  };
 
+  if (message.type === "game:trump-selected") {
+    updates.gameStatus = "bidding";
+  }
+
+  set(createStateUpdater(updates));
   showToast(`Trump suit selected: ${selectedSuit}`, "info");
+};
+
+const handleForceBotVotes: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['roomId', 'hostId'])) return;
+  
+  const { roomId, hostId } = message.payload;
+  logger.info(`Host ${hostId} is forcing bot votes in room ${roomId}`);
+  
+  showToast("Forcing bots to vote...", "info");
+  showStatusMessage("Host is forcing bots to vote...", set);
 };
 
 // Room State Handlers
 const handleRoomJoined: MessageHandler = (message, get, set) => {
   const roomState = message.payload;
   
-  if (roomState && roomState.players) {
+  if (roomState?.players) {
     logger.info("Room joined, updating state with players:", roomState.players);
-    
-    set({
+    set(createStateUpdater({
       currentRoom: roomState,
       players: roomState.players,
       isConnected: true,
-    });
+    }));
   }
 };
 
@@ -407,52 +411,109 @@ const handleRoomUpdated: MessageHandler = (message, get, set) => {
   
   if (roomState) {
     logger.info("Room updated:", roomState);
-    
-    set((state) => ({
+    set(createStateUpdater({
       currentRoom: roomState,
-      players: roomState.players || state.players,
-      gameStatus: roomState.gameState?.gamePhase || state.gameStatus,
+      players: roomState.players || get().players,
+      gameStatus: roomState.gameState?.gamePhase || get().gameStatus,
     }));
   }
 };
 
 const handleRoomFullState: MessageHandler = (message, get, set) => {
   const roomState = message.payload;
-  
   logger.info("Received full room state:", roomState);
   
-  set({
+  set(createStateUpdater({
     currentRoom: roomState,
     players: roomState.players || [],
     gameStatus: roomState.gameState?.gamePhase || "waiting",
     trumpSuit: roomState.gameState?.trumpSuit || null,
     scores: roomState.gameState?.scores || { royals: 0, rebels: 0 },
     teamAssignments: roomState.gameState?.teamAssignments || {},
-  });
+  }));
 };
 
 // Social Features
 const handleEmote: MessageHandler = (message, get, set) => {
-  const { emoji, playerId, playerName } = message.payload as EmotePayload;
+  if (!validatePayload(message.payload, ['emoji', 'playerName'])) return;
   
-  if (!emoji || !playerName) {
-    logger.error("Invalid emote message:", message.payload);
-    return;
-  }
-
+  const { emoji, playerId, playerName } = message.payload as EmotePayload;
   logger.info(`Player ${playerName} sent emote: ${emoji}`);
   showToast(`${playerName}: ${emoji}`, "info");
+};
+
+// Frenzy Mode Handlers
+const handleFrenzyPowerUsed: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['powerType', 'playerId'])) return;
+  
+  const { powerType, playerId, playerName, data } = message.payload;
+  logger.info(`Player ${playerName} used frenzy power: ${powerType}`);
+  
+  // Update power usage state
+  set((state) => ({
+    ...state,
+    frenzyPowers: {
+      ...state.frenzyPowers,
+      [playerId]: {
+        ...state.frenzyPowers?.[playerId],
+        [powerType]: {
+          used: true,
+          lastUsed: Date.now(),
+          usageCount: (state.frenzyPowers?.[playerId]?.[powerType]?.usageCount || 0) + 1,
+        },
+      },
+    },
+  }));
+
+  // Show appropriate toast based on power type
+  const powerMessages: Record<string, string> = {
+    extra_points: `${playerName} activated Extra Heart Points!`,
+    free_lead: `${playerName} can now lead with any card!`,
+    peek_card: `${playerName} peeked at an opponent's card!`,
+    out_of_turn: `${playerName} can play out of turn!`,
+  };
+  
+  const messageText = powerMessages[powerType] || `${playerName} used ${powerType} power!`;
+  showToast(messageText, "info");
+};
+
+const handleFrenzyPowerEffect: MessageHandler = (message, get, set) => {
+  if (!validatePayload(message.payload, ['effectType'])) return;
+  
+  const { effectType, targetPlayer, data } = message.payload;
+  logger.info(`Frenzy power effect: ${effectType}`, data);
+  
+  // Handle different power effects
+  const effectHandlers: Record<string, () => void> = {
+    reveal_card: () => {
+      if (data?.card && targetPlayer) {
+        showToast(`${targetPlayer}'s card revealed: ${data.card.value} of ${data.card.suit}`, "info");
+      }
+    },
+    extra_points_scored: () => {
+      if (data?.points) {
+        showToast(`Extra points scored from hearts: +${data.points}`, "success");
+      }
+    }
+  };
+
+  const handler = effectHandlers[effectType];
+  if (handler) {
+    handler();
+  } else {
+    logger.warn(`Unknown frenzy power effect: ${effectType}`);
+  }
 };
 
 // Game Phase Handlers
 const handleFinalDeal: MessageHandler = (message, get, set) => {
   logger.info("Starting final deal phase");
   
-  set({
+  set(createStateUpdater({
     gameStatus: "final_deal",
     initialCardsDeal: false,
     statusMessage: "All cards dealt. Game starting soon...",
-  });
+  }));
 
   showToast("All cards dealt. Game starting soon...", "info");
   dealRemainingCards(get, set);
@@ -460,8 +521,7 @@ const handleFinalDeal: MessageHandler = (message, get, set) => {
 };
 
 const dealRemainingCards = (get: () => GameStoreState, set: SetStateFn) => {
-  const remainingCards = get().remainingDeck;
-  const allPlayers = get().players;
+  const { remainingDeck: remainingCards, players: allPlayers } = get();
   
   if (!remainingCards || remainingCards.length < 32) {
     logger.error("No remaining cards to deal or insufficient cards", remainingCards);
@@ -491,26 +551,17 @@ const dealRemainingCards = (get: () => GameStoreState, set: SetStateFn) => {
       return { ...player, hand: updatedHand };
     });
 
-    return {
-      players: updatedPlayers,
-      remainingDeck: undefined,
-    };
+    return { ...state, players: updatedPlayers, remainingDeck: undefined };
   });
 };
 
 const schedulePlayingPhaseTransition = (get: () => GameStoreState, set: SetStateFn) => {
   setTimeout(() => {
     if (get().gameStatus === "final_deal") {
-      set({
-        gameStatus: "playing",
-        statusMessage: "Game started! Your turn to play...",
-      });
-
-      showToast("Game started! Your turn to play...", "success");
-
-      setTimeout(() => {
-        set({ statusMessage: null });
-      }, TIMING.STATUS_MESSAGE_CLEAR_DELAY);
+      const statusMsg = "Game started! Your turn to play...";
+      set(createStateUpdater({ gameStatus: "playing", statusMessage: statusMsg }));
+      showToast(statusMsg, "success");
+      setTimeout(() => set({ statusMessage: null }), TIMING.STATUS_MESSAGE_CLEAR_DELAY);
     }
   }, TIMING.FINAL_DEAL_TRANSITION_DELAY);
 };
@@ -531,12 +582,12 @@ const handlePlayingStarted: MessageHandler = (message, get, set) => {
         }))
       );
 
-      return {
+      return createStateUpdater({
         gameStatus: "playing",
         initialCardsDeal: false,
         statusMessage: "Game started! Your turn to play...",
         currentPlayer: currentUser?.username || "",
-      };
+      })(state);
     });
 
     dispatchGameRefreshEvent("playing");
@@ -563,18 +614,9 @@ const handleGameUpdated: MessageHandler = (message, get, set) => {
   logger.info("Received game:updated message:", message.payload);
 
   if (message.payload.gameState) {
-    set((state: GameStoreState) => ({
-      ...state,
-      currentRoom: message.payload,
-    }));
+    set(updateCurrentRoom(message.payload));
   } else if (message.payload.game) {
-    set((state: GameStoreState) => ({
-      ...state,
-      currentRoom: {
-        ...state.currentRoom,
-        gameState: message.payload.game,
-      } as any,
-    }));
+    set(updateCurrentRoom({ gameState: message.payload.game }));
   } else {
     logger.error("Received invalid game:updated message format:", message.payload);
   }
@@ -583,30 +625,26 @@ const handleGameUpdated: MessageHandler = (message, get, set) => {
 // Presence handlers
 const handlePresenceSync: MessageHandler = (message, get, set) => {
   const presenceState = message.payload;
-  
   logger.info("Presence sync received:", presenceState);
   
-  // Update connection status for all players
   const { players } = get();
-  const updatedPlayers = players.map(player => {
-    const presence = presenceState[player.id];
-    return {
-      ...player,
-      isConnected: presence ? presence.connectionStatus === "connected" : false,
-    };
-  });
+  const updatedPlayers = players.map(player => ({
+    ...player,
+    isConnected: presenceState[player.id]?.connectionStatus === "connected" || false,
+  }));
   
   set({ players: updatedPlayers });
 };
 
 const handlePresenceJoin: MessageHandler = (message, get, set) => {
-  const { userId, username } = message.payload;
+  if (!validatePayload(message.payload, ['userId', 'username'])) return;
   
+  const { userId, username } = message.payload;
   logger.info(`Player ${username} connected`);
   showToast(`${username} connected`, "info");
   
-  // Update player connection status
   set((state) => ({
+    ...state,
     players: state.players.map(p => 
       p.id === userId ? { ...p, isConnected: true } : p
     ),
@@ -614,13 +652,14 @@ const handlePresenceJoin: MessageHandler = (message, get, set) => {
 };
 
 const handlePresenceLeave: MessageHandler = (message, get, set) => {
-  const { userId, username } = message.payload;
+  if (!validatePayload(message.payload, ['userId', 'username'])) return;
   
+  const { userId, username } = message.payload;
   logger.info(`Player ${username} disconnected`);
   showToast(`${username} disconnected`, "error");
   
-  // Update player connection status
   set((state) => ({
+    ...state,
     players: state.players.map(p => 
       p.id === userId ? { ...p, isConnected: false } : p
     ),
@@ -629,18 +668,12 @@ const handlePresenceLeave: MessageHandler = (message, get, set) => {
 
 // Replay handler
 const handleReplayAvailable: MessageHandler = (message, get, set) => {
-  const { replayData } = message.payload;
+  const { replayData } = message.payload || {};
   
   logger.info("Replay data available:", replayData);
   showToast("Game replay is now available!", "success");
   
-  // Store replay data in state if needed
-  set((state) => ({
-    currentRoom: {
-      ...state.currentRoom,
-      replayData,
-    } as any,
-  }));
+  set(updateCurrentRoom({ replayData }));
 };
 
 // Export message handlers registry
@@ -677,6 +710,7 @@ export const messageHandlers: Record<string, MessageHandler> = {
   "game:select-trump": handleTrumpSelection,
   "game:trump-vote": handleTrumpSelection,
   "game:trump-selected": handleTrumpSelection,
+  "game:force-bot-votes": handleForceBotVotes,
   
   // Game phases
   "game:final-deal": handleFinalDeal,
@@ -688,6 +722,10 @@ export const messageHandlers: Record<string, MessageHandler> = {
   
   // Social features
   "game:emote": handleEmote,
+  
+  // Frenzy mode powers
+  "game:frenzy-power": handleFrenzyPowerUsed,
+  "game:frenzy-effect": handleFrenzyPowerEffect,
   
   // Presence tracking
   "presence:sync": handlePresenceSync,

@@ -1,8 +1,8 @@
-# Database Setup Guide
+# Enhanced Database Setup Guide
 
 ## Overview
 
-This project uses Supabase as the database provider with PostgreSQL as the underlying database engine. The database schema is designed to support the game's core features including user management, game sessions, and replay functionality.
+This project uses Supabase as the database provider with PostgreSQL as the underlying database engine. The database schema has been significantly enhanced to support advanced game features including **Frenzy Mode**, comprehensive replay system, bot player management, and detailed game statistics.
 
 ## Prerequisites
 
@@ -43,67 +43,105 @@ If tables are missing, you can create them using the SQL file:
 3. Copy and paste the contents of `scripts/create-tables-manual.sql`
 4. Run the SQL query
 
-## Database Schema
+## Enhanced Database Schema
 
-### User Model
+### User Model (Enhanced)
 
 - Stores user information and authentication details
 - Supports both anonymous and registered users
 - Links to game participation through Player model
-- Tracks user statistics and preferences
+- **New Features**:
+  - Player statistics tracking (games played, won, tricks won)
+  - Frenzy powers usage statistics
+  - Preferred game mode setting
+  - Enhanced user profile management
 
-### Game Model
+### Game Rooms Model (New)
 
-- Represents a game instance
+- Manages game room instances and settings
+- Supports different game modes (Classic, Frenzy)
+- Room privacy and password protection
+- **Features**:
+  - Game mode selection
+  - Turn timer configuration
+  - Bot player settings
+  - Room capacity management
+
+### Games Model (Enhanced)
+
+- Represents a game instance with extended functionality
 - Tracks game mode, status, and winner
 - Connected to players, session, and replay data
-- Stores game phase (waiting, initial_deal, bidding, final_deal, playing, ended)
-- Tracks trump votes and final trump suit selection
+- **New Features**:
+  - Game mode support (Classic/Frenzy)
+  - Enhanced status tracking (finished/ended distinction)
+  - Frenzy power type and effects tracking
+  - Special effects and revealed cards storage
+  - Improved timing and duration tracking
 
-### Player Model
+### Players Model (Enhanced)
 
-- Links users to games
+- Links users to games with comprehensive player data
 - Tracks team assignment and position
-- Enables many-to-many relationship between users and games
-- Stores player's card hand
-- Records trump suit votes
-- Tracks bidding history
+- **New Features**:
+  - Bot player support with difficulty levels
+  - Enhanced game state tracking
+  - Trump voting with timestamps
+  - Bidding history
+  - Cards played tracking
+  - Connection status monitoring
 
-### GameSession Model
+### Game Cards Model (Enhanced)
 
-- Manages active game state
-- Tracks current turn and trump suit
-- Records game start and end times
-- Stores current trump voting status
-- Maintains record of all player actions
+- Tracks individual cards with detailed state information
+- **Features**:
+  - Card ownership and play history
+  - Trump card identification
+  - Position tracking in hands
+  - Trick association
+  - Detailed timing information
 
-### GameReplay Model
+### Game Tricks Model (Enhanced)
 
-- Stores game replay data
-- Includes move history and game summary
-- Enables post-game analysis
-- Records trump selection phase for replay purposes
+- Represents individual tricks with comprehensive data
+- **Features**:
+  - Lead and trump suit tracking
+  - Winner determination
+  - Point calculation
+  - Card play sequence
+  - Timing information
 
-### TrumpVote Model
+### Game Replays Model (Significantly Enhanced)
 
-- Tracks player votes for trump suit
-- Links to players and game sessions
-- Records timestamp of votes
-- Allows for analysis of voting patterns
+- Comprehensive replay system with detailed tracking
+- **New Features**:
+  - Game mode specific replay data
+  - Detailed move-by-move tracking
+  - Player statistics and performance metrics
+  - Frenzy power usage tracking
+  - Enhanced metadata storage
+  - Longest streak calculation
+  - Game duration and timing statistics
 
-### Card Model
+### Frenzy Powers Model (New)
 
-- Represents individual cards in the deck
-- Tracks card suit, value, and ownership
-- Records play history and trick association
-- Used for game state reconstruction
+- Dedicated table for Frenzy Mode power tracking
+- **Features**:
+  - Power type and usage tracking
+  - Target player identification
+  - Effect data storage
+  - Usage timestamps and cooldowns
+  - Power success/failure tracking
 
-### Trick Model
+### Bot Players Model (New)
 
-- Represents a single trick in the game
-- Tracks cards played in the trick
-- Records winner and point value
-- Links to game session
+- Manages bot player instances and configurations
+- **Features**:
+  - Bot difficulty levels
+  - Personality and behavior settings
+  - Performance tracking
+  - Connection status
+  - Activation/deactivation state
 
 ## Realtime Data Storage
 
@@ -112,28 +150,61 @@ The application uses a refactored modular Supabase Realtime system for synchroni
 ### Enhanced Realtime Architecture
 
 - **Modular Connection Management**: ConnectionManager class handles all Supabase connections with auto-reconnection
-- **Organized Message Handlers**: Message handlers are categorized by functionality (player management, game flow, etc.)
+- **Organized Message Handlers**: Message handlers are categorized by functionality (player management, game flow, Frenzy powers, etc.)
 - **Enhanced Performance**: Debounced database sync prevents excessive calls (300ms debounce)
 - **Improved Reliability**: Automatic fallback to API when WebSocket connections fail
 - **Better Error Handling**: Comprehensive validation and graceful error recovery
 
 ### Data Synchronization Features
 
-- Game state changes are broadcasted to all connected clients with enhanced validation
-- Trump selection votes are recorded in real-time with proper TypeScript interfaces
-- Player actions are synchronized through the database and modular realtime system
-- Game phase transitions are managed through database triggers and connection pooling
-- Presence tracking for real-time player connection status monitoring
-- Automatic retry logic with exponential backoff for failed operations
+- **Game State Changes**: Real-time broadcasting with enhanced validation
+- **Trump Selection**: Voting system with proper TypeScript interfaces
+- **Frenzy Powers**: Real-time power usage and effect synchronization
+- **Player Actions**: Comprehensive action tracking and synchronization
+- **Game Phases**: Enhanced phase transition management
+- **Presence Tracking**: Real-time player connection status monitoring
+- **Automatic Retry**: Exponential backoff for failed operations
+- **Bot Integration**: Seamless bot player synchronization
 
-## Database Functions and Triggers
+## Database Functions and Triggers (Enhanced)
 
-Several PostgreSQL functions and triggers ensure game integrity:
+### Game Logic Functions
 
-- `on_trump_vote`: Trigger that updates game state when a trump vote is cast
-- `on_card_play`: Trigger that validates card play and updates game state
-- `on_game_end`: Trigger that calculates final scores and updates player statistics
-- `get_valid_moves`: Function that returns valid card plays for a player
+- `update_user_stats_after_game()`: Updates player statistics after game completion
+- `create_game_replay()`: Automatically creates detailed replay data
+- `check_trump_voting_complete()`: Manages trump voting process completion
+
+### Trigger System
+
+- `update_user_stats_trigger`: Automatically updates user statistics
+- `create_replay_trigger`: Creates replay data when games end
+- `trump_voting_trigger`: Handles trump voting completion
+- `update_updated_at_column()`: Maintains timestamp consistency
+
+## Advanced Features
+
+### Frenzy Mode Support
+
+The database fully supports Frenzy Mode with:
+- Power type tracking and usage limits
+- Effect duration and cooldown management
+- Target player identification
+- Special effects data storage
+
+### Enhanced Replay System
+
+- **Detailed Move Tracking**: Every game action is recorded
+- **Statistics Calculation**: Comprehensive performance metrics
+- **Frenzy Power Analytics**: Usage patterns and effectiveness
+- **Game Duration Tracking**: Precise timing information
+- **Player Performance**: Individual and team statistics
+
+### Bot Player Management
+
+- **Difficulty Levels**: Easy, Medium, Hard bot configurations
+- **Behavior Patterns**: Customizable bot personalities
+- **Performance Tracking**: Bot effectiveness monitoring
+- **Dynamic Management**: Runtime bot addition/removal
 
 ## Development Tools
 
@@ -153,40 +224,53 @@ When making schema changes:
 1. Update the SQL in `scripts/create-tables-manual.sql`
 2. Apply changes via Supabase dashboard's SQL Editor
 3. Update the corresponding TypeScript types in `/types` folder
+4. Test with the enhanced realtime system
 
 ## Production Deployment
 
 1. Ensure environment variables are properly set in your deployment platform
 2. Make sure all schema changes are applied to your production Supabase instance
+3. Verify Frenzy Mode functionality is working correctly
+4. Test enhanced replay system performance
 
 ## Security Considerations
 
-- Row-level security policies restrict access to user data
-- Authentication tokens are required for database access
-- Validation is performed on both client and server
-- Sensitive operations require server-side verification
+- **Row-level Security**: Enhanced policies for all new tables
+- **Authentication**: Required for all database access
+- **Validation**: Comprehensive server-side and client-side validation
+- **Sensitive Operations**: Server-side verification for critical game actions
+- **Frenzy Powers**: Validation to prevent power abuse
 
 ## Performance Optimization
 
-- Indexes are created on frequently queried fields
-- Query optimization for common game operations
-- Connection pooling for efficient database access
-- Caching strategies for frequently accessed data
+- **Comprehensive Indexing**: Optimized indexes for all frequently queried fields
+- **Query Optimization**: Enhanced queries for complex game operations
+- **Connection Pooling**: Efficient database connection management
+- **Caching Strategies**: Intelligent caching for frequently accessed data
+- **Batch Operations**: Optimized bulk operations for better performance
 
 ## Backup and Recovery
 
-- Regular database backups through Supabase
-- Point-in-time recovery options
-- Game state snapshots for resilience
+- **Automated Backups**: Regular database backups through Supabase
+- **Point-in-time Recovery**: Enhanced recovery options
+- **Game State Snapshots**: Resilient game state preservation
+- **Replay Data Protection**: Secure replay data storage
+
+## Monitoring and Analytics
+
+- **Performance Metrics**: Database query performance tracking
+- **Usage Analytics**: Game mode popularity and usage patterns
+- **Error Tracking**: Comprehensive error logging and monitoring
+- **Player Behavior**: Detailed player interaction analytics
 
 ## Notes
 
 - The database schema uses snake_case for table names and columns following Supabase conventions
 - Column names are converted to camelCase in application code
 - The database is accessed using Supabase's JavaScript SDK through the refactored modular realtime system
-- All timestamps are stored in UTC
-- Foreign key relationships ensure data integrity
-- Indexes are created automatically for optimal query performance
+- All timestamps are stored in UTC with enhanced precision
+- Foreign key relationships ensure data integrity across all tables
+- Comprehensive indexes are created automatically for optimal query performance
 - The application uses Zustand for client-side state management, which syncs with the database via the enhanced modular Supabase Realtime system
 
 ### Realtime System Integration
@@ -199,3 +283,5 @@ The database integrates seamlessly with the refactored realtime architecture:
 - **Error Recovery**: Failed database operations automatically retry with exponential backoff
 - **Monitoring**: Real-time connection status tracking for database subscriptions
 - **Graceful Fallbacks**: API fallback mechanisms when realtime database subscriptions fail
+- **Frenzy Mode Integration**: Seamless integration with Frenzy Mode power tracking and effects
+- **Enhanced Replay**: Comprehensive replay data storage and retrieval optimization

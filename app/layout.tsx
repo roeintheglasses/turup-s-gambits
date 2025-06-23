@@ -37,10 +37,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen w-full">
+          <div className="flex flex-col h-screen w-full">
             <Navbar />
-            <main className="flex-1 h-[80vh] w-full mx-auto">{children}</main>
-            <footer className="text-center text-sm text-foreground/60 mt-auto mb-4 z-10">
+            <main className="flex-1 w-full mx-auto overflow-hidden">{children}</main>
+            <footer className="text-center text-sm text-foreground/60 py-4 z-10 flex-shrink-0">
               <div className="container mx-auto px-4">
                 <p className="mb-2">© {2025} Turup's Gambit Fantasy Edition</p>
                 <div className="flex justify-center gap-6">

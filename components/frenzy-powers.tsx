@@ -215,7 +215,7 @@ const PeekCardModal: React.FC<{
               <div className="flex justify-center mb-4">
                 <div className="p-4 bg-muted/30 rounded-lg border">
                   <span className="text-2xl">
-                    {revealedCard.value} {revealedCard.suit === "hearts" ? "♥" : 
+                    {revealedCard.rank} {revealedCard.suit === "hearts" ? "♥" : 
                      revealedCard.suit === "diamonds" ? "♦" :
                      revealedCard.suit === "clubs" ? "♣" : "♠"}
                   </span>
@@ -240,101 +240,167 @@ export function FrenzyPowers({
   isCurrentUserTurn,
   onUsePower,
 }: FrenzyPowersProps) {
-  const [powerStates, setPowerStates] = useState<Record<string, PowerState>>({});
+  const [selectedOpponent, setSelectedOpponent] = useState<string>("");
   const [showPeekModal, setShowPeekModal] = useState(false);
-  const [peekData, setPeekData] = useState<any>(null);
+  const [revealedCard, setRevealedCard] = useState<any>(null);
   
-  // Don't show in classic mode
-  if (gameMode !== "frenzy") return null;
+  const { 
+    frenzyPowers, 
+    players, 
+    userId, 
+    sendMessage,
+    roomId,
+    specialEffects,
+    revealedCards 
+  } = useGameStore();
+  const { showToast } = useUIStore();
 
+  // Get current player's power states
+  const userPowerStates = frenzyPowers?.[userId || ""] || {};
+  
+  // Get the power definition for current trump suit
   const currentPower = FRENZY_POWERS[trumpSuit];
-  
-  // Initialize power state if not exists
-  useEffect(() => {
-    if (!powerStates[currentPower.id]) {
-      setPowerStates(prev => ({
-        ...prev,
-        [currentPower.id]: {
-          isUsed: false,
-          lastUsed: 0,
-          usageCount: 0,
-        },
-      }));
-    }
-  }, [currentPower.id, powerStates]);
-
-  const currentPowerState = powerStates[currentPower.id] || {
-    isUsed: false,
-    lastUsed: 0,
-    usageCount: 0,
+  const powerState: PowerState = {
+    isUsed: userPowerStates[currentPower?.id]?.used || false,
+    lastUsed: userPowerStates[currentPower?.id]?.lastUsed || 0,
+    usageCount: userPowerStates[currentPower?.id]?.usageCount || 0,
   };
+
+  // Check if power is currently active
+  const isActive = gameMode === "frenzy" && trumpSuit && !!currentPower;
+  const isUsable = isCurrentUserTurn && !powerState.isUsed;
 
   const handleUsePower = async () => {
-    const now = Date.now();
-    
-    // Update power state
-    setPowerStates(prev => ({
-      ...prev,
-      [currentPower.id]: {
-        ...prev[currentPower.id],
-        isUsed: true,
-        lastUsed: now,
-        usageCount: (prev[currentPower.id]?.usageCount || 0) + 1,
-      },
-    }));
+    if (!currentPower || !isUsable || !roomId || !userId) {
+      showToast("Cannot use power right now", "error");
+      return;
+    }
 
-    // Handle different power types
-    switch (currentPower.id) {
-      case "peek_card":
-        // Simulate peeking at opponent's card
-        const mockCard = { value: "K", suit: "hearts" };
-        setPeekData({ targetPlayer: "Opponent", revealedCard: mockCard });
-        setShowPeekModal(true);
-        onUsePower("peek_card", { targetPlayer: "Opponent" });
-        break;
+    try {
+      // Handle different power types
+      let powerData: any = {};
+      let requiresTarget = false;
+
+      switch (currentPower.id) {
+        case "peek_card":
+          // For peek card, we need to select an opponent
+          const opponents = players.filter(p => p.id !== userId && !p.isBot);
+          if (opponents.length === 0) {
+            showToast("No opponents available to peek at", "error");
+            return;
+          }
+          
+          // Show opponent selection or use first available
+          const targetOpponent = opponents[0]; // Simplified - could show selection UI
+          powerData.targetPlayerId = targetOpponent.id;
+          powerData.targetPlayerName = targetOpponent.name;
+          requiresTarget = true;
+          break;
+          
+        case "out_of_turn":
+          // For out of turn, just grant permission
+          powerData.grantedTurns = 1;
+          break;
+          
+        case "extra_points":
+        case "free_lead":
+          // These are passive powers, no additional data needed
+          break;
+      }
+
+      // Send the frenzy power usage message
+      const success = await sendMessage({
+        type: "game:frenzy-power",
+        payload: {
+          powerType: currentPower.id,
+          playerId: userId,
+          playerName: players.find(p => p.id === userId)?.name || "Unknown",
+          roomId,
+          data: powerData,
+          timestamp: Date.now(),
+        },
+      });
+
+      if (success) {
+        // Call the callback if provided
+        onUsePower?.(currentPower.id, powerData);
         
-      case "out_of_turn":
-        onUsePower("out_of_turn");
-        useUIStore.getState().showToast("You can now play out of turn!", "info");
-        break;
+        // Show success message
+        showToast(`${currentPower.name} activated!`, "success");
         
-      default:
-        onUsePower(currentPower.id);
-        break;
+        // Handle peek card modal
+        if (currentPower.id === "peek_card" && requiresTarget) {
+          // Simulate card reveal for demo (in real game, this would come from server)
+          setTimeout(() => {
+            setRevealedCard({
+              suit: "hearts",
+              rank: "K",
+              player: powerData.targetPlayerName,
+            });
+            setShowPeekModal(true);
+          }, 1000);
+        }
+      } else {
+        showToast("Failed to use power. Please try again.", "error");
+      }
+    } catch (error) {
+      console.error("Error using frenzy power:", error);
+      showToast("Error using power", "error");
     }
   };
+
+  // Don't render if not in frenzy mode or no trump suit
+  if (gameMode !== "frenzy" || !trumpSuit || !currentPower) {
+    return null;
+  }
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-4 right-4 bg-card/90 backdrop-blur-md p-4 rounded-lg border border-primary/30 shadow-lg"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <Zap className="h-5 w-5 text-primary" />
-          <h3 className="font-medieval text-foreground">Frenzy Power</h3>
+      <div className="frenzy-powers-container p-4 bg-gradient-to-br from-purple-900/30 to-indigo-900/30 rounded-lg border border-purple-500/30">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Zap className="h-5 w-5 text-yellow-500" />
+            Frenzy Power
+          </h2>
+          <div className="text-sm text-muted-foreground">
+            Trump: {trumpSuit}
+          </div>
         </div>
-        
+
         <PowerCard
           power={currentPower}
-          powerState={currentPowerState}
-          isActive={true}
-          isUsable={isCurrentUserTurn}
+          powerState={powerState}
+          isActive={isActive}
+          isUsable={isUsable}
           onUse={handleUsePower}
         />
-        
-        <div className="mt-2 text-xs text-center text-muted-foreground">
-          Trump: <span className={`${currentPower.color} capitalize`}>{trumpSuit}</span>
-        </div>
-      </motion.div>
 
-      {/* Peek card modal */}
+        {/* Show active special effects */}
+        {specialEffects && Object.entries(specialEffects).map(([effectId, effect]) => (
+          <div key={effectId} className="mt-2 p-2 bg-green-500/20 rounded border border-green-500/30">
+            <div className="text-xs text-green-400">
+              Active Effect: {effect.type}
+              {effect.targetPlayer && ` (Target: ${effect.targetPlayer})`}
+            </div>
+          </div>
+        ))}
+
+        {/* Show revealed cards */}
+        {revealedCards && Object.entries(revealedCards).map(([cardId, cardInfo]) => (
+          <div key={cardId} className="mt-2 p-2 bg-blue-500/20 rounded border border-blue-500/30">
+            <div className="text-xs text-blue-400">
+              Revealed: {cardInfo.card.rank} of {cardInfo.card.suit} (Player: {cardInfo.playerId})
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Peek Card Modal */}
       <PeekCardModal
         isOpen={showPeekModal}
         onClose={() => setShowPeekModal(false)}
-        targetPlayer={peekData?.targetPlayer || ""}
-        revealedCard={peekData?.revealedCard}
+        targetPlayer={revealedCard?.player || ""}
+        revealedCard={revealedCard}
       />
     </>
   );

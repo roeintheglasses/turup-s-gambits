@@ -56,6 +56,34 @@ const getSuitColor = (suit: string): string => {
   }
 };
 
+// Frenzy mode power descriptions
+const FRENZY_POWERS = {
+  hearts: {
+    name: "Extra Points",
+    description: "Gain bonus points for winning tricks with heart cards",
+    type: "Passive",
+    icon: "💝"
+  },
+  spades: {
+    name: "Free Lead",
+    description: "Lead with any card after winning a trick",
+    type: "Passive", 
+    icon: "🗡️"
+  },
+  diamonds: {
+    name: "Peek Card",
+    description: "See one opponent's card (2 uses per game)",
+    type: "Active",
+    icon: "👁️"
+  },
+  clubs: {
+    name: "Out of Turn",
+    description: "Play one card out of turn (1 use per game)",
+    type: "Active",
+    icon: "⚡"
+  }
+} as const;
+
 // Types
 interface TrumpSelectionPopupProps {
   onVote: (suit: string) => void;
@@ -70,6 +98,7 @@ interface TrumpSelectionPopupProps {
   isOpen: boolean;
   isCurrentUserHost: boolean;
   onForceBotVotes?: () => void;
+  gameMode?: "classic" | "frenzy";
 }
 
 interface PlayerHandProps {
@@ -90,6 +119,7 @@ interface SuitSelectionProps {
   isCurrentUserHost: boolean;
   onForceBotVotes?: () => void;
   totalVotes: number;
+  gameMode?: "classic" | "frenzy";
 }
 
 interface VotingResultsProps {
@@ -201,11 +231,15 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
     isCurrentUserHost,
     onForceBotVotes,
     totalVotes,
+    gameMode = "classic",
   }) => {
     return (
       <>
         <p className="text-center mb-4 text-muted-foreground">
-          Select a trump suit based on your hand. Your hand contains:
+          {gameMode === "frenzy" 
+            ? "Select a trump suit and gain its special power!"
+            : "Select a trump suit based on your hand. Your hand contains:"
+          }
         </p>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -216,7 +250,7 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
               disabled={!!userVote}
               className={`
               p-4 rounded-lg flex flex-col items-center justify-center
-              transition-all duration-300
+              transition-all duration-300 relative
               ${
                 selectedSuit === suit && !userVote
                   ? "bg-primary/20 border-2 border-primary/50 shadow-lg"
@@ -233,18 +267,49 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
               <span className="font-medieval capitalize text-foreground">
                 {suit}
               </span>
-              <div className="flex justify-between w-full mt-2 px-2">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <span className="text-sm">{suitCounts[suit] || 0}</span>
-                  <span className="text-xs">cards</span>
+              
+              {/* Frenzy Mode Power Preview */}
+              {gameMode === "frenzy" && (
+                <div className="mt-2 text-center">
+                  <div className="text-lg mb-1">{FRENZY_POWERS[suit].icon}</div>
+                  <div className="text-xs font-semibold text-primary">
+                    {FRENZY_POWERS[suit].name}
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-tight">
+                    {FRENZY_POWERS[suit].description}
+                  </div>
+                  <div className="text-xs mt-1 px-2 py-1 rounded-full bg-primary/20 text-primary">
+                    {FRENZY_POWERS[suit].type}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
+              )}
+              
+              {/* Classic Mode Card Count and Votes */}
+              {gameMode === "classic" && (
+                <div className="flex justify-between w-full mt-2 px-2">
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <span className="text-sm">{suitCounts[suit] || 0}</span>
+                    <span className="text-xs">cards</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <span className="text-sm font-bold">
+                      {trumpVotes[suit] || 0}
+                    </span>
+                    <span className="text-xs">votes</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Frenzy Mode Votes */}
+              {gameMode === "frenzy" && (
+                <div className="mt-2 flex items-center gap-1 text-muted-foreground">
                   <span className="text-sm font-bold">
                     {trumpVotes[suit] || 0}
                   </span>
                   <span className="text-xs">votes</span>
                 </div>
-              </div>
+              )}
+              
               {userVote === suit && (
                 <div className="absolute top-2 right-2">
                   <Check className="h-5 w-5 text-green-400" />
@@ -460,6 +525,7 @@ export function TrumpSelectionPopup({
   isOpen,
   isCurrentUserHost,
   onForceBotVotes,
+  gameMode = "classic",
 }: TrumpSelectionPopupProps) {
   const { showTrumpPopup, setShowTrumpPopup } = useUIStore();
   const { setGameStatus, setShowShuffleAnimation } = useGameStore();
@@ -643,13 +709,24 @@ export function TrumpSelectionPopup({
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-medieval text-primary">
-              {votingComplete
-                ? "Trump Selection Complete"
-                : userVote
-                ? "Waiting for Other Players"
-                : "Select Trump Suit"}
-            </h2>
+            <div className="flex flex-col">
+              <h2 className="text-2xl font-medieval text-primary">
+                {votingComplete
+                  ? "Trump Selection Complete"
+                  : userVote
+                  ? "Waiting for Other Players"
+                  : gameMode === "frenzy" 
+                    ? "Choose Trump Suit & Power"
+                    : "Select Trump Suit"}
+              </h2>
+              {gameMode === "frenzy" && (
+                <div className="mt-2">
+                  <span className="px-3 py-1 bg-purple-600/20 text-purple-300 text-xs font-bold rounded-full border border-purple-500/30">
+                    FRENZY MODE
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Player's hand display */}
@@ -669,7 +746,9 @@ export function TrumpSelectionPopup({
                 ? "Voting Results"
                 : userVote
                 ? "Your Vote"
-                : "Choose Trump Suit"}
+                : gameMode === "frenzy"
+                  ? "Choose Your Power"
+                  : "Choose Trump Suit"}
             </h3>
 
             {votingComplete ? (
@@ -684,6 +763,7 @@ export function TrumpSelectionPopup({
                 isCurrentUserHost={isCurrentUserHost}
                 onForceBotVotes={onForceBotVotes}
                 totalVotes={totalVotes}
+                gameMode={gameMode}
               />
             )}
           </div>

@@ -7,7 +7,8 @@ export type GameStatus =
   | "bidding"
   | "final_deal"
   | "playing"
-  | "finished";
+  | "finished"
+  | "ended";
 
 export interface GameStoreState {
   // Room and players data
@@ -34,6 +35,28 @@ export interface GameStoreState {
   // Additional game state
   specialPowers?: Record<string, boolean>;
   remainingDeck?: Card[];
+  
+  // Frenzy mode powers tracking
+  frenzyPowers?: Record<string, Record<string, {
+    used: boolean;
+    lastUsed: number;
+    usageCount: number;
+  }>>;
+
+  // Special effects tracking for frenzy mode
+  specialEffects?: Record<string, {
+    type: string;
+    active: boolean;
+    targetPlayer?: string;
+    data?: any;
+  }>;
+
+  // Revealed cards tracking (for peek card power)
+  revealedCards?: Record<string, {
+    playerId: string;
+    card: Card;
+    revealedAt: number;
+  }>;
 
   // UI state flags
   showShuffleAnimation: boolean;

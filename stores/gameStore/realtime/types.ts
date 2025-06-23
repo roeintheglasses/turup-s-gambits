@@ -107,6 +107,30 @@ export interface EmotePayload {
   timestamp?: number;
 }
 
+export interface ForceBotVotesPayload {
+  roomId: string;
+  hostId: string;
+  timestamp?: number;
+}
+
+export interface FrenzyPowerPayload {
+  powerType: "extra_points" | "free_lead" | "peek_card" | "out_of_turn";
+  playerId: string;
+  playerName: string;
+  roomId: string;
+  data?: any;
+  timestamp?: number;
+}
+
+export interface FrenzyPowerEffectPayload {
+  effectType: "reveal_card" | "extra_points_scored" | "out_of_turn_granted" | "free_lead_granted";
+  targetPlayer?: string;
+  sourcePlayer: string;
+  roomId: string;
+  data?: any;
+  timestamp?: number;
+}
+
 // Game state update payload
 export interface GameStateUpdatePayload {
   gameState: any;

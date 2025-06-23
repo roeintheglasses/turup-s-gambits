@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/card";
 import { InGameEmotes } from "@/components/in-game-emotes";
 import { type Card as CardType, type Player } from "@/app/types/game";
@@ -10,6 +10,13 @@ import { useGameStore } from "@/stores";
 import { useUIStore } from "@/stores/uiStore";
 import { useAuthStore } from "@/stores/authStore";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useReplay } from "@/hooks/use-replay";
+import { ReplaySummary } from "./replay-summary";
+import { BarChart3, Eye } from "lucide-react";
+import { TrumpSelectionPopup } from "@/components/trump-selection-popup";
+import { VisualEffects } from "@/components/visual-effects";
+import { CardShuffleAnimation } from "@/components/card-shuffle-animation";
+import { FrenzyPowers } from "@/components/frenzy-powers";
 
 interface CenterCard {
   id: number;
@@ -984,470 +991,552 @@ export function GameBoard({
     return team === "royals" ? "👑" : "⚔️";
   };
 
+  // Helper function to get suit color
+  const getSuitColor = (suit: string) => {
+    switch (suit) {
+      case "hearts":
+      case "diamonds":
+        return "text-red-500";
+      case "clubs":
+      case "spades":
+        return "text-slate-900 dark:text-slate-100";
+      default:
+        return "text-muted-foreground";
+    }
+  };
+
+  // Helper function to get suit symbol
+  const getSuitSymbol = (suit: string) => {
+    switch (suit) {
+      case "hearts":
+        return "♥";
+      case "diamonds":
+        return "♦";
+      case "clubs":
+        return "♣";
+      case "spades":
+        return "♠";
+      default:
+        return suit;
+    }
+  };
+
+  const [showReplaySummary, setShowReplaySummary] = useState(false);
+  const [gameStartTime] = useState(Date.now());
+
+  // Add replay hook
+  const { getReplayData } = useReplay();
+
+  // Generate game stats when game ends
+  const generateGameStats = useMemo(() => {
+    if (gameStatus !== "ended") return undefined;
+
+    const winningTeam = scores.royals >= 7 ? "royals" : "rebels";
+    const replayData = getReplayData();
+    
+    return {
+      gameId: roomId,
+      players: players,
+      winner: winningTeam === "royals" ? "Royals" : "Rebels",
+      gameMode: gameMode as "classic" | "frenzy",
+      trumpSuit: (trumpSuit || "hearts") as string,
+      finalScores: scores,
+      duration: Math.floor((Date.now() - gameStartTime) / 1000), // Approximate duration
+      totalTricks: scores.royals + scores.rebels,
+    };
+  }, [gameStatus, scores, roomId, players, gameMode, trumpSuit, getReplayData, gameStartTime]);
+
+  // Add frenzy power handler
+  const handleUseFrenzyPower = useCallback((powerType: string, data?: any) => {
+    console.log(`[GameBoard] Using frenzy power: ${powerType}`, data);
+    
+    if (!user?.id) {
+      console.error("[GameBoard] Cannot use frenzy power: No user ID");
+      return;
+    }
+
+    // Send frenzy power message through the game store
+    sendMessage({
+      type: "game:frenzy-power",
+      payload: {
+        powerType,
+        playerId: user.id,
+        playerName: user.username || "Player",
+        roomId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }, [user, roomId, sendMessage]);
+
   // Render the game board
   return (
-    <div className="relative w-full max-w-6xl mx-auto flex flex-col gap-4">
-      {/* Game Summary Screen - Show when game has ended */}
-      {gameStatus === "ended" ? (
-        <div className="bg-gradient-to-b from-primary/10 to-primary/20 rounded-lg border border-primary/30 shadow-lg p-8 flex flex-col items-center">
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-medieval mb-2">Game Over!</h2>
-            <div className="text-xl">
-              {scores.royals >= 7 ? (
-                <span className="text-amber-500 font-bold flex items-center justify-center gap-2">
-                  <span className="text-2xl">👑</span> Royals Win!{" "}
-                  <span className="text-2xl">👑</span>
-                </span>
-              ) : (
-                <span className="text-indigo-500 font-bold flex items-center justify-center gap-2">
-                  <span className="text-2xl">⚔️</span> Rebels Win!{" "}
-                  <span className="text-2xl">⚔️</span>
-                </span>
-              )}
+    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-green-800/20 to-green-900/30">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-700/10 via-transparent to-transparent" />
+      
+      {/* Game table surface */}
+      <div className="absolute inset-4 rounded-xl bg-gradient-to-br from-green-800/30 to-green-900/40 border-2 border-green-700/50 shadow-2xl" />
+
+      {/* Main game area */}
+      <div className="relative z-10 h-full p-6 flex flex-col">
+        {/* Frenzy Mode Power Display - Keep this as it's unique to frenzy mode */}
+        {gameMode === "frenzy" && trumpSuit && gameStatus === "playing" && (
+          <div className="mb-4 flex justify-center">
+            <div className="bg-card/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-500/30">
+              <FrenzyPowers
+                trumpSuit={trumpSuit}
+                gameMode={gameMode}
+                currentPlayer={currentPlayerIndex === 0 ? (user?.username || "You") : (players[currentPlayerIndex] || "Player")}
+                isCurrentUserTurn={currentPlayerIndex === 0}
+                onUsePower={handleUseFrenzyPower}
+              />
             </div>
           </div>
+        )}
 
-          <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border border-primary/30 shadow-lg mb-8 w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4 text-center">
-              Final Score
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div
-                className={`p-4 rounded-lg ${
-                  scores.royals >= 7
-                    ? "bg-amber-900/40 border border-amber-500/50"
-                    : "bg-card/50"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">👑</span>
-                  <span className="text-lg font-medium">Royals</span>
-                </div>
-                <div className="text-4xl font-bold text-center">
-                  {scores.royals}
-                </div>
-              </div>
-
-              <div
-                className={`p-4 rounded-lg ${
-                  scores.rebels >= 7
-                    ? "bg-indigo-900/40 border border-indigo-500/50"
-                    : "bg-card/50"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">⚔️</span>
-                  <span className="text-lg font-medium">Rebels</span>
-                </div>
-                <div className="text-4xl font-bold text-center">
-                  {scores.rebels}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <h4 className="text-md font-medium mb-2 text-center">
-                Team Members
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <ul className="space-y-1">
-                    {players
-                      .filter(
-                        (player) => storedTeamAssignments[player] === "royals"
-                      )
-                      .map((player) => (
-                        <li key={player} className="text-amber-400">
-                          {player}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-                <div>
-                  <ul className="space-y-1">
-                    {players
-                      .filter(
-                        (player) => storedTeamAssignments[player] === "rebels"
-                      )
-                      .map((player) => (
-                        <li key={player} className="text-indigo-400">
-                          {player}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={() => (window.location.href = "/lobby")}
-              className="px-6 py-3 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg shadow transition-colors"
-            >
-              Return to Lobby
-            </button>
-          </div>
-
-          <div className="mt-8 text-center text-muted-foreground text-sm">
-            <p>Thanks for playing Turup's Gambit!</p>
-            <p className="mt-1">A team wins by securing 7 out of 13 tricks.</p>
-          </div>
-        </div>
-      ) : (
-        /* Rest of the original game board UI for active game */
-        <>
-          {/* First Box: Game Information */}
-          <div className="relative bg-gradient-to-b from-primary/5 to-primary/10 rounded-lg border border-primary/30 shadow-inner p-4">
-            <div className="absolute inset-0 bg-card-pattern opacity-20" />
-
-            <div className="flex justify-between items-start">
-              {/* Game Phase */}
-              <div className="bg-card/80 backdrop-blur-sm p-2 rounded-lg border border-primary/30 shadow">
-                <div className="text-xs font-semibold">Game Phase</div>
-                <div className="text-sm flex items-center gap-2">
-                  {gameStatus === "playing" && (
-                    <>
-                      <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                      <span>Playing</span>
-                    </>
-                  )}
-                  {gameStatus !== "playing" && (
-                    <>
-                      <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                      <span>
-                        {gameStatus.charAt(0).toUpperCase() +
-                          gameStatus.slice(1).replace("_", " ")}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Team Scores */}
-              <div className="bg-card/80 backdrop-blur-sm p-2 rounded-lg border border-primary/30 shadow">
-                <div className="text-xs font-semibold mb-1">Team Scores</div>
-                <div className="flex flex-col gap-1 text-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="text-amber-500 mr-1">👑</span> Royals:
-                    </div>
-                    <span className="font-bold">{scores.royals}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="text-indigo-500 mr-1">⚔️</span> Rebels:
-                    </div>
-                    <span className="font-bold">{scores.rebels}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Trump suit indicator */}
-              <div className="bg-card/80 backdrop-blur-sm p-2 rounded-lg border border-primary/30 shadow flex items-center gap-2">
-                <span className="text-sm text-foreground">Trump:</span>
-                <span className="text-2xl">
-                  {trumpSuit === "hearts"
-                    ? "♥️"
-                    : trumpSuit === "diamonds"
-                    ? "♦️"
-                    : trumpSuit === "clubs"
-                    ? "♣️"
-                    : trumpSuit === "spades"
-                    ? "♠️"
-                    : "?"}
-                </span>
-              </div>
-            </div>
-
-            {/* Turn indicator */}
-            <div className="mt-4 flex flex-col items-center">
-              <div className="text-sm font-medium mb-1">
-                {currentPlayerIndex === 0
-                  ? `${user?.username}'s Turn`
-                  : `${
-                      players[currentPlayerIndex] ||
-                      `Player ${currentPlayerIndex + 1}`
-                    }'s Turn`}
-              </div>
-            </div>
-          </div>
-
-          {/* Second Box: Card Play Area */}
-          <div className="relative aspect-[16/10] bg-gradient-to-b from-primary/5 to-primary/10 rounded-lg border border-primary/30 shadow-inner overflow-hidden">
-            <div className="absolute inset-0 bg-card-pattern opacity-20" />
-
-            {/* Top player */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
-              <div className="flex flex-col items-center mb-1">
-                <div className="flex items-center">
-                  <div className="font-medieval text-primary">
-                    {players.length > 2 ? players[2] || "Player 3" : "Player 3"}
-                  </div>
-                  {/* Team indicator - make more robust with optional chaining */}
-                  <span
-                    className={`ml-1 ${getTeamColorClasses(
-                      players[2] ? storedTeamAssignments[players[2]] : undefined
-                    )}`}
-                  >
-                    {getTeamIcon(
-                      players[2] ? storedTeamAssignments[players[2]] : undefined
-                    )}
+        {/* Game Summary Screen - Show when game has ended */}
+        {gameStatus === "ended" ? (
+          <div className="bg-gradient-to-b from-primary/10 to-primary/20 rounded-lg border border-primary/30 shadow-lg p-8 flex flex-col items-center">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-medieval mb-2">Game Over!</h2>
+              <div className="text-xl">
+                {scores.royals >= 7 ? (
+                  <span className="text-amber-500 font-bold flex items-center justify-center gap-2">
+                    <span className="text-2xl">👑</span> Royals Win!{" "}
+                    <span className="text-2xl">👑</span>
                   </span>
-                </div>
-              </div>
-              {/* Vertical cards display */}
-              <div className="flex space-x-1">
-                {Array.from({
-                  length:
-                    gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
-                }).map((_, i) => (
-                  <div
-                    key={`top-card-${i}`}
-                    className="w-4 h-20 bg-card rounded-sm border border-primary/30 shadow-md"
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Left player */}
-            <div className="absolute left-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
-              <div className="flex flex-col items-center mb-1">
-                <div className="flex items-center">
-                  <div className="font-medieval text-primary">
-                    {players.length > 1 ? players[1] || "Player 2" : "Player 2"}
-                  </div>
-                  {/* Team indicator - make more robust */}
-                  <span
-                    className={`ml-1 ${getTeamColorClasses(
-                      players[1] ? storedTeamAssignments[players[1]] : undefined
-                    )}`}
-                  >
-                    {getTeamIcon(
-                      players[1] ? storedTeamAssignments[players[1]] : undefined
-                    )}
-                  </span>
-                </div>
-              </div>
-              {/* Vertical cards display */}
-              <div className="flex flex-col space-y-1">
-                {Array.from({
-                  length:
-                    gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
-                }).map((_, i) => (
-                  <div
-                    key={`left-card-${i}`}
-                    className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Right player */}
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
-              <div className="flex flex-col items-center mb-1">
-                <div className="flex items-center">
-                  <div className="font-medieval text-primary">
-                    {players.length > 3 ? players[3] || "Player 4" : "Player 4"}
-                  </div>
-                  {/* Team indicator - make more robust */}
-                  <span
-                    className={`ml-1 ${getTeamColorClasses(
-                      players[3] ? storedTeamAssignments[players[3]] : undefined
-                    )}`}
-                  >
-                    {getTeamIcon(
-                      players[3] ? storedTeamAssignments[players[3]] : undefined
-                    )}
-                  </span>
-                </div>
-              </div>
-              {/* Vertical cards display */}
-              <div className="flex flex-col space-y-1">
-                {Array.from({
-                  length:
-                    gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
-                }).map((_, i) => (
-                  <div
-                    key={`right-card-${i}`}
-                    className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Current trick - center cards */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="grid grid-cols-2 gap-4 md:gap-8">
-                {centerCards.map((card, index) => (
-                  <motion.div
-                    key={`center-card-${card.id}-${index}`}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{
-                      type: "spring",
-                      damping: 12,
-                      stiffness: 200,
-                    }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="text-xs md:text-sm text-muted-foreground mb-1">
-                        {card.playedBy}
-                      </div>
-                      {/* Team indicator with better undefined handling */}
-                      <div
-                        className={`text-xs ${getTeamColorClasses(
-                          storedTeamAssignments[card.playedBy]
-                        )} mb-1`}
-                      >
-                        {getTeamIcon(storedTeamAssignments[card.playedBy])}
-                      </div>
-                    </div>
-                    <Card
-                      suit={card.suit}
-                      value={card.value}
-                      onClick={() => {}} // No action when clicking played cards
-                      disabled={true}
-                      is3D={true}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Trick Winner Message */}
-            <AnimatePresence>
-              {showTrickWinnerMessage && lastTrickResult && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-                              ${
-                                lastTrickResult.winningTeam === "royals"
-                                  ? "bg-amber-900/90 border-amber-500"
-                                  : "bg-indigo-900/90 border-indigo-500"
-                              }
-                              backdrop-blur-sm p-3 px-6 rounded-lg border-2 shadow-lg z-30`}
-                >
-                  <div className="text-center">
-                    <div className="text-xl font-bold mb-1">
-                      {lastTrickResult.winningTeam === "royals"
-                        ? "👑 Royals Win! 👑"
-                        : "⚔️ Rebels Win! ⚔️"}
-                    </div>
-                    <div className="text-sm">
-                      {lastTrickResult.winningPlayer} won the trick
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Emotes */}
-            <AnimatePresence>
-              {emotes.map((emote) => (
-                <motion.div
-                  key={emote.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm p-2 rounded-full shadow-lg"
-                >
-                  <div className="text-4xl md:text-5xl">{emote.emoji}</div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Bottom player (user) */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
-              {/* Game status message or turn indicator */}
-              {gameStatus !== "playing" && (
-                <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
-                  {gameStatus === "initial_deal" &&
-                    "Waiting for initial deal to complete..."}
-                  {gameStatus === "bidding" &&
-                    "Trump selected. Waiting for final deal..."}
-                  {gameStatus === "final_deal" && "Dealing remaining cards..."}
-                </div>
-              )}
-              {gameStatus === "playing" && currentPlayerIndex !== 0 && (
-                <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
-                  Waiting for your turn...
-                </div>
-              )}
-              {gameStatus === "playing" && currentPlayerIndex === 0 && (
-                <div className="mb-2 px-4 py-2 bg-green-800/80 backdrop-blur-sm rounded-lg border border-green-500/50 shadow text-sm animate-pulse">
-                  Your turn to play!
-                </div>
-              )}
-
-              {/* Player hand cards */}
-              <div className="flex justify-center gap-1 md:gap-2 mb-2">
-                {playerHand.map((card: any) => (
-                  <motion.div
-                    key={`player-card-${card.id}`}
-                    whileHover={{
-                      y: gameStatus === "playing" ? -10 : 0,
-                      transition: { duration: 0.2 },
-                    }}
-                    onClick={() => handleCardClick(card.id)}
-                    className={`cursor-pointer ${
-                      selectedCard === card.id ? "transform -translate-y-4" : ""
-                    } ${
-                      playingCardId === card.id
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    } ${
-                      gameStatus !== "playing"
-                        ? "opacity-70 filter grayscale-[30%] cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    <Card
-                      suit={card.suit}
-                      value={card.value}
-                      onClick={() => handleCardClick(card.id)}
-                      disabled={
-                        playingCardId === card.id || gameStatus !== "playing"
-                      }
-                      is3D={true}
-                    />
-                    {playingCardId === card.id && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <LoadingSpinner size="sm" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Player name and team - improved with better undefined handling */}
-              <div className="flex items-center justify-center mb-2">
-                <div className="font-medieval text-primary text-lg">
-                  {user?.username || "You"}
-                </div>
-                {/* Current player team indicator - make more robust */}
-                {user?.username && (
-                  <span
-                    className={`ml-1 text-lg ${getTeamColorClasses(
-                      storedTeamAssignments[user.username]
-                    )}`}
-                  >
-                    {getTeamIcon(storedTeamAssignments[user.username])}
+                ) : (
+                  <span className="text-indigo-500 font-bold flex items-center justify-center gap-2">
+                    <span className="text-2xl">⚔️</span> Rebels Win!{" "}
+                    <span className="text-2xl">⚔️</span>
                   </span>
                 )}
               </div>
+            </div>
 
-              {/* Emote controls */}
-              <InGameEmotes onEmote={handleEmote} />
+            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border border-primary/30 shadow-lg mb-8 w-full max-w-md">
+              <h3 className="text-xl font-semibold mb-4 text-center">
+                Final Score
+              </h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className={`p-4 rounded-lg ${
+                    scores.royals >= 7
+                      ? "bg-amber-900/40 border border-amber-500/50"
+                      : "bg-card/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl">👑</span>
+                    <span className="text-lg font-medium">Royals</span>
+                  </div>
+                  <div className="text-4xl font-bold text-center">
+                    {scores.royals}
+                  </div>
+                </div>
+
+                <div
+                  className={`p-4 rounded-lg ${
+                    scores.rebels >= 7
+                      ? "bg-indigo-900/40 border border-indigo-500/50"
+                      : "bg-card/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl">⚔️</span>
+                    <span className="text-lg font-medium">Rebels</span>
+                  </div>
+                  <div className="text-4xl font-bold text-center">
+                    {scores.rebels}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-md font-medium mb-2 text-center">
+                  Team Members
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <ul className="space-y-1">
+                      {players
+                        .filter(
+                          (player) => storedTeamAssignments[player] === "royals"
+                        )
+                        .map((player) => (
+                          <li key={player} className="text-amber-400">
+                            {player}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <ul className="space-y-1">
+                      {players
+                        .filter(
+                          (player) => storedTeamAssignments[player] === "rebels"
+                        )
+                        .map((player) => (
+                          <li key={player} className="text-indigo-400">
+                            {player}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Game Statistics */}
+            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border border-primary/30 shadow-lg mb-6 w-full max-w-2xl">
+              <h3 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Game Statistics
+              </h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="bg-card/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{scores.royals + scores.rebels}</div>
+                  <div className="text-sm text-muted-foreground">Total Tricks</div>
+                </div>
+                
+                <div className="bg-card/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    {trumpSuit === "hearts" ? "♥️" :
+                     trumpSuit === "diamonds" ? "♦️" :
+                     trumpSuit === "clubs" ? "♣️" : "♠️"}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Trump Suit</div>
+                </div>
+                
+                <div className="bg-card/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{players.length}</div>
+                  <div className="text-sm text-muted-foreground">Players</div>
+                </div>
+                
+                <div className="bg-card/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}</div>
+                  <div className="text-sm text-muted-foreground">Game Mode</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setShowReplaySummary(true)}
+                className="px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg shadow transition-colors flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                View Replay
+              </button>
+              
+              <button
+                onClick={() => (window.location.href = "/")}
+                className="px-6 py-3 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg shadow transition-colors"
+              >
+                New Game
+              </button>
+              
+              <button
+                onClick={() => (window.location.href = "/")}
+                className="px-6 py-3 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg shadow transition-colors"
+              >
+                Return to Home
+              </button>
+            </div>
+
+            <div className="mt-4 text-center text-muted-foreground text-sm">
+              <p>Thanks for playing Turup's Gambit!</p>
+              <p className="mt-1">A team wins by securing 7 out of 13 tricks.</p>
             </div>
           </div>
-        </>
-      )}
+        ) : (
+          /* Rest of the original game board UI for active game */
+          <>
+            {/* Card Play Area */}
+            <div className="relative flex-1 min-h-0 bg-gradient-to-b from-primary/5 to-primary/10 rounded-lg border border-primary/30 shadow-inner overflow-hidden">
+              <div className="absolute inset-0 bg-card-pattern opacity-20" />
+
+              {/* Top player */}
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-1">
+                  <div className="flex items-center">
+                    <div className="font-medieval text-primary">
+                      {players.length > 2 ? players[2] || "Player 3" : "Player 3"}
+                    </div>
+                    {/* Team indicator - make more robust with optional chaining */}
+                    <span
+                      className={`ml-1 ${getTeamColorClasses(
+                        players[2] ? storedTeamAssignments[players[2]] : undefined
+                      )}`}
+                    >
+                      {getTeamIcon(
+                        players[2] ? storedTeamAssignments[players[2]] : undefined
+                      )}
+                    </span>
+                  </div>
+                </div>
+                {/* Vertical cards display */}
+                <div className="flex space-x-1">
+                  {Array.from({
+                    length:
+                      gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
+                  }).map((_, i) => (
+                    <div
+                      key={`top-card-${i}`}
+                      className="w-4 h-20 bg-card rounded-sm border border-primary/30 shadow-md"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Left player */}
+              <div className="absolute left-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-1">
+                  <div className="flex items-center">
+                    <div className="font-medieval text-primary">
+                      {players.length > 1 ? players[1] || "Player 2" : "Player 2"}
+                    </div>
+                    {/* Team indicator - make more robust */}
+                    <span
+                      className={`ml-1 ${getTeamColorClasses(
+                        players[1] ? storedTeamAssignments[players[1]] : undefined
+                      )}`}
+                    >
+                      {getTeamIcon(
+                        players[1] ? storedTeamAssignments[players[1]] : undefined
+                      )}
+                    </span>
+                  </div>
+                </div>
+                {/* Vertical cards display */}
+                <div className="flex flex-col space-y-1">
+                  {Array.from({
+                    length:
+                      gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
+                  }).map((_, i) => (
+                    <div
+                      key={`left-card-${i}`}
+                      className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right player */}
+              <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-1">
+                  <div className="flex items-center">
+                    <div className="font-medieval text-primary">
+                      {players.length > 3 ? players[3] || "Player 4" : "Player 4"}
+                    </div>
+                    {/* Team indicator - make more robust */}
+                    <span
+                      className={`ml-1 ${getTeamColorClasses(
+                        players[3] ? storedTeamAssignments[players[3]] : undefined
+                      )}`}
+                    >
+                      {getTeamIcon(
+                        players[3] ? storedTeamAssignments[players[3]] : undefined
+                      )}
+                    </span>
+                  </div>
+                </div>
+                {/* Vertical cards display */}
+                <div className="flex flex-col space-y-1">
+                  {Array.from({
+                    length:
+                      gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
+                  }).map((_, i) => (
+                    <div
+                      key={`right-card-${i}`}
+                      className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Current trick - center cards */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="grid grid-cols-2 gap-4 md:gap-8">
+                  {centerCards.map((card, index) => (
+                    <motion.div
+                      key={`center-card-${card.id}-${index}`}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{
+                        type: "spring",
+                        damping: 12,
+                        stiffness: 200,
+                      }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-1">
+                          {card.playedBy}
+                        </div>
+                        {/* Team indicator with better undefined handling */}
+                        <div
+                          className={`text-xs ${getTeamColorClasses(
+                            storedTeamAssignments[card.playedBy]
+                          )} mb-1`}
+                        >
+                          {getTeamIcon(storedTeamAssignments[card.playedBy])}
+                        </div>
+                      </div>
+                      <Card
+                        suit={card.suit}
+                        value={card.value}
+                        onClick={() => {}} // No action when clicking played cards
+                        disabled={true}
+                        is3D={true}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trick Winner Message */}
+              <AnimatePresence>
+                {showTrickWinnerMessage && lastTrickResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+                                ${
+                                  lastTrickResult.winningTeam === "royals"
+                                    ? "bg-amber-900/90 border-amber-500"
+                                    : "bg-indigo-900/90 border-indigo-500"
+                                }
+                                backdrop-blur-sm p-3 px-6 rounded-lg border-2 shadow-lg z-30`}
+                  >
+                    <div className="text-center">
+                      <div className="text-xl font-bold mb-1">
+                        {lastTrickResult.winningTeam === "royals"
+                          ? "👑 Royals Win! 👑"
+                          : "⚔️ Rebels Win! ⚔️"}
+                      </div>
+                      <div className="text-sm">
+                        {lastTrickResult.winningPlayer} won the trick
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Emotes */}
+              <AnimatePresence>
+                {emotes.map((emote) => (
+                  <motion.div
+                    key={emote.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm p-2 rounded-full shadow-lg"
+                  >
+                    <div className="text-4xl md:text-5xl">{emote.emoji}</div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Bottom player (user) */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                {/* Game status message or turn indicator */}
+                {gameStatus !== "playing" && (
+                  <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
+                    {gameStatus === "initial_deal" &&
+                      "Waiting for initial deal to complete..."}
+                    {gameStatus === "bidding" &&
+                      "Trump selected. Waiting for final deal..."}
+                    {gameStatus === "final_deal" && "Dealing remaining cards..."}
+                  </div>
+                )}
+                {gameStatus === "playing" && currentPlayerIndex !== 0 && (
+                  <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
+                    Waiting for your turn...
+                  </div>
+                )}
+                {gameStatus === "playing" && currentPlayerIndex === 0 && (
+                  <div className="mb-2 px-4 py-2 bg-green-800/80 backdrop-blur-sm rounded-lg border border-green-500/50 shadow text-sm animate-pulse">
+                    Your turn to play!
+                  </div>
+                )}
+
+                {/* Player hand cards */}
+                <div className="flex justify-center gap-1 md:gap-2 mb-2">
+                  {playerHand.map((card: any) => (
+                    <motion.div
+                      key={`player-card-${card.id}`}
+                      whileHover={{
+                        y: gameStatus === "playing" ? -10 : 0,
+                        transition: { duration: 0.2 },
+                      }}
+                      onClick={() => handleCardClick(card.id)}
+                      className={`cursor-pointer ${
+                        selectedCard === card.id ? "transform -translate-y-4" : ""
+                      } ${
+                        playingCardId === card.id
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      } ${
+                        gameStatus !== "playing"
+                          ? "opacity-70 filter grayscale-[30%] cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      <Card
+                        suit={card.suit}
+                        value={card.value}
+                        onClick={() => handleCardClick(card.id)}
+                        disabled={
+                          playingCardId === card.id || gameStatus !== "playing"
+                        }
+                        is3D={true}
+                      />
+                      {playingCardId === card.id && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <LoadingSpinner size="sm" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Player name and team - improved with better undefined handling */}
+                <div className="flex items-center justify-center mb-2">
+                  <div className="font-medieval text-primary text-lg">
+                    {user?.username || "You"}
+                  </div>
+                  {/* Current player team indicator - make more robust */}
+                  {user?.username && (
+                    <span
+                      className={`ml-1 text-lg ${getTeamColorClasses(
+                        storedTeamAssignments[user.username]
+                      )}`}
+                    >
+                      {getTeamIcon(storedTeamAssignments[user.username])}
+                    </span>
+                  )}
+                </div>
+
+                {/* Emote controls */}
+                <InGameEmotes onEmote={handleEmote} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Replay Summary Modal */}
+      <ReplaySummary
+        isOpen={showReplaySummary}
+        onClose={() => setShowReplaySummary(false)}
+        gameData={generateGameStats}
+      />
     </div>
   );
 }

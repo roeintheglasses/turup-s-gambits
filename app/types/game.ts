@@ -43,7 +43,8 @@ export interface GameState {
     | "bidding"
     | "final_deal"
     | "playing"
-    | "finished";
+    | "finished"
+    | "ended";
   leadSuit?: Suit | null; // The suit that was led in the current trick
   teams: {
     royals: string[]; // Array of player IDs for the Royals team (formerly team1)
@@ -63,6 +64,29 @@ export interface GameState {
   trumpVotes?: { [playerId: string]: Suit }; // Track votes for trump suit
   playersVoted?: string[]; // Track which players have voted
   remainingDeck?: Card[]; // Store the remaining cards to be dealt after trump selection
+  
+  // Frenzy mode properties
+  frenzyPowers?: Record<string, Record<string, {
+    used: boolean;
+    lastUsed: number;
+    usageCount: number;
+  }>>;
+  
+  // Special effects tracking
+  specialEffects?: Record<string, {
+    type: string;
+    active: boolean;
+    targetPlayer?: string;
+    data?: any;
+  }>;
+  
+  // Revealed cards tracking (for peek card power)
+  revealedCards?: Record<string, {
+    playerId: string;
+    card: Card;
+    revealedAt: number;
+    revealedTo?: string;
+  }>;
 }
 
 export interface GameRoom {

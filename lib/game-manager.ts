@@ -760,4 +760,297 @@ export class GameManager {
       // Add more bot behaviors for other phases as needed
     }
   }
+
+  /**
+   * Start a frenzy game with random trump selection and special powers
+   */
+  public startFrenzyGame(roomId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      throw new Error("Room not found");
+    }
+
+    // Reset game state for frenzy mode
+    this.resetGameState(room);
+    
+    // Set game mode to frenzy
+    room.gameState.gamePhase = "initial_deal";
+    
+    // Generate and shuffle deck as normal
+    const deck = this.generateDeck();
+    const shuffledDeck = this.shuffleDeck(deck);
+    
+    // Deal initial 5 cards
+    this.dealInitialCards(room, shuffledDeck);
+    
+    // Randomly select trump suit for frenzy mode
+    const trumpSuits: Suit[] = ["hearts", "spades", "diamonds", "clubs"];
+    const randomTrumpSuit = trumpSuits[Math.floor(Math.random() * trumpSuits.length)];
+    room.gameState.trumpSuit = randomTrumpSuit;
+    
+    // Skip bidding phase in frenzy mode - go straight to final deal
+    room.gameState.gamePhase = "final_deal";
+    
+    // Deal remaining cards
+    this.dealRemainingCards(room);
+    
+    // Initialize frenzy powers based on trump suit
+    const frenzyPower = this.getFrenzyPowerForSuit(randomTrumpSuit);
+    console.log(`Frenzy game started with trump: ${randomTrumpSuit}, power: ${frenzyPower}`);
+    
+    // Start playing phase immediately
+    this.startPlayingPhase(room);
+    
+    room.lastActivity = Date.now();
+  }
+
+  /**
+   * Get the frenzy power associated with a trump suit
+   */
+  private getFrenzyPowerForSuit(suit: Suit): string {
+    const powerMap: Record<Suit, string> = {
+      hearts: "extra_points", // Extra points for heart tricks
+      spades: "free_lead",    // Lead with any card after winning
+      diamonds: "peek_card",  // See one opponent's card
+      clubs: "out_of_turn",   // Play one card out of turn
+    };
+    return powerMap[suit];
+  }
+
+  /**
+   * Use a frenzy power during gameplay
+   */
+  public useFrenzyPower(
+    roomId: string, 
+    playerId: string, 
+    powerType: string, 
+    targetData?: any
+  ): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      throw new Error("Room not found");
+    }
+
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) {
+      throw new Error("Player not found");
+    }
+
+    // Check if power can be used
+    if (!this.canUseFrenzyPower(roomId, playerId, powerType)) {
+      return false;
+    }
+
+    // Initialize frenzy powers tracking if not exists
+    if (!room.gameState.frenzyPowers) {
+      room.gameState.frenzyPowers = {};
+    }
+    if (!room.gameState.frenzyPowers[playerId]) {
+      room.gameState.frenzyPowers[playerId] = {};
+    }
+
+    // Record power usage
+    room.gameState.frenzyPowers[playerId][powerType] = {
+      used: true,
+      lastUsed: Date.now(),
+      usageCount: (room.gameState.frenzyPowers[playerId][powerType]?.usageCount || 0) + 1,
+    };
+
+    // Handle different power types
+    switch (powerType) {
+      case "peek_card":
+        this.handlePeekCardPower(room, playerId, targetData);
+        break;
+      case "out_of_turn":
+        this.handleOutOfTurnPower(room, playerId);
+        break;
+      case "free_lead":
+        // This is handled during trick resolution
+        console.log(`Player ${player.name} can now lead with any card after winning`);
+        break;
+      case "extra_points":
+        // This is handled during trick resolution
+        console.log(`Player ${player.name} will get extra points for heart tricks`);
+        break;
+      default:
+        console.warn(`Unknown frenzy power: ${powerType}`);
+        return false;
+    }
+
+    room.lastActivity = Date.now();
+    return true;
+  }
+
+  /**
+   * Check if a player can use a specific frenzy power
+   */
+  public canUseFrenzyPower(roomId: string, playerId: string, powerType: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room || room.gameState.gamePhase !== "playing") {
+      return false;
+    }
+
+    const powerLimits: Record<string, { cooldown: number; maxUses: number }> = {
+      peek_card: { cooldown: 30000, maxUses: 2 },      // 30 seconds, max 2 uses
+      out_of_turn: { cooldown: 45000, maxUses: 1 },    // 45 seconds, max 1 use
+      free_lead: { cooldown: 0, maxUses: -1 },         // Passive, unlimited
+      extra_points: { cooldown: 0, maxUses: -1 },      // Passive, unlimited
+    };
+
+    const limits = powerLimits[powerType];
+    if (!limits) return false;
+
+    const playerPowers = room.gameState.frenzyPowers?.[playerId];
+    if (!playerPowers) return true; // No powers used yet
+
+    const powerState = playerPowers[powerType];
+    if (!powerState) return true; // This power not used yet
+
+    // Check usage limit
+    if (limits.maxUses > 0 && powerState.usageCount >= limits.maxUses) {
+      return false;
+    }
+
+    // Check cooldown
+    if (limits.cooldown > 0) {
+      const timeSinceLastUse = Date.now() - powerState.lastUsed;
+      if (timeSinceLastUse < limits.cooldown) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Handle peek card power - reveal one opponent's card
+   */
+  private handlePeekCardPower(room: GameRoom, playerId: string, targetData: any): void {
+    const targetPlayerId = targetData?.targetPlayerId;
+    if (!targetPlayerId) return;
+
+    const targetPlayer = room.players.find(p => p.id === targetPlayerId);
+    if (!targetPlayer || targetPlayer.hand.length === 0) return;
+
+    // Select a random card from target's hand
+    const randomCard = targetPlayer.hand[Math.floor(Math.random() * targetPlayer.hand.length)];
+    
+    // Store revealed card info (in real implementation, this would be sent to the peek initiator only)
+    if (!room.gameState.revealedCards) {
+      room.gameState.revealedCards = {};
+    }
+    
+    const revealId = `${playerId}-${targetPlayerId}-${Date.now()}`;
+    room.gameState.revealedCards[revealId] = {
+      playerId: targetPlayerId,
+      card: randomCard,
+      revealedAt: Date.now(),
+      revealedTo: playerId,
+    };
+
+    console.log(`Player ${playerId} peeked at ${targetPlayer.name}'s card: ${randomCard.rank} of ${randomCard.suit}`);
+  }
+
+  /**
+   * Handle out of turn power - grant permission to play out of turn
+   */
+  private handleOutOfTurnPower(room: GameRoom, playerId: string): void {
+    if (!room.gameState.specialEffects) {
+      room.gameState.specialEffects = {};
+    }
+
+    const effectId = `out_of_turn_${playerId}_${Date.now()}`;
+    room.gameState.specialEffects[effectId] = {
+      type: "out_of_turn",
+      active: true,
+      targetPlayer: playerId,
+      data: { turnsRemaining: 1 },
+    };
+
+    console.log(`Player ${playerId} can now play out of turn`);
+  }
+
+  /**
+   * Get the current game mode based on room state
+   */
+  private getGameMode(room: GameRoom): "classic" | "frenzy" {
+    // In a real implementation, this would be stored in room metadata
+    // For now, we'll determine based on whether frenzy powers exist
+    return room.gameState.frenzyPowers ? "frenzy" : "classic";
+  }
+
+  /**
+   * Enhanced trick resolution for frenzy mode with special effects
+   */
+  private resolveFrenzyTrick(room: GameRoom): void {
+    const trickEntries = Object.entries(room.gameState.trickCards);
+    if (trickEntries.length !== room.players.length) {
+      return; // Wait for all players
+    }
+
+    // Determine trick winner normally
+    const [winningPlayerId, winningCard] = this.findTrickWinner(
+      trickEntries,
+      room.gameState.leadSuit,
+      room.gameState.trumpSuit
+    );
+
+    const winningPlayer = room.players.find(p => p.id === winningPlayerId);
+    if (!winningPlayer) return;
+
+    // Calculate base points
+    let trickPoints = 1;
+    
+    // Apply frenzy power effects
+    if (room.gameState.trumpSuit === "hearts") {
+      // Check if any hearts were played in this trick
+      const heartsPlayed = trickEntries.some(([_, card]) => card.suit === "hearts");
+      if (heartsPlayed) {
+        trickPoints += 1; // Extra point for heart tricks
+        console.log(`Extra point awarded for hearts in trick!`);
+      }
+    }
+
+    // Update scores
+    const teams = room.gameState.teams;
+    const winningTeam = this.getPlayerTeam(winningPlayerId, teams);
+    
+    if (winningTeam) {
+      room.gameState.scores[winningTeam] += trickPoints;
+      
+      // Update consecutive tricks
+      const losingTeam = winningTeam === "royals" ? "rebels" : "royals";
+      this.updateConsecutiveTricks(room.gameState, winningTeam, losingTeam);
+    }
+
+    // Handle free lead power for spades
+    if (room.gameState.trumpSuit === "spades" && winningTeam) {
+      // Winner can lead with any card next (this is the default behavior)
+      console.log(`Player ${winningPlayer.name} won with spades trump - can lead with any card`);
+    }
+
+    // Clear trick and prepare for next
+    room.gameState.trickCards = {};
+    room.gameState.leadSuit = null;
+    room.gameState.lastTrickWinner = winningPlayerId;
+    room.gameState.currentTurn = winningPlayerId; // Winner leads next trick
+
+    // Check for game end
+    if (this.checkGameEndConditions(room.gameState)) {
+      room.gameState.gamePhase = "finished";
+    } else {
+      room.gameState.roundNumber++;
+    }
+
+    room.lastActivity = Date.now();
+  }
+
+  /**
+   * Get which team a player belongs to
+   */
+  private getPlayerTeam(playerId: string, teams: GameState['teams']): "royals" | "rebels" | null {
+    if (teams.royals.includes(playerId)) return "royals";
+    if (teams.rebels.includes(playerId)) return "rebels";
+    return null;
+  }
 }
