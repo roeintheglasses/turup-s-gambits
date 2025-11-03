@@ -141,7 +141,14 @@ export function GameBoard({
       : [];
 
     // If Colyseus player hand is provided, use it directly
-    if (colyseusPlayerHand && colyseusPlayerHand.length > 0) {
+    // Check for undefined (not just length) to avoid fallback during state transitions
+    if (colyseusPlayerHand !== undefined) {
+      // During state transitions, the hand might temporarily be empty
+      if (colyseusPlayerHand.length === 0) {
+        console.log(`[GameBoard] Colyseus hand is empty (state transition)`);
+        return [];
+      }
+
       console.log(`[GameBoard] Using Colyseus player hand: ${colyseusPlayerHand.length} cards`);
 
       const cards = colyseusPlayerHand.map((card: any, index: number) => ({

@@ -8,4 +8,5 @@ export { GameBoardWrapper } from "./game-board-wrapper";
 export { WaitingRoomState } from "./game-states/waiting-room-state";
 export { InitialDealState } from "./game-states/initial-deal-state";
 export { BiddingState } from "./game-states/bidding-state";
-export { FinalDealState } from "./game-states/final-deal-state"; 
+export { FinalDealState } from "./game-states/final-deal-state";
+export { EndedState } from "./game-states/ended-state"; 

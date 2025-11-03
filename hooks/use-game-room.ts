@@ -153,6 +153,12 @@ export function useGameRoom(roomId: string) {
     rebels: gameState?.rebelsScore || 0,
   }), [gameState]);
 
+  // Winner data for end-game
+  const winner = gameState?.winner || "";
+  const isKot = gameState?.isKot || false;
+  const royalsTricks = gameState?.royalsTricks || 0;
+  const rebelsTricks = gameState?.rebelsTricks || 0;
+
   // Current trick for display - return both cards and playedBy arrays
   const currentTrick = useMemo(() => {
     console.log("[use-game-room] gameState.currentTrick:", gameState?.currentTrick);
@@ -221,6 +227,12 @@ export function useGameRoom(roomId: string) {
     currentTurn: gameState?.currentTurn || "",
     highestBid: gameState?.highestBid || 0,
     highestBidder: gameState?.highestBidder || "",
+
+    // End-game data
+    winner,
+    isKot,
+    royalsTricks,
+    rebelsTricks,
 
     // Actions
     joinRoom,

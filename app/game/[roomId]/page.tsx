@@ -15,6 +15,7 @@ import {
   InitialDealState,
   BiddingState,
   FinalDealState,
+  EndedState,
 } from "@/components/game-room";
 
 // Custom hooks
@@ -63,6 +64,11 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     highestBid,
     highestBidder,
     statusMessage,
+    // End-game data
+    winner,
+    isKot,
+    royalsTricks,
+    rebelsTricks,
   } = gameRoom;
 
   // Show login modal if user is not authenticated
@@ -186,7 +192,6 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       );
 
     case "playing":
-    case "ended":
       return (
         <div className="h-full flex flex-col">
           <VisualEffects enableGrain />
@@ -215,6 +220,20 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
             />
           </div>
         </div>
+      );
+
+    case "ended":
+      return (
+        <EndedState
+          winner={winner}
+          isKot={isKot}
+          royalsTricks={royalsTricks}
+          rebelsTricks={rebelsTricks}
+          players={players}
+          currentPlayer={currentPlayer}
+          onPlayAgain={() => router.push("/game")}
+          onBackToLobby={() => router.push("/game")}
+        />
       );
 
     default:
