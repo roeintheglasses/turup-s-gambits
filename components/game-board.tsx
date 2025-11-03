@@ -56,11 +56,13 @@ interface GameBoardProps {
   gameState: any;
   gameStatus: string;
   initialCardsDeal: boolean;
+  currentTrick: any[];
   onUpdateGameState: (newState: any) => void;
   onRecordMove: (move: any) => void;
   onPlayCard: (card: any) => void;
   onBid: (bid: number) => void;
   sendMessage: (message: any) => Promise<boolean>;
+  playerHand?: any[]; // Optional prop for Colyseus player hand
 }
 
 // Define a type for card to avoid implicit any
@@ -78,10 +80,12 @@ export function GameBoard({
   gameState,
   gameStatus,
   initialCardsDeal,
+  currentTrick,
   onUpdateGameState,
   onRecordMove,
   onPlayCard,
   sendMessage,
+  playerHand: colyseusPlayerHand,
 }: GameBoardProps) {
   // Use primitive selectors instead of object selectors to prevent reference instability
   const trumpSuit = useGameStore((state) => state.trumpSuit);
@@ -135,6 +139,28 @@ export function GameBoard({
     const playedCardIds = user
       ? useGameStore.getState().playedCards[user.id] || []
       : [];
+
+    // If Colyseus player hand is provided, use it directly
+    if (colyseusPlayerHand && colyseusPlayerHand.length > 0) {
+      console.log(`[GameBoard] Using Colyseus player hand: ${colyseusPlayerHand.length} cards`);
+
+      const cards = colyseusPlayerHand.map((card: any, index: number) => ({
+        id: index,
+        suit: card.suit,
+        value: card.rank || card.value,
+        apiId: `${card.suit}-${card.rank || card.value}`,
+      }));
+
+      // Filter out played cards
+      const filteredCards = cards.filter(
+        (card: HandCard) =>
+          !playedCardIds.includes(card.apiId) &&
+          !playedCardIds.includes(`${card.suit}-${card.value}`)
+      );
+
+      console.log(`[GameBoard] Returning ${filteredCards.length} cards from Colyseus hand (filtered from ${cards.length})`);
+      return filteredCards;
+    }
 
     if (gameState && user) {
       // Try to find the player in the game state
@@ -218,7 +244,7 @@ export function GameBoard({
     } else {
       return filteredMockHand;
     }
-  }, [gameState, user, gameStatus, initialCardsDeal]);
+  }, [gameState, user, gameStatus, initialCardsDeal, colyseusPlayerHand]);
 
   // Memoize card click handler to prevent infinite rerenders
   const handleCardClick = useCallback(
@@ -507,6 +533,54 @@ export function GameBoard({
       setTeamAssignments(storedTeamAssignments);
     }
   }, [storedTeamAssignments, setTeamAssignments]);
+
+  // Sync center cards with Colyseus current trick
+  useEffect(() => {
+    console.log("[GameBoard] currentTrick raw data:", currentTrick);
+    console.log("[GameBoard] currentTrick type:", typeof currentTrick);
+
+    if (!currentTrick || typeof currentTrick !== 'object') {
+      console.log("[GameBoard] No currentTrick data from Colyseus");
+      return;
+    }
+
+    const { cards, playedBy } = currentTrick;
+    console.log("[GameBoard] Extracted cards:", cards, "playedBy:", playedBy);
+
+    if (!cards || !Array.isArray(cards) || cards.length === 0) {
+      console.log("[GameBoard] No cards in currentTrick, clearing center");
+      setCenterCards([]);
+      return;
+    }
+
+    console.log(`[GameBoard] Syncing with Colyseus currentTrick: ${cards.length} cards`);
+    console.log("[GameBoard] PlayedBy IDs:", playedBy);
+
+    // Convert Colyseus Card objects to CenterCard format
+    const convertedCards: CenterCard[] = cards.map((card: any, index: number) => {
+      // Get the player ID from playedBy array
+      const playerId = playedBy?.[index];
+
+      // Find the player in the gameState to get their name
+      let playerName = `Player ${index + 1}`;
+      if (gameState?.players) {
+        const player = gameState.players.find((p: any) => p.id === playerId);
+        if (player) {
+          playerName = player.name || player.id;
+        }
+      }
+
+      return {
+        id: index,
+        suit: card.suit || "hearts",
+        value: card.value || "A",
+        playedBy: playerName,
+      };
+    });
+
+    console.log("[GameBoard] Converted cards for center display:", convertedCards);
+    setCenterCards(convertedCards);
+  }, [currentTrick, players, gameState]);
 
   // Enhance the trick completion handler to show which team won
   const handleTrickCompletion = useCallback(() => {

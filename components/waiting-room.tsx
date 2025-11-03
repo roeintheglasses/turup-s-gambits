@@ -46,6 +46,15 @@ export function WaitingRoom({
   const safePlayersArray = Array.isArray(players) ? players : [];
   const playerCount = safePlayersArray.length;
 
+  // Debug logging
+  console.log("[WaitingRoom] Debug:", {
+    isCurrentUserHost,
+    allPlayersJoined,
+    playerCount,
+    shouldShowAddBots: isCurrentUserHost && !allPlayersJoined && playerCount < 4,
+    onAddBots: typeof onAddBots
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

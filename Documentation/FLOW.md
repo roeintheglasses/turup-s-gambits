@@ -1,14 +1,20 @@
-# Turup's Gambit - Enhanced Game Flow Documentation
+# Turup's Gambit - Game Flow Documentation
+
+> **⚠️ NOTE**: This document describes the game flow and rules. The technical implementation has been migrated to Colyseus.
+> For implementation details, see [`COLYSEUS_MIGRATION.md`](./COLYSEUS_MIGRATION.md) and [`GAME_RULES_REFERENCE.md`](./GAME_RULES_REFERENCE.md).
+
+## Current Implementation
+
+**Game Mode**: Classic Mode (Court Piece)
+- Frenzy Mode is planned for future implementation
 
 ## Game Modes Overview
 
-Turup's Gambit now supports two distinct game modes:
-
-### Classic Mode (Court Piece Style)
+### Classic Mode (Court Piece Style) ✅ Implemented
 Traditional gameplay with standard rules, bidding phases, and strategic trump selection.
 
-### Frenzy Mode ✨ NEW
-Enhanced gameplay with special powers, accelerated pacing, and dynamic abilities based on trump suit.
+### Frenzy Mode 🔮 Future
+Enhanced gameplay with special powers (planned for future release).
 
 ---
 

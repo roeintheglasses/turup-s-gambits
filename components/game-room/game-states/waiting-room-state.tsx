@@ -6,26 +6,29 @@ import { GameBackground } from "../game-background";
 interface WaitingRoomStateProps {
   roomId: string;
   players: any[];
-  currentRoom: any;
   isCurrentUserHost: boolean;
   isAddingBots: boolean;
   isStartingGame: boolean;
   handleAddBots: () => void;
   handleStartGame: () => void;
-  handleForceHostStatus?: () => void;
 }
 
 export const WaitingRoomState: React.FC<WaitingRoomStateProps> = ({
   roomId,
   players,
-  currentRoom,
   isCurrentUserHost,
   isAddingBots,
   isStartingGame,
   handleAddBots,
   handleStartGame,
-  handleForceHostStatus,
 }) => {
+  // Build a minimal currentRoom object for compatibility
+  const currentRoom = {
+    id: roomId,
+    players: players,
+    maxPlayers: 4,
+  };
+
   return (
     <div className="h-full flex flex-col items-center justify-center p-2 md:p-4">
       <VisualEffects enableGrain />
@@ -34,7 +37,7 @@ export const WaitingRoomState: React.FC<WaitingRoomStateProps> = ({
       <div className="w-full px-2 md:px-4">
         <WaitingRoom
           roomId={roomId}
-          players={players.map((p) => p.name)}
+          players={players.map((p) => p.name || p.id)}
           currentRoom={currentRoom}
           isCurrentUserHost={isCurrentUserHost}
           allPlayersJoined={players.length === 4}
@@ -42,7 +45,7 @@ export const WaitingRoomState: React.FC<WaitingRoomStateProps> = ({
           isStartingGame={isStartingGame}
           onAddBots={handleAddBots}
           onStartGame={handleStartGame}
-          onForceHostStatus={handleForceHostStatus}
+          onForceHostStatus={undefined}
         />
       </div>
     </div>

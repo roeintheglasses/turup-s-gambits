@@ -7,6 +7,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
+import { ClerkProvider } from '@clerk/nextjs';
 // Zustand stores are used for state management, no need for context providers
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -27,47 +28,49 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${medievalSharp.variable} font-sans bg-background min-h-screen`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${inter.variable} ${medievalSharp.variable} font-sans bg-background min-h-screen`}
         >
-          <div className="flex flex-col h-screen w-full">
-            <Navbar />
-            <main className="flex-1 w-full mx-auto overflow-hidden">{children}</main>
-            <footer className="text-center text-sm text-foreground/60 py-4 z-10 flex-shrink-0">
-              <div className="container mx-auto px-4">
-                <p className="mb-2">© {2025} Turup's Gambit Fantasy Edition</p>
-                <div className="flex justify-center gap-6">
-                  <Link
-                    href="/privacy-policy"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Privacy Policy
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="hover:text-primary transition-colors"
-                  >
-                    About
-                  </Link>
-                  <Link
-                    href="/game"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Play Game
-                  </Link>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex flex-col h-screen w-full">
+              <Navbar />
+              <main className="flex-1 w-full mx-auto overflow-hidden">{children}</main>
+              <footer className="text-center text-sm text-foreground/60 py-4 z-10 flex-shrink-0">
+                <div className="container mx-auto px-4">
+                  <p className="mb-2">© {2025} Turup's Gambit Fantasy Edition</p>
+                  <div className="flex justify-center gap-6">
+                    <Link
+                      href="/privacy-policy"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Privacy Policy
+                    </Link>
+                    <Link
+                      href="/about"
+                      className="hover:text-primary transition-colors"
+                    >
+                      About
+                    </Link>
+                    <Link
+                      href="/game"
+                      className="hover:text-primary transition-colors"
+                    >
+                      Play Game
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </footer>
-          </div>
-        </ThemeProvider>
-      </body>
-    </html>
+              </footer>
+            </div>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

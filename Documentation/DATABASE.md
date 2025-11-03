@@ -1,8 +1,20 @@
-# Enhanced Database Setup Guide
+# Database Setup Guide
+
+> **⚠️ NOTE**: With the Colyseus migration, Supabase is now used ONLY for:
+> - User authentication (login/signup)
+> - User profiles and statistics
+> - Game history and replays (after game completion)
+>
+> **NOT used for**:
+> - ❌ Real-time game state (now handled by Colyseus)
+> - ❌ Active gameplay (runs on Colyseus server)
+> - ❌ Game logic (server-authoritative in Colyseus)
+>
+> See [`COLYSEUS_MIGRATION.md`](./COLYSEUS_MIGRATION.md) for the new architecture.
 
 ## Overview
 
-This project uses Supabase as the database provider with PostgreSQL as the underlying database engine. The database schema has been significantly enhanced to support advanced game features including **Frenzy Mode**, comprehensive replay system, bot player management, and detailed game statistics.
+This project uses Supabase as the database provider with PostgreSQL as the underlying database engine for persistent storage of user data, profiles, and game history.
 
 ## Prerequisites
 

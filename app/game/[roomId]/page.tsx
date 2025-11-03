@@ -3,9 +3,9 @@
 import React, { Suspense, use } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
-import { LoginModal } from "@/components/login-modal";
 import { WaitingRoomSkeleton } from "@/components/waiting-room-skeleton";
 import { VisualEffects } from "@/components/visual-effects";
+import { BiddingPanel } from "@/components/bidding-panel";
 
 // Game room components
 import {
@@ -19,8 +19,6 @@ import {
 
 // Custom hooks
 import { useGameRoom } from "@/hooks/use-game-room";
-import { useGameRoomInitializer } from "@/hooks/use-game-room-initializer";
-import { useGameStore } from "@/stores";
 
 interface GameRoomPageProps {
   params: Promise<{
@@ -28,50 +26,43 @@ interface GameRoomPageProps {
   }>;
 }
 
-function GameRoomContentInner() {
+function GameRoomContentInner({ roomId }: { roomId: string }) {
   const { mode } = useParams();
-  const { roomId } = useGameStore();
-  
-  const gameRoom = useGameRoom(roomId || "");
-  
+
+  const gameRoom = useGameRoom(roomId);
+
   // Destructure all needed values from the hook
   const {
     user,
-    currentRoom,
     players,
+    currentPlayer,
     isLoading,
     gameStatus,
     router,
+    isConnected,
+    error,
     // Waiting room props
     isCurrentUserHost,
     isAddingBots,
     isStartingGame,
     handleAddBots,
     handleStartGame,
-    handleForceHostStatus,
     // Game board props
-    isGameBoardReady,
-    initialCardsDeal,
-    recordMove,
     handlePlayCard,
     handleBid,
-    // Bidding props
+    currentTrick,
+    // Trump voting props
     playerHand,
     handleTrumpVote,
     userVote,
     trumpVotes,
     votingComplete,
     showTrumpPopup,
-    forceBotVotes,
+    // Bidding props
+    currentTurn,
+    highestBid,
+    highestBidder,
     statusMessage,
-    isPhaseTransitioning,
-    phaseTransitionMessage,
-    // Animation props
-    showShuffleAnimation,
-    handleShuffleComplete,
-    handleFinalShuffleDrawComplete,
-    // UI state
-    showLoginModal,
   } = gameRoom;
 
   // Show login modal if user is not authenticated
@@ -83,13 +74,34 @@ function GameRoomContentInner() {
         <div className="w-full px-2 md:px-4">
           <WaitingRoomSkeleton />
         </div>
-        <LoginModal isOpen={showLoginModal} onClose={() => router.push("/")} />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center p-2 md:p-4">
+        <VisualEffects enableGrain />
+        <GameBackground />
+        <div className="w-full px-2 md:px-4">
+          <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 text-center">
+            <h2 className="text-xl font-bold text-red-500">Connection Error</h2>
+            <p className="mt-2">{error}</p>
+            <button
+              onClick={() => router.push("/game")}
+              className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 rounded"
+            >
+              Back to Lobby
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   // Show loading state
-  if (isLoading || !currentRoom) {
+  if (isLoading || !isConnected) {
     return (
       <div className="h-full flex items-center justify-center p-2 md:p-4">
         <VisualEffects enableGrain />
@@ -106,27 +118,17 @@ function GameRoomContentInner() {
     case "waiting":
       return (
         <WaitingRoomState
-          roomId={roomId || ""}
+          roomId={roomId}
           players={players}
-          currentRoom={currentRoom}
           isCurrentUserHost={isCurrentUserHost}
           isAddingBots={isAddingBots}
           isStartingGame={isStartingGame}
           handleAddBots={handleAddBots}
           handleStartGame={handleStartGame}
-          handleForceHostStatus={handleForceHostStatus}
         />
       );
 
-    case "initial_deal":
-      return (
-        <InitialDealState
-          showShuffleAnimation={showShuffleAnimation}
-          handleShuffleComplete={handleShuffleComplete}
-        />
-      );
-
-    case "bidding":
+    case "trump_selection":
       return (
         <BiddingState
           mode={(mode as string) || "classic"}
@@ -136,24 +138,54 @@ function GameRoomContentInner() {
           trumpVotes={trumpVotes}
           votingComplete={votingComplete}
           showTrumpPopup={showTrumpPopup}
-          forceBotVotes={forceBotVotes}
           isCurrentUserHost={isCurrentUserHost}
           statusMessage={statusMessage}
-          isPhaseTransitioning={isPhaseTransitioning}
-          phaseTransitionMessage={phaseTransitionMessage}
         />
       );
 
-    case "final_deal":
+    case "bidding":
       return (
-        <FinalDealState
-          showShuffleAnimation={showShuffleAnimation}
-          handleFinalShuffleDrawComplete={handleFinalShuffleDrawComplete}
-        />
+        <div className="h-full flex flex-col">
+          <VisualEffects enableGrain />
+          <GameBackground />
+
+          {/* Game Header - Only on small screens */}
+          <div className="md:hidden flex-shrink-0 p-2">
+            <h1 className="text-xl font-bold text-center">{gameStatus}</h1>
+          </div>
+
+          {/* Main Game Area */}
+          <div className="flex-1 min-h-0 p-2 md:p-4">
+            <GameBoardWrapper
+              roomId={roomId}
+              mode={(mode as string) || "classic"}
+              players={players}
+              gameStatus={gameStatus}
+              currentTrick={currentTrick}
+              handlePlayCard={handlePlayCard}
+              handleBid={handleBid}
+              scores={gameRoom.scores}
+              trumpSuit={gameRoom.trumpSuit}
+              currentTurn={currentTurn}
+              isCurrentUserHost={isCurrentUserHost}
+              playerHand={playerHand}
+            />
+          </div>
+
+          {/* Bidding Panel Overlay */}
+          <BiddingPanel
+            isOpen={true}
+            players={players}
+            currentTurn={currentTurn}
+            currentPlayerId={currentPlayer?.id || ""}
+            highestBid={highestBid}
+            highestBidder={highestBidder}
+            onBid={handleBid}
+          />
+        </div>
       );
 
     case "playing":
-    case "finished":
     case "ended":
       return (
         <div className="h-full flex flex-col">
@@ -168,15 +200,18 @@ function GameRoomContentInner() {
           {/* Main Game Area */}
           <div className="flex-1 min-h-0 p-2 md:p-4">
             <GameBoardWrapper
-              roomId={roomId || ""}
+              roomId={roomId}
               mode={(mode as string) || "classic"}
               players={players}
               gameStatus={gameStatus}
-              initialCardsDeal={initialCardsDeal}
-              recordMove={recordMove}
+              currentTrick={currentTrick}
               handlePlayCard={handlePlayCard}
               handleBid={handleBid}
-              isGameBoardReady={isGameBoardReady}
+              scores={gameRoom.scores}
+              trumpSuit={gameRoom.trumpSuit}
+              currentTurn={currentTurn}
+              isCurrentUserHost={isCurrentUserHost}
+              playerHand={playerHand}
             />
           </div>
         </div>
@@ -195,37 +230,6 @@ function GameRoomContentInner() {
   }
 }
 
-// Wrapper component with Suspense
-function GameRoomContent() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <VisualEffects enableGrain />
-          <GameBackground />
-          <div className="container mx-auto px-4 py-8">
-            <WaitingRoomSkeleton />
-          </div>
-        </div>
-      }
-    >
-      <GameRoomContentInner />
-    </Suspense>
-  );
-}
-
-// Room initializer wrapper component
-function GameRoomInitializer({
-  roomId,
-  children,
-}: {
-  roomId: string;
-  children: React.ReactNode;
-}) {
-  useGameRoomInitializer(roomId);
-  return <>{children}</>;
-}
-
 // Main page component
 export default function GameRoomPage({ params }: GameRoomPageProps) {
   const resolvedParams = use(params);
@@ -233,9 +237,19 @@ export default function GameRoomPage({ params }: GameRoomPageProps) {
 
   return (
     <ProtectedRoute>
-      <GameRoomInitializer roomId={roomId}>
-        <GameRoomContent />
-      </GameRoomInitializer>
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <VisualEffects enableGrain />
+            <GameBackground />
+            <div className="container mx-auto px-4 py-8">
+              <WaitingRoomSkeleton />
+            </div>
+          </div>
+        }
+      >
+        <GameRoomContentInner roomId={roomId} />
+      </Suspense>
     </ProtectedRoute>
   );
 }

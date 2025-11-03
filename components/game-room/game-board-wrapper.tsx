@@ -1,20 +1,22 @@
-import React, { useCallback, useMemo, memo } from "react";
+import React, { useMemo, memo } from "react";
 import { GameBoard } from "@/components/game-board";
-import { GameBoardSkeleton } from "@/components/game-board-skeleton";
 import { GameSidebar } from "./game-sidebar";
-import { useGameStore } from "@/stores";
-import { useShallow } from "zustand/react/shallow";
 
 interface GameBoardWrapperProps {
   roomId: string;
   mode: string;
   players: any[];
   gameStatus: string;
-  initialCardsDeal: boolean;
-  recordMove: any;
+  currentTrick: any[];
   handlePlayCard: (card: any) => void;
   handleBid: (bid: number) => void;
-  isGameBoardReady: boolean;
+  // Sidebar props
+  scores?: { royals: number; rebels: number };
+  trumpSuit?: string | null;
+  currentTurn?: string;
+  isCurrentUserHost?: boolean;
+  // Player hand from Colyseus
+  playerHand?: any[];
 }
 
 // Memoized component for the main game board
@@ -23,31 +25,31 @@ const GameBoardContent = memo(({
   mode,
   players,
   gameStatus,
-  initialCardsDeal,
-  recordMove,
+  currentTrick,
   handlePlayCard,
   handleBid,
-  gameState,
-  updateGameState,
-  sendMessage,
+  playerHand,
 }: {
   roomId: string;
   mode: string;
   players: any[];
   gameStatus: string;
-  initialCardsDeal: boolean;
-  recordMove: any;
+  currentTrick: any[];
   handlePlayCard: (card: any) => void;
   handleBid: (bid: number) => void;
-  gameState: any;
-  updateGameState: (newState: any) => void;
-  sendMessage: (message: any) => Promise<boolean>;
+  playerHand?: any[];
 }) => {
   // Memoized player names to prevent unnecessary re-renders
-  const playerNames = useMemo(() => 
-    players.map((p) => p.name), 
+  const playerNames = useMemo(() =>
+    players.map((p) => p.name || p.id),
     [players]
   );
+
+  // Minimal game state for compatibility
+  const gameState = {
+    players: playerNames,
+    gameStatus: gameStatus,
+  };
 
   return (
     <GameBoard
@@ -55,13 +57,15 @@ const GameBoardContent = memo(({
       gameMode={mode as "classic" | "frenzy"}
       players={playerNames}
       gameState={gameState}
-      onUpdateGameState={updateGameState}
-      onRecordMove={recordMove}
+      onUpdateGameState={() => console.log("Game state updates handled by Colyseus")}
+      onRecordMove={() => {}}
       gameStatus={gameStatus}
-      initialCardsDeal={initialCardsDeal}
+      initialCardsDeal={gameStatus === "initial_deal" || gameStatus === "trump_selection" || gameStatus === "bidding"}
+      currentTrick={currentTrick}
       onPlayCard={handlePlayCard}
       onBid={handleBid}
-      sendMessage={sendMessage}
+      sendMessage={async () => false}
+      playerHand={playerHand}
     />
   );
 });
@@ -69,8 +73,32 @@ const GameBoardContent = memo(({
 GameBoardContent.displayName = "GameBoardContent";
 
 // Memoized sidebar component
-const MemoizedGameSidebar = memo(({ roomId }: { roomId: string }) => (
-  <GameSidebar roomId={roomId} />
+const MemoizedGameSidebar = memo(({
+  roomId,
+  players,
+  gameStatus,
+  scores,
+  trumpSuit,
+  currentTurn,
+  isCurrentUserHost
+}: {
+  roomId: string;
+  players?: any[];
+  gameStatus?: string;
+  scores?: { royals: number; rebels: number };
+  trumpSuit?: string | null;
+  currentTurn?: string;
+  isCurrentUserHost?: boolean;
+}) => (
+  <GameSidebar
+    roomId={roomId}
+    players={players}
+    gameStatus={gameStatus}
+    scores={scores}
+    trumpSuit={trumpSuit}
+    currentTurn={currentTurn}
+    isCurrentUserHost={isCurrentUserHost}
+  />
 ));
 
 MemoizedGameSidebar.displayName = "MemoizedGameSidebar";
@@ -80,31 +108,15 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(({
   mode,
   players,
   gameStatus,
-  initialCardsDeal,
-  recordMove,
+  currentTrick,
   handlePlayCard,
   handleBid,
-  isGameBoardReady,
+  scores,
+  trumpSuit,
+  currentTurn,
+  isCurrentUserHost,
+  playerHand,
 }) => {
-  // Use shallow selector to get only needed state
-  const gameState = useGameStore(
-    useShallow((state) => state.currentRoom?.gameState)
-  );
-
-  // Memoize the stable callback functions
-  const updateGameState = useCallback((newState: any) => {
-    useGameStore.getState().updateGameState(newState);
-  }, []);
-
-  const sendMessage = useCallback((message: any) => {
-    return useGameStore.getState().sendMessage(message);
-  }, []);
-
-  // Early return for loading state
-  if (!isGameBoardReady) {
-    return <GameBoardSkeleton />;
-  }
-
   return (
     <div className="h-full flex">
       {/* Main Game Board - Takes most of the space */}
@@ -114,19 +126,24 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(({
           mode={mode}
           players={players}
           gameStatus={gameStatus}
-          initialCardsDeal={initialCardsDeal}
-          recordMove={recordMove}
+          currentTrick={currentTrick}
           handlePlayCard={handlePlayCard}
           handleBid={handleBid}
-          gameState={gameState}
-          updateGameState={updateGameState}
-          sendMessage={sendMessage}
+          playerHand={playerHand}
         />
       </div>
-      
+
       {/* Game Sidebar - Only on medium+ screens */}
       <div className="hidden md:flex md:flex-col md:w-80 lg:w-96 h-full">
-        <MemoizedGameSidebar roomId={roomId} />
+        <MemoizedGameSidebar
+          roomId={roomId}
+          players={players}
+          gameStatus={gameStatus}
+          scores={scores}
+          trumpSuit={trumpSuit}
+          currentTurn={currentTurn}
+          isCurrentUserHost={isCurrentUserHost}
+        />
       </div>
     </div>
   );

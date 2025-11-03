@@ -16,11 +16,8 @@ interface BiddingStateProps {
   trumpVotes: TrumpVotes;
   votingComplete: boolean;
   showTrumpPopup: boolean;
-  forceBotVotes: () => void;
   isCurrentUserHost: boolean;
   statusMessage: string | null;
-  isPhaseTransitioning: boolean;
-  phaseTransitionMessage: string;
 }
 
 export const BiddingState: React.FC<BiddingStateProps> = ({
@@ -31,11 +28,8 @@ export const BiddingState: React.FC<BiddingStateProps> = ({
   trumpVotes,
   votingComplete,
   showTrumpPopup,
-  forceBotVotes,
   isCurrentUserHost,
   statusMessage,
-  isPhaseTransitioning,
-  phaseTransitionMessage,
 }) => (
   <div className="h-full flex items-center justify-center p-2 md:p-4">
     <VisualEffects enableGrain />
@@ -49,15 +43,15 @@ export const BiddingState: React.FC<BiddingStateProps> = ({
         votingComplete={votingComplete}
         playerHand={playerHand}
         isOpen={showTrumpPopup}
-        onForceBotVotes={forceBotVotes}
+        onForceBotVotes={() => console.log("Force bot votes not implemented")}
         isCurrentUserHost={isCurrentUserHost}
         gameMode={mode as "classic" | "frenzy"}
       />
       <GameBoardSkeleton />
       <GameOverlays
         statusMessage={statusMessage}
-        isPhaseTransitioning={isPhaseTransitioning}
-        phaseTransitionMessage={phaseTransitionMessage}
+        isPhaseTransitioning={false}
+        phaseTransitionMessage=""
       />
     </div>
   </div>

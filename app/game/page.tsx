@@ -16,27 +16,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GameModeSelector } from "@/components/game-mode-selector";
 import { VisualEffects } from "@/components/visual-effects";
-import { LoginModal } from "@/components/login-modal";
 import { useAuthStore } from "@/stores/authStore";
 import { useGameStore } from "@/stores";
-import { SupabaseDatabase } from "@/lib/services/supabase-database";
+import { useAuth } from "@clerk/nextjs";
 
 export default function GamePage() {
   const [roomId, setRoomId] = useState("");
   const [gameMode, setGameMode] = useState<"classic" | "frenzy">("classic");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
   const { user } = useAuthStore();
   const { leaveRoom } = useGameStore();
 
-  // Check if user is logged in
-  useEffect(() => {
-    if (!user) {
-      setShowLoginModal(true);
-    }
-  }, [user]);
+  const { isSignedIn } = useAuth();
 
   // Clean up game state when entering the lobby
   useEffect(() => {
@@ -59,13 +52,13 @@ export default function GamePage() {
   }, []); // Run only once when component mounts
 
   async function handleCreateGame() {
-    if (!user) {
-      setShowLoginModal(true);
+    if (!isSignedIn) {
+      router.push("/");
       return;
     }
 
     setIsCreatingGame(true);
-    
+
     try {
       // Generate a unique room ID
       const newRoomId = Math.random()
@@ -73,61 +66,29 @@ export default function GamePage() {
         .substring(2, 8)
         .toUpperCase();
 
-      console.log("Creating room with ID:", newRoomId, "for user:", user.id);
+      console.log("Creating room with ID:", newRoomId, "for user:", user?.id);
 
-      // Actually create the room in the database
-      const createdRoom = await SupabaseDatabase.createGameRoom(
-        newRoomId,
-        user.id,
-        gameMode
-      );
-
-      if (createdRoom) {
-        console.log("Room created successfully:", createdRoom);
-        
-        // Wait a bit to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Verify the room exists before redirecting
-        const verifyRoom = await SupabaseDatabase.getGameRoom(newRoomId);
-        if (verifyRoom) {
-          console.log("Room verified, redirecting to:", newRoomId);
-          router.push(`/game/${newRoomId}?mode=${gameMode}`);
-        } else {
-          console.error("Room creation verified but room not found on verification");
-          throw new Error("Room not found after creation");
-        }
-      } else {
-        throw new Error("Failed to create room - no room returned");
-      }
+      // Colyseus will handle room creation, just redirect
+      router.push(`/game/${newRoomId}?mode=${gameMode}`);
     } catch (error) {
       console.error("Error creating game:", error);
-      
-      let errorMessage = "Failed to create game. Please try again.";
-      if (error instanceof Error) {
-        errorMessage = `Failed to create game: ${error.message}`;
-      }
-      
-      alert(errorMessage);
+      alert("Failed to create game. Please try again.");
     } finally {
       setIsCreatingGame(false);
     }
   }
 
   function handleJoinGame() {
-    if (!user) {
-      setShowLoginModal(true);
+    if (!isSignedIn) {
+      router.push("/");
       return;
     }
 
     if (!roomId) return;
 
     setIsJoiningGame(true);
-    // Navigate to room - the room initializer will handle validation
-    setTimeout(() => {
-      setIsJoiningGame(false);
-      router.push(`/game/${roomId}`);
-    }, 500);
+    // Navigate to room - Colyseus will handle room joining
+    router.push(`/game/${roomId}`);
   }
 
   if (!user) {
@@ -150,8 +111,6 @@ export default function GamePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background" />
         </div>
-
-        <LoginModal isOpen={showLoginModal} onClose={() => router.push("/")} />
       </div>
     );
   }

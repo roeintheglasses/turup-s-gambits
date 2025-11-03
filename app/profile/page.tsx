@@ -17,10 +17,21 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VisualEffects } from "@/components/visual-effects";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useUser } from "@clerk/nextjs";
 
 export default function ProfilePage() {
-  const { user: authUser } = useSupabaseAuth();
+  const { user: clerkUser } = useUser();
+
+  // Map Clerk user to our user format
+  const authUser = clerkUser ? {
+    id: clerkUser.id,
+    username: clerkUser.username || clerkUser.emailAddresses[0]?.emailAddress.split('@')[0] || '',
+    name: clerkUser.firstName || clerkUser.username || '',
+    email: clerkUser.emailAddresses[0]?.emailAddress || '',
+    avatar: clerkUser.imageUrl,
+    image: clerkUser.imageUrl,
+  } : null;
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: authUser?.username || authUser?.name || "",
@@ -149,14 +160,12 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {!authUser.isAnonymous && (
-                <Button
-                  className="medieval-button"
-                  onClick={() => setIsEditing(!isEditing)}
-                >
-                  {isEditing ? "Cancel" : "Edit Profile"}
-                </Button>
-              )}
+              <Button
+                className="medieval-button"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                {isEditing ? "Cancel" : "Edit Profile"}
+              </Button>
             </div>
           </div>
 

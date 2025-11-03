@@ -1,157 +1,103 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, User, Settings } from "lucide-react";
-import { useAuthStore } from "@/stores/authStore";
-import { LoginModal } from "@/components/login-modal";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LogIn } from "lucide-react";
 import { motion } from "framer-motion";
+import { syncCurrentUser } from "@/app/actions/sync-user";
+import { useAuthStore } from "@/stores/authStore";
 
 export function AuthButton() {
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { isSignedIn, user, isLoaded } = useUser();
+  const { setUser, clearUser, setLoading } = useAuthStore();
+
+  // Sync user to database and authStore when signed in
+  useEffect(() => {
+    setLoading(!isLoaded);
+
+    if (isSignedIn && user) {
+      // Sync to authStore
+      setUser({
+        id: user.id,
+        username: user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'user',
+        name: user.firstName || user.username || undefined,
+        email: user.emailAddresses[0]?.emailAddress,
+        avatar: user.imageUrl,
+        imageUrl: user.imageUrl,
+      });
+
+      // Sync to database
+      syncCurrentUser().catch((error) => {
+        console.error("[AuthButton] Failed to sync user:", error);
+      });
+    } else if (isLoaded && !isSignedIn) {
+      clearUser();
+    }
+  }, [isSignedIn, user, isLoaded, setUser, clearUser, setLoading]);
 
   // Debug logging
   console.log("[AuthButton] User:", user);
-  console.log("[AuthButton] isAuthenticated:", isAuthenticated);
+  console.log("[AuthButton] isSignedIn:", isSignedIn);
+  console.log("[AuthButton] isLoaded:", isLoaded);
 
-  const handleNavigation = useCallback(
-    (path: string) => {
-      if (!user && (path === "/profile" || path === "/game")) {
-        setShowLoginModal(true);
-        return;
-      }
-      router.push(path);
-    },
-    [user, router]
-  );
-
-  const handleLogout = useCallback(() => {
-    logout();
-    if (pathname === "/profile" || pathname === "/game") {
-      router.push("/");
-    }
-  }, [logout, pathname, router]);
-
-  // User display info
-  const userDisplayInfo = {
-    displayName:
-      user?.discordUsername || user?.username || user?.name || "User",
-    avatarUrl:
-      user?.discordAvatar ||
-      user?.avatar ||
-      user?.image ||
-      "/default-avatar.png",
-  };
-
-  if (isAuthenticated && user) {
+  if (!isLoaded) {
     return (
-      <>
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="flex items-center"
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 hover:bg-primary/10"
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={userDisplayInfo.avatarUrl}
-                    alt={userDisplayInfo.displayName}
-                  />
-                  <AvatarFallback className="bg-primary/20 text-primary">
-                    {userDisplayInfo.displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden lg:inline">
-                  {userDisplayInfo.displayName}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 bg-card/95 backdrop-blur-md border-primary/20"
-            >
-              <DropdownMenuLabel className="font-medieval text-primary">
-                My Account
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="cursor-pointer flex items-center gap-2"
-                onClick={() => handleNavigation("/profile")}
-              >
-                <User size={16} />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer flex items-center gap-2"
-                onClick={() => handleNavigation("/game")}
-              >
-                <Settings size={16} />
-                <span>Game Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="cursor-pointer flex items-center gap-2 text-destructive"
-                onClick={handleLogout}
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </motion.div>
-
-        {/* Login Modal */}
-        <LoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
         <Button
+          variant="ghost"
+          size="sm"
+          disabled
+          className="flex items-center gap-2"
+        >
+          <span>Loading...</span>
+        </Button>
+      </motion.div>
+    );
+  }
+
+  if (isSignedIn) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="flex items-center"
+      >
+        <UserButton
+          afterSignOutUrl="/"
+          appearance={{
+            elements: {
+              avatarBox: "h-8 w-8",
+              userButtonPopoverCard: "bg-card/95 backdrop-blur-md border-primary/20",
+              userButtonPopoverActionButton: "hover:bg-primary/10",
+            },
+          }}
+        />
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+    >
+      <SignInButton mode="modal">
+        <Button
           variant="default"
           size="sm"
           className="flex items-center gap-2 medieval-button bg-primary text-primary-foreground"
-          onClick={() => setShowLoginModal(true)}
         >
           <LogIn size={18} />
           <span>Login</span>
         </Button>
-      </motion.div>
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-      />
-    </>
+      </SignInButton>
+    </motion.div>
   );
 }

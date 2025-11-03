@@ -7,6 +7,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // Disabled to prevent double connections in development
   eslint: {
     ignoreDuringBuilds: true,
   },

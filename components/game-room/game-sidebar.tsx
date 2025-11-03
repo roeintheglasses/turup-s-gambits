@@ -9,6 +9,12 @@ import { useGameStore } from "@/stores/gameStore";
 
 interface GameSidebarProps {
   roomId: string;
+  players?: any[];
+  gameStatus?: string;
+  trumpSuit?: string | null;
+  scores?: { royals: number; rebels: number };
+  currentTurn?: string;
+  isCurrentUserHost?: boolean;
 }
 
 // Memoized sub-components for better performance
@@ -234,27 +240,30 @@ const ActionButtons = memo(({
 
 ActionButtons.displayName = "ActionButtons";
 
-export const GameSidebar: React.FC<GameSidebarProps> = memo(({ roomId }) => {
+export const GameSidebar: React.FC<GameSidebarProps> = memo(({
+  roomId,
+  players: propPlayers,
+  gameStatus: propGameStatus,
+  trumpSuit: propTrumpSuit,
+  scores: propScores,
+  currentTurn: propCurrentTurn,
+  isCurrentUserHost: propIsCurrentUserHost
+}) => {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { 
-    players, 
-    leaveRoom, 
-    gameStatus, 
-    trumpSuit, 
-    scores, 
-    currentPlayer 
-  } = useGameStore();
+  const { leaveRoom } = useGameStore();
+
+  // Use props if available, otherwise fallback to old store (for backwards compatibility)
+  const players = propPlayers || [];
+  const gameStatus = propGameStatus || "waiting";
+  const trumpSuit = propTrumpSuit || null;
+  const scores = propScores || { royals: 0, rebels: 0 };
+  const currentPlayer = propCurrentTurn || "";
+  const isCurrentUserHost = propIsCurrentUserHost !== undefined ? propIsCurrentUserHost : false;
 
   const [isSharing, setIsSharing] = useState(false);
   const [isCreatingNewGame, setIsCreatingNewGame] = useState(false);
   const [isEndingGame, setIsEndingGame] = useState(false);
-
-  // Memoized computed values
-  const isCurrentUserHost = useMemo(() => 
-    players.find((p) => p.id === user?.id)?.isHost || false,
-    [players, user?.id]
-  );
 
   const shouldShowProgressSection = useMemo(() => 
     trumpSuit || gameStatus === "playing" || gameStatus === "finished" || gameStatus === "ended",
