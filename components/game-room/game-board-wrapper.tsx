@@ -7,7 +7,7 @@ interface GameBoardWrapperProps {
   mode: string;
   players: any[];
   gameStatus: string;
-  currentTrick: any[];
+  currentTrick: { cards: any[]; playedBy: string[] };
   handlePlayCard: (card: any) => void;
   handleBid: (bid: number) => void;
   // Sidebar props
@@ -17,6 +17,8 @@ interface GameBoardWrapperProps {
   isCurrentUserHost?: boolean;
   // Player hand from Colyseus
   playerHand?: any[];
+  // Current player ID (session ID from Colyseus room)
+  currentPlayerId?: string;
 }
 
 // Memoized component for the main game board
@@ -29,15 +31,19 @@ const GameBoardContent = memo(({
   handlePlayCard,
   handleBid,
   playerHand,
+  currentTurn,
+  currentPlayerId,
 }: {
   roomId: string;
   mode: string;
   players: any[];
   gameStatus: string;
-  currentTrick: any[];
+  currentTrick: { cards: any[]; playedBy: string[] };
   handlePlayCard: (card: any) => void;
   handleBid: (bid: number) => void;
   playerHand?: any[];
+  currentTurn?: string;
+  currentPlayerId?: string;
 }) => {
   // Memoized player names to prevent unnecessary re-renders
   const playerNames = useMemo(() =>
@@ -66,6 +72,8 @@ const GameBoardContent = memo(({
       onBid={handleBid}
       sendMessage={async () => false}
       playerHand={playerHand}
+      currentTurn={currentTurn}
+      currentPlayerId={currentPlayerId}
     />
   );
 });
@@ -116,6 +124,7 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(({
   currentTurn,
   isCurrentUserHost,
   playerHand,
+  currentPlayerId,
 }) => {
   return (
     <div className="h-full flex">
@@ -130,6 +139,8 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(({
           handlePlayCard={handlePlayCard}
           handleBid={handleBid}
           playerHand={playerHand}
+          currentTurn={currentTurn}
+          currentPlayerId={currentPlayerId}
         />
       </div>
 

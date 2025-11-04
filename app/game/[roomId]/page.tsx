@@ -37,6 +37,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     user,
     players,
     currentPlayer,
+    currentPlayerId,
     isLoading,
     gameStatus,
     router,
@@ -173,6 +174,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
               scores={gameRoom.scores}
               trumpSuit={gameRoom.trumpSuit}
               currentTurn={currentTurn}
+              currentPlayerId={currentPlayerId}
               isCurrentUserHost={isCurrentUserHost}
               playerHand={playerHand}
             />
@@ -215,6 +217,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
               scores={gameRoom.scores}
               trumpSuit={gameRoom.trumpSuit}
               currentTurn={currentTurn}
+              currentPlayerId={currentPlayerId}
               isCurrentUserHost={isCurrentUserHost}
               playerHand={playerHand}
             />

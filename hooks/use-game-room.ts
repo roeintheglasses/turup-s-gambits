@@ -95,14 +95,18 @@ export function useGameRoom(roomId: string) {
   // Handle play card
   const handlePlayCard = useCallback(
     (card: any) => {
-      if (!card?.id) {
-        console.error("[GameRoom] Cannot play card: No card ID provided");
+      // The card ID from Colyseus is in the format "suit-value-counter" (e.g., "hearts-A-0")
+      // We need to send this actual card.id, not the array index
+      const cardId = card?.id || card?.apiId;
+
+      if (!cardId) {
+        console.error("[GameRoom] Cannot play card: No card ID provided", card);
         return;
       }
 
       try {
-        console.log("[GameRoom] Playing card:", card);
-        playCard(card.id);
+        console.log("[GameRoom] Playing card:", card, "with ID:", cardId);
+        playCard(cardId);
       } catch (error) {
         console.error("[GameRoom] Error playing card:", error);
         useUIStore.getState().showToast("Error playing card. Please try again.", "error");
@@ -207,6 +211,7 @@ export function useGameRoom(roomId: string) {
     // Game state (mapped for compatibility)
     players,
     currentPlayer,
+    currentPlayerId: room?.sessionId || "", // Session ID is the current player's ID
     playerHand,
     gameStatus,
     isLoading,

@@ -69,7 +69,17 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
         // Handle errors
         newRoom.onError((code, message) => {
           console.error("❌ Room error:", code, message);
-          setError(`Room error: ${message}`);
+
+          // Don't kick user out for gameplay errors (like "not your turn")
+          // Only set error state for critical connection issues
+          if (code === 1006 || code === 1000) {
+            // Connection closed - this is critical
+            setError(`Connection error: ${message}`);
+          } else {
+            // Gameplay error - just log it, don't disconnect user
+            console.warn("⚠️ Gameplay error (non-critical):", message);
+            // You can emit an event or callback here if needed for UI feedback
+          }
         });
 
         // Handle disconnection
