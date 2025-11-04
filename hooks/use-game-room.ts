@@ -69,7 +69,6 @@ export function useGameRoom(roomId: string) {
   // Auto-open trump popup when phase changes to trump_selection
   useEffect(() => {
     if (gameStatus === "trump_selection") {
-      console.log("[useGameRoom] Trump selection phase detected, opening popup");
       setShowTrumpPopup(true);
     }
   }, [gameStatus, setShowTrumpPopup]);
@@ -80,14 +79,12 @@ export function useGameRoom(roomId: string) {
       console.warn("Cannot start game: not host or not enough players");
       return;
     }
-    console.log("[GameRoom] Starting game");
     setIsStartingGame(true);
     startGame();
   }, [isCurrentUserHost, players.length, startGame]);
 
   // Handle add bots
   const handleAddBots = useCallback(() => {
-    console.log("[GameRoom] Adding bots");
     setIsAddingBots(true);
     addBots();
   }, [addBots]);
@@ -105,7 +102,6 @@ export function useGameRoom(roomId: string) {
       }
 
       try {
-        console.log("[GameRoom] Playing card:", card, "with ID:", cardId);
         playCard(cardId);
       } catch (error) {
         console.error("[GameRoom] Error playing card:", error);
@@ -118,7 +114,6 @@ export function useGameRoom(roomId: string) {
   // Handle bid
   const handleBid = useCallback(
     (bid: number) => {
-      console.log("[GameRoom] Placing bid:", bid);
       placeBid(bid);
     },
     [placeBid]
@@ -127,7 +122,6 @@ export function useGameRoom(roomId: string) {
   // Handle trump vote
   const handleTrumpVote = useCallback(
     (suit: string) => {
-      console.log("[GameRoom] Voting for trump:", suit);
       voteTrump(suit);
     },
     [voteTrump]
@@ -165,17 +159,12 @@ export function useGameRoom(roomId: string) {
 
   // Current trick for display - return both cards and playedBy arrays
   const currentTrick = useMemo(() => {
-    console.log("[use-game-room] gameState.currentTrick:", gameState?.currentTrick);
     if (!gameState?.currentTrick) {
-      console.log("[use-game-room] No currentTrick in gameState");
       return { cards: [], playedBy: [] };
     }
 
     const cards = Array.from(gameState.currentTrick.cards || []);
     const playedBy = Array.from(gameState.currentTrick.playedBy || []);
-    console.log("[use-game-room] currentTrick cards:", cards, "playedBy:", playedBy);
-    console.log("[use-game-room] Raw cards ArraySchema:", gameState.currentTrick.cards);
-    console.log("[use-game-room] Raw playedBy ArraySchema:", gameState.currentTrick.playedBy);
 
     return {
       cards,

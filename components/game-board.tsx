@@ -145,11 +145,8 @@ export function GameBoard({
     if (colyseusPlayerHand !== undefined) {
       // During state transitions, the hand might temporarily be empty
       if (colyseusPlayerHand.length === 0) {
-        console.log(`[GameBoard] Colyseus hand is empty (state transition)`);
         return [];
       }
-
-      console.log(`[GameBoard] Using Colyseus player hand: ${colyseusPlayerHand.length} cards`);
 
       const cards = colyseusPlayerHand.map((card: any, index: number) => ({
         id: card.id, // Use the actual Colyseus card ID (e.g., "hearts-A-0")
@@ -158,26 +155,14 @@ export function GameBoard({
         apiId: card.id, // Keep the actual card ID for backward compat
       }));
 
-      // No filtering needed - Colyseus server manages the hand correctly
-      console.log(`[GameBoard] Returning ${cards.length} cards from Colyseus hand`);
       return cards;
     }
 
     if (gameState && user) {
-      // Try to find the player in the game state
-      console.log("[GameBoard] Debug GameState:", gameState);
-      console.log(
-        `[GameBoard] Current game status: ${gameStatus}, initialCardsDeal: ${initialCardsDeal}`
-      );
-
       const player = gameState.players?.find(
         (p: PlayerInterface) => p.id === user.id
       );
       if (player && player.hand && player.hand.length > 0) {
-        console.log(
-          `[GameBoard] Player ${user.username} hand has ${player.hand.length} cards`
-        );
-
         const cards = player.hand.map((card: any, index: number) => ({
           id: index,
           suit: card.suit,
@@ -186,19 +171,12 @@ export function GameBoard({
         }));
 
         // In playing state, always return all cards regardless of initialCardsDeal flag
-        // No filtering needed - server manages the hand
         if (gameStatus === "playing") {
-          console.log(
-            `[GameBoard] In playing state - returning ${cards.length} cards`
-          );
           return cards;
         }
 
         // For other states, respect the initialCardsDeal flag
         const finalHand = initialCardsDeal ? cards.slice(0, 5) : cards;
-        console.log(
-          `[GameBoard] Returning ${finalHand.length} cards for display (initialCardsDeal: ${initialCardsDeal})`
-        );
         return finalHand;
       }
     }
@@ -222,9 +200,6 @@ export function GameBoard({
 
     // Return appropriate number of cards (no filtering - this is just mock data)
     if (gameStatus === "playing") {
-      console.log(
-        `[GameBoard] Using mock hand in playing state: ${mockHand.length} cards`
-      );
       return mockHand;
     } else if (initialCardsDeal) {
       return mockHand.slice(0, 5);
@@ -244,13 +219,11 @@ export function GameBoard({
 
       // CRITICAL: Check if a card play is already in progress using ref
       if (isPlayingCardRef.current) {
-        console.log("[GameBoard] Card play already in progress (ref check)");
         return;
       }
 
       // Check if we're in the playing phase
       if (gameStatus !== "playing") {
-        console.log(`[GameBoard] Cannot play card in ${gameStatus} phase`);
         showToast(
           `Cannot play card yet. Current phase: ${gameStatus}`,
           "warning"
@@ -260,14 +233,12 @@ export function GameBoard({
 
       // Check if it's the player's turn using Colyseus state
       if (!isMyTurn) {
-        console.log("[GameBoard] Not your turn. currentTurn:", currentTurn, "currentPlayerId:", currentPlayerId);
         showToast("Not your turn to play", "warning");
         return;
       }
 
       // Check if a card is already being played
       if (cardPlayLoading) {
-        console.log("[GameBoard] Card already being played");
         return;
       }
 
@@ -295,8 +266,6 @@ export function GameBoard({
         rank: card.value as any,
       };
 
-      console.log("[GameBoard] Playing card:", apiCard);
-
       // First add the card to center immediately for better UX
       const playerName = user?.username || "You";
       const uiCard: CenterCard = {
@@ -316,9 +285,6 @@ export function GameBoard({
 
       // Remove card from player's hand
       setPlayerHandCards((prevHand) => prevHand.filter((c) => c.id !== cardId));
-
-      // Note: Card tracking is now handled server-side by Colyseus
-      // No need to manually track played cards client-side
 
       // Use the provided onPlayCard function
       try {
@@ -372,7 +338,6 @@ export function GameBoard({
 
   // Use the provided onRecordMove function
   const recordMove = (move: any) => {
-    console.log("[GameBoard] Recording move:", move);
     onRecordMove(move);
   };
 
@@ -380,11 +345,6 @@ export function GameBoard({
   useEffect(() => {
     // Always get a fresh hand when initializing or when game state changes
     const hand = getPlayerHand();
-    console.log(
-      `[GameBoard] Initializing player hand from gameState, has ${
-        hand?.length || 0
-      } cards (gameStatus: ${gameStatus})`
-    );
 
     // Set the hand directly without checking handInitialized flag
     // This ensures we always have the correct hand after refresh or state change
@@ -394,41 +354,21 @@ export function GameBoard({
     // This prevents the hand from being reset during trick completions
     if (gameStatus === "playing") {
       if (!handInitialized) {
-        console.log(
-          "[GameBoard] Setting handInitialized to true for playing state"
-        );
         setHandInitialized(true);
       }
     } else {
       // For other states, reset handInitialized flag to ensure we'll reload cards when state changes
       if (handInitialized) {
-        console.log(
-          "[GameBoard] Resetting handInitialized flag for non-playing state"
-        );
         setHandInitialized(false);
       }
-    }
-
-    // Force a custom refresh event to ensure other components update
-    if (gameStatus === "playing") {
-      console.log("[GameBoard] Dispatching refresh event for playing state");
-      // Use setTimeout to ensure this happens after state update
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("game:refreshState"));
-      }, 100);
     }
   }, [gameState, gameStatus, initialCardsDeal, getPlayerHand]);
 
   // Fix the force refresh handler to actually update the state properly
   useEffect(() => {
     const handleRefreshState = (event: any) => {
-      console.log("[GameBoard] Received force refresh event:", event.detail);
-
       // Force a re-evaluation of the player's hand
       const refreshedHand = getPlayerHand();
-      console.log(
-        `[GameBoard] Refreshed hand has ${refreshedHand.length} cards`
-      );
 
       // Always update the state with the refreshed hand
       setPlayerHandCards(refreshedHand);
@@ -450,17 +390,7 @@ export function GameBoard({
 
   // Add a new debug function to help track team assignments
   const logTeamAssignments = useCallback(() => {
-    console.log("[GameBoard] Current team assignments:", storedTeamAssignments);
-    console.log("[GameBoard] Current players:", players);
-
-    // Log each player's team assignment for debugging
-    players.forEach((playerName, index) => {
-      console.log(
-        `[GameBoard] Player ${index} (${playerName}): Team ${
-          storedTeamAssignments[playerName] || "unknown"
-        }`
-      );
-    });
+    // Reserved for debugging when needed
   }, [storedTeamAssignments, players]);
 
   // Replace the team assignment useEffect with one that respects stored assignments
@@ -470,30 +400,18 @@ export function GameBoard({
       Object.keys(storedTeamAssignments).length > 0;
 
     if (hasExistingAssignments) {
-      // Use the stored team assignments
-      console.log(
-        "[GameBoard] Using stored team assignments:",
-        storedTeamAssignments
-      );
-
       // Check if all current players have team assignments
       const allPlayersHaveTeams = players.every(
         (playerName) => !!storedTeamAssignments[playerName]
       );
 
       if (!allPlayersHaveTeams) {
-        console.log(
-          "[GameBoard] Not all players have team assignments, updating..."
-        );
         const updatedTeams = { ...storedTeamAssignments };
 
         players.forEach((playerName, index) => {
           if (!updatedTeams[playerName]) {
             // Assign new players based on their position
             updatedTeams[playerName] = index % 2 === 0 ? "royals" : "rebels";
-            console.log(
-              `[GameBoard] Assigned new player ${playerName} to team ${updatedTeams[playerName]}`
-            );
           }
         });
 
@@ -511,7 +429,6 @@ export function GameBoard({
 
       // Set store state
       setTeamAssignments(teams);
-      console.log("[GameBoard] Created new team assignments:", teams);
     }
 
     // Log the final team assignments for debugging
@@ -521,32 +438,22 @@ export function GameBoard({
   // When we have team assignments, update the local state
   useEffect(() => {
     if (Object.keys(storedTeamAssignments).length > 0) {
-      console.log("[GameBoard] Updated local team assignments from store");
       setTeamAssignments(storedTeamAssignments);
     }
   }, [storedTeamAssignments, setTeamAssignments]);
 
   // Sync center cards with Colyseus current trick
   useEffect(() => {
-    console.log("[GameBoard] currentTrick raw data:", currentTrick);
-    console.log("[GameBoard] currentTrick type:", typeof currentTrick);
-
     if (!currentTrick || typeof currentTrick !== 'object') {
-      console.log("[GameBoard] No currentTrick data from Colyseus");
       return;
     }
 
     const { cards, playedBy } = currentTrick;
-    console.log("[GameBoard] Extracted cards:", cards, "playedBy:", playedBy);
 
     if (!cards || !Array.isArray(cards) || cards.length === 0) {
-      console.log("[GameBoard] No cards in currentTrick, clearing center");
       setCenterCards([]);
       return;
     }
-
-    console.log(`[GameBoard] Syncing with Colyseus currentTrick: ${cards.length} cards`);
-    console.log("[GameBoard] PlayedBy IDs:", playedBy);
 
     // Convert Colyseus Card objects to CenterCard format
     const convertedCards: CenterCard[] = cards.map((card: any, index: number) => {
@@ -570,7 +477,6 @@ export function GameBoard({
       };
     });
 
-    console.log("[GameBoard] Converted cards for center display:", convertedCards);
     setCenterCards(convertedCards);
   }, [currentTrick, players, gameState]);
 
@@ -586,18 +492,10 @@ export function GameBoard({
 
     // Check if this exact trick has been processed already
     if (processedTrickIds.has(trickId)) {
-      console.log(
-        "[GameBoard] Skipping duplicate trick completion for:",
-        trickId
-      );
       return;
     }
 
     const currentCenterCards = [...centerCards];
-    console.log(
-      "[GameBoard] Determining trick winner for cards:",
-      currentCenterCards
-    );
 
     // Proper trick winning logic implementation
     // 1. Determine the lead suit (suit of the first card played)
@@ -605,8 +503,6 @@ export function GameBoard({
     if (centerCards.length > 0) {
       leadSuit = centerCards[0].suit;
     }
-
-    console.log(`[GameBoard] Lead suit is ${leadSuit}`);
 
     // Card rank order (2 is lowest, Ace is highest)
     const cardRanks: { [key: string]: number } = {
@@ -637,9 +533,6 @@ export function GameBoard({
       if (currentCard.suit === trumpSuit && winningCard.suit !== trumpSuit) {
         winningCardIndex = i;
         winningCard = currentCard;
-        console.log(
-          `[GameBoard] Card ${i} (${currentCard.value} of ${currentCard.suit}) beats current winner with trump`
-        );
       }
       // Case 2: Both cards are trump, compare ranks
       else if (
@@ -649,9 +542,6 @@ export function GameBoard({
         if (cardRanks[currentCard.value] > cardRanks[winningCard.value]) {
           winningCardIndex = i;
           winningCard = currentCard;
-          console.log(
-            `[GameBoard] Card ${i} (${currentCard.value} of ${currentCard.suit}) beats current winner with higher trump`
-          );
         }
       }
       // Case 3: Current card follows lead suit and winning card is not a trump
@@ -665,9 +555,6 @@ export function GameBoard({
         ) {
           winningCardIndex = i;
           winningCard = currentCard;
-          console.log(
-            `[GameBoard] Card ${i} (${currentCard.value} of ${currentCard.suit}) beats current winner with higher lead suit card`
-          );
         }
       }
       // All other cases: Current card cannot win (different suit, not trump)
@@ -678,9 +565,7 @@ export function GameBoard({
     // Determine which team won (based on player name)
     const winningTeam = storedTeamAssignments[winningPlayerName] || "royals";
 
-    console.log(
-      `[GameBoard] Trick won by ${winningPlayerName} (${winningTeam}) with ${winningCard.value} of ${winningCard.suit}`
-    );
+    console.log(`Trick complete - Winner: ${winningPlayerName} (${winningTeam})`);
 
     // Create trick result
     const trickResult: TrickResult = {
@@ -719,13 +604,7 @@ export function GameBoard({
     const gameEnded = newScores.royals >= 7 || newScores.rebels >= 7;
 
     if (gameEnded) {
-      console.log(
-        `[GameBoard] Game ended! ${
-          newScores.royals >= 7 ? "Royals" : "Rebels"
-        } win with ${
-          newScores.royals >= 7 ? newScores.royals : newScores.rebels
-        } tricks`
-      );
+      console.log(`Game ended - ${newScores.royals >= 7 ? "Royals" : "Rebels"} win!`);
       // Use a targeted update to update scores and game status
       onUpdateGameState({
         scores: newScores,
@@ -752,8 +631,6 @@ export function GameBoard({
         // Reset card play loading states to allow new card plays
         setCardPlayLoading(false);
         setPlayingCardId(null);
-
-        console.log("[GameBoard] Ready for next trick - play states reset");
       }
     }, 500);
   }, [
@@ -814,13 +691,8 @@ export function GameBoard({
   // Memoize card playing function to prevent infinite loops
   const handlePlayCard = useCallback(
     (card: any) => {
-      console.log("[GameBoard] Playing card:", card);
-
       // Disable clicking if a card is already being played
       if (cardPlayLoading || playingCardId) {
-        console.log(
-          "[GameBoard] Card play in progress, ignoring new card play"
-        );
         return;
       }
 
@@ -848,13 +720,10 @@ export function GameBoard({
         return [...prev, uiCard];
       });
 
-      // Turn management is now handled by Colyseus server state
-
       // Delay to show animation
       setTimeout(() => {
         // Call the onPlayCard callback to actually play the card
         if (onPlayCard) {
-          console.log("[GameBoard] Sending card play to game store:", card);
           try {
             onPlayCard(card);
           } catch (error) {
@@ -960,8 +829,6 @@ export function GameBoard({
 
   // Add frenzy power handler
   const handleUseFrenzyPower = useCallback((powerType: string, data?: any) => {
-    console.log(`[GameBoard] Using frenzy power: ${powerType}`, data);
-    
     if (!user?.id) {
       console.error("[GameBoard] Cannot use frenzy power: No user ID");
       return;

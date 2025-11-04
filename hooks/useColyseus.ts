@@ -44,18 +44,11 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
           roomId: targetRoomId,
         });
 
-        // Debug: Log room info
-        console.log("🎮 Room object:", newRoom);
-        console.log("🎮 Room ID:", newRoom.id);
-        console.log("🎮 Room name:", newRoom.name);
-        console.log("🎮 Session ID:", newRoom.sessionId);
-
         setRoom(newRoom);
         setIsConnected(true);
 
         // Listen to state changes
         newRoom.onStateChange((state) => {
-          console.log("🔄 State changed, players:", state.players?.size);
           setGameState(state);
           // Increment version to force re-render
           setStateVersion(v => v + 1);
@@ -63,7 +56,7 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
 
         // Listen to messages from server
         newRoom.onMessage("*", (type, message) => {
-          console.log("📨 Message:", type, message);
+          // Messages are handled by server
         });
 
         // Handle errors
@@ -84,7 +77,6 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
 
         // Handle disconnection
         newRoom.onLeave((code) => {
-          console.log("👋 Left room with code:", code);
           setIsConnected(false);
           setRoom(null);
         });
@@ -199,7 +191,6 @@ export function usePlayers(gameState: GameState | null, stateVersion?: number): 
       (a, b) => a.position - b.position
     );
     setPlayers(playersArray);
-    console.log("👥 Players updated:", playersArray.length, playersArray.map(p => p.name));
   }, [gameState, stateVersion]); // React to state version changes
 
   return players;
