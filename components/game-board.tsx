@@ -655,16 +655,17 @@ export function GameBoard({
     }
   }, [centerCards.length, handleTrickCompletion]);
 
-  // Reset loading state when turn changes (card was successfully played)
+  // Reset loading state when turn changes
   useEffect(() => {
-    // If it's not our turn and we have a loading state, it means our card was accepted
-    // Reset the loading state so we can play again when it becomes our turn
-    if (!isMyTurn && cardPlayLoading) {
-      console.log("[GameBoard] Turn changed - resetting card play loading state");
+    // Reset loading state in two scenarios:
+    // 1. Turn moved away from us (card was accepted)
+    // 2. Turn came back to us (new trick, ensure we can play)
+    if (cardPlayLoading) {
+      console.log("[GameBoard] Resetting card play loading state");
       setCardPlayLoading(false);
       setPlayingCardId(null);
     }
-  }, [isMyTurn, cardPlayLoading, setCardPlayLoading, setPlayingCardId]);
+  }, [isMyTurn]); // Trigger whenever turn changes (to or from us)
 
   // Memoize emote handler to prevent unnecessary rerenders
   const handleEmote = useCallback(
