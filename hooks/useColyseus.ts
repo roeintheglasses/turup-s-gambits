@@ -72,8 +72,12 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
             // Gameplay error - show user-friendly message via toast
             console.warn("⚠️ Gameplay error (non-critical):", message);
 
+            // Reset UI loading states so user can try again
+            const { showToast, setCardPlayLoading, setPlayingCardId } = useUIStore.getState();
+            setCardPlayLoading(false);
+            setPlayingCardId(null);
+
             // Show toast to user with friendly error message
-            const { showToast } = useUIStore.getState();
             showToast(message || "Invalid move. Please try again.", "error");
           }
         });
