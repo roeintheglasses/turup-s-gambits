@@ -646,9 +646,10 @@ export function GameBoard({
   // Use the memoized handler in the effect
   useEffect(() => {
     if (centerCards.length === 4) {
+      // Wait 2 seconds to let players see all 4 cards and process the trick
       const timer = setTimeout(() => {
         handleTrickCompletion();
-      }, 500); // Reduced from 1500ms to 500ms for faster game play
+      }, 2000); // Increased pause to let players see the completed trick
 
       return () => clearTimeout(timer);
     }

@@ -99,17 +99,41 @@ export function BiddingPanel({
             </div>
           </div>
 
+          {/* Bidding Progress Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span>Bidding Progress</span>
+              <span>{players.filter(p => p.bid > 0).length} / {players.length} players</span>
+            </div>
+            <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
+              <motion.div
+                className="bg-primary h-full rounded-full"
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${(players.filter(p => p.bid > 0).length / players.length) * 100}%`
+                }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+
           {/* Current Status */}
           <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border/50">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">Current Turn:</p>
-                <p className="text-lg font-medieval text-foreground">
-                  {currentPlayer?.name || "Unknown"}
-                  {currentPlayer?.isHost && (
-                    <Crown className="inline h-4 w-4 ml-1 text-primary" />
-                  )}
-                </p>
+                <motion.div
+                  animate={isMyTurn ? { scale: [1, 1.05, 1] } : {}}
+                  transition={{ duration: 1.5, repeat: isMyTurn ? Infinity : 0 }}
+                >
+                  <p className={`text-lg font-medieval ${isMyTurn ? 'text-primary' : 'text-foreground'}`}>
+                    {currentPlayer?.name || "Unknown"}
+                    {currentPlayer?.isHost && (
+                      <Crown className="inline h-4 w-4 ml-1 text-primary" />
+                    )}
+                    {isMyTurn && <span className="ml-2 text-sm">(Your turn!)</span>}
+                  </p>
+                </motion.div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Highest Bid:</p>
@@ -131,12 +155,15 @@ export function BiddingPanel({
               Players
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              {players.map((player) => (
-                <div
+              {players.map((player, index) => (
+                <motion.div
                   key={player.id}
-                  className={`p-3 rounded-lg border ${
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`p-3 rounded-lg border transition-all duration-300 ${
                     player.id === currentTurn
-                      ? "bg-primary/20 border-primary/50"
+                      ? "bg-primary/20 border-primary/50 shadow-lg"
                       : player.bid > 0
                       ? "bg-green-500/10 border-green-500/30"
                       : "bg-muted/30 border-border/50"
@@ -156,12 +183,16 @@ export function BiddingPanel({
                     </div>
                     <div className="text-right">
                       {player.bid > 0 ? (
-                        <div className="flex items-center gap-1">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="flex items-center gap-1"
+                        >
                           <span className="text-lg font-bold text-foreground">
                             {player.bid}
                           </span>
                           <Check className="h-4 w-4 text-green-500" />
-                        </div>
+                        </motion.div>
                       ) : player.id === currentTurn ? (
                         <LoadingSpinner size="sm" />
                       ) : (
@@ -171,7 +202,7 @@ export function BiddingPanel({
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
