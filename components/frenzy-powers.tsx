@@ -121,7 +121,7 @@ const PowerCard: React.FC<{
   return (
     <motion.div
       className={`
-        relative p-4 rounded-lg border-2 transition-all duration-300
+        relative p-3 sm:p-4 rounded-lg border-2 transition-all duration-300
         ${
           isActive
             ? "bg-primary/20 border-primary/50 shadow-lg"
@@ -134,7 +134,7 @@ const PowerCard: React.FC<{
       whileTap={canUse ? { scale: 0.95 } : {}}
     >
       <div className="flex flex-col items-center text-center">
-        <power.icon className={`h-8 w-8 mb-2 ${power.color}`} />
+        <power.icon className={`h-6 w-6 sm:h-8 sm:w-8 mb-2 ${power.color}`} />
         <h3 className="font-bold text-sm text-foreground mb-1">{power.name}</h3>
         <p className="text-xs text-muted-foreground mb-3">{power.description}</p>
         
@@ -200,7 +200,7 @@ const PeekCardModal: React.FC<{
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-card/95 backdrop-blur-md p-6 rounded-lg border-2 border-primary/30 shadow-xl"
+          className="bg-card/95 backdrop-blur-md p-4 sm:p-6 rounded-lg border-2 border-primary/30 shadow-xl max-w-xs sm:max-w-md"
         >
           <div className="text-center">
             <Eye className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -356,7 +356,7 @@ export function FrenzyPowers({
 
   return (
     <>
-      <div className="frenzy-powers-container p-4 bg-gradient-to-br from-purple-900/30 to-indigo-900/30 rounded-lg border border-purple-500/30">
+      <div className="frenzy-powers-container p-3 sm:p-4 bg-gradient-to-br from-purple-900/30 to-indigo-900/30 rounded-lg border border-purple-500/30">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-500" />

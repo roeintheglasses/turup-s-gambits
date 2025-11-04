@@ -53,7 +53,7 @@ export function Navbar() {
                   height={48}
                   className="[&>path]:fill-primary"
                 />
-                <span className="text-2xl font-medieval text-primary">
+                <span className="text-xl sm:text-2xl font-medieval text-primary">
                   Turup's Gambit
                 </span>
               </Link>

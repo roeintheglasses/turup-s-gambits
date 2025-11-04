@@ -204,8 +204,8 @@ const PlayerStatistics: React.FC<{
                 )}
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tricks Won:</span>
                 <span className="font-medium">{player.tricksWon}</span>
@@ -248,9 +248,9 @@ const GameSummary: React.FC<{
         <Trophy className="h-5 w-5" />
         Game Summary
       </h3>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-3">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Game Mode:</span>
             <span className="font-medium capitalize">{gameData.gameMode}</span>
@@ -312,8 +312,8 @@ const MoveTimeline: React.FC<{
         <PlayCircle className="h-5 w-5" />
         Move Timeline
       </h3>
-      
-      <div className="max-h-40 overflow-y-auto space-y-2">
+
+      <div className="max-h-32 sm:max-h-40 md:max-h-48 overflow-y-auto space-y-2">
         {moves.map((move, index) => (
           <button
             key={move.id}
@@ -498,17 +498,17 @@ export function ReplaySummary({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-background/95 backdrop-blur-md w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg border border-border shadow-xl"
+          className="bg-background/95 backdrop-blur-md w-full max-w-full sm:max-w-4xl lg:max-w-6xl max-h-[95vh] overflow-y-auto rounded-lg border border-border shadow-xl"
         >
           {/* Header */}
-          <div className="sticky top-0 bg-background/95 backdrop-blur-md p-6 border-b border-border">
+          <div className="sticky top-0 bg-background/95 backdrop-blur-md p-3 sm:p-6 border-b border-border">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-medieval text-foreground flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-medieval text-foreground flex items-center gap-2">
                 <Eye className="h-6 w-6" />
                 Game Replay
               </h2>
@@ -542,7 +542,7 @@ export function ReplaySummary({
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
             {/* Game Summary */}
             <GameSummary gameData={mockGameData} />
             

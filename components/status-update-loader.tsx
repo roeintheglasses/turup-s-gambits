@@ -13,7 +13,7 @@ export function StatusUpdateLoader({ message }: StatusUpdateLoaderProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-card/90 backdrop-blur-md border border-primary/30 rounded-lg px-6 py-3 shadow-lg flex items-center gap-3 z-50"
+      className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-card/90 backdrop-blur-md border border-primary/30 rounded-lg px-3 sm:px-6 py-2 sm:py-3 shadow-lg flex items-center gap-2 sm:gap-3 z-50 max-w-[90vw] sm:max-w-none"
     >
       <div className="relative">
         <LoadingSpinner size="sm" />

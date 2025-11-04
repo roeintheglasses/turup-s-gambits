@@ -24,7 +24,7 @@ export function GameLoader({ message = "Loading game...", fullScreen = false }: 
 export function PhaseTransitionLoader({ message }: { message: string }) {
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-card rounded-lg shadow-lg p-8 max-w-md w-full">
+      <div className="bg-card rounded-lg shadow-lg p-4 sm:p-8 max-w-xs sm:max-w-md w-full mx-4">
         <div className="flex flex-col items-center justify-center space-y-6">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-xl font-medium text-center">{message}</p>

@@ -37,7 +37,7 @@ export function InGameEmotes({ onEmote }: InGameEmotesProps) {
   }
 
   return (
-    <div className="absolute bottom-24 left-6 z-10">
+    <div className="absolute bottom-20 sm:bottom-24 left-2 sm:left-6 z-10">
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -48,7 +48,7 @@ export function InGameEmotes({ onEmote }: InGameEmotesProps) {
             <Smile className="h-5 w-5 text-primary" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-2 bg-card/90 backdrop-blur-sm border-2 border-primary/30">
+        <PopoverContent className="w-56 sm:w-64 p-2 bg-card/90 backdrop-blur-sm border-2 border-primary/30">
           <div className="grid grid-cols-4 gap-2">
             {emojiOptions.map((option) => (
               <Button
