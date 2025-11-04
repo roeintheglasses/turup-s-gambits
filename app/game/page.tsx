@@ -135,29 +135,29 @@ export default function GamePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background" />
       </div>
 
-      <Card className="w-full max-w-sm sm:max-w-md border border-primary/30 md:border-2 shadow-xl bg-card/90 backdrop-blur-sm">
-        <CardHeader className="text-center p-4 sm:p-6">
-          <CardTitle className="text-2xl sm:text-3xl font-medieval text-primary">
+      <Card className="w-full max-w-2xl border-2 border-primary/30 shadow-xl bg-card/90 backdrop-blur-sm">
+        <CardHeader className="text-center p-3">
+          <CardTitle className="text-2xl font-medieval text-primary">
             Game Hall
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Create or join a game of Turup's Gambit
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-3">
           <Tabs defaultValue="create" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
-              <TabsTrigger value="create" className="font-medieval text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-2 mb-3">
+              <TabsTrigger value="create" className="font-medieval text-sm">
                 Create Game
               </TabsTrigger>
-              <TabsTrigger value="join" className="font-medieval text-xs sm:text-sm">
+              <TabsTrigger value="join" className="font-medieval text-sm">
                 Join Game
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="create" className="space-y-4 sm:space-y-6">
+            <TabsContent value="create" className="space-y-3">
               <div>
-                <h3 className="text-base sm:text-lg font-medieval mb-2 sm:mb-3">Select Game Mode</h3>
+                <h3 className="text-sm font-medieval mb-2">Select Game Mode</h3>
                 <GameModeSelector
                   selectedMode={gameMode}
                   onSelectMode={(mode) =>
@@ -167,7 +167,7 @@ export default function GamePage() {
               </div>
 
               <Button
-                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
                 onClick={handleCreateGame}
                 disabled={isCreatingGame}
               >
@@ -175,14 +175,14 @@ export default function GamePage() {
               </Button>
             </TabsContent>
 
-            <TabsContent value="join" className="space-y-4 sm:space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="room-id" className="block text-xs sm:text-sm font-medium">
+            <TabsContent value="join" className="space-y-3">
+              <div className="space-y-1.5">
+                <label htmlFor="room-id" className="block text-xs font-medium">
                   Room Code
                 </label>
                 <Input
                   id="room-id"
-                  className="medieval-input text-sm sm:text-base"
+                  className="medieval-input text-sm"
                   placeholder="Enter 6-character room code"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value.toUpperCase())}
@@ -191,7 +191,7 @@ export default function GamePage() {
               </div>
 
               <Button
-                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base"
+                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
                 onClick={handleJoinGame}
                 disabled={isJoiningGame || !roomId}
               >
@@ -200,10 +200,10 @@ export default function GamePage() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center p-4 sm:p-6">
+        <CardFooter className="flex justify-center p-2">
           <Link
             href="/"
-            className="text-xs sm:text-sm text-muted-foreground hover:text-primary"
+            className="text-xs text-muted-foreground hover:text-primary"
           >
             Return to the Kingdom
           </Link>
