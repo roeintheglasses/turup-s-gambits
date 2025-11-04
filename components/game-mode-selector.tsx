@@ -14,7 +14,7 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
         <RadioGroupItem value="classic" id="classic" className="peer sr-only" />
         <Label
           htmlFor="classic"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[100px]"
+          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[130px]"
         >
           <div className="mb-1.5 rounded-full bg-primary/20 p-1.5">
             <svg
@@ -44,7 +44,7 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
         <RadioGroupItem value="frenzy" id="frenzy" className="peer sr-only" />
         <Label
           htmlFor="frenzy"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[100px]"
+          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[130px]"
         >
           <div className="mb-1.5 rounded-full bg-accent/20 p-1.5">
             <svg
@@ -74,7 +74,7 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
         <RadioGroupItem value="tutorial" id="tutorial" className="peer sr-only" disabled />
         <Label
           htmlFor="tutorial"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card/50 p-2 opacity-80 cursor-not-allowed relative min-h-[100px]"
+          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card/50 p-2 opacity-80 cursor-not-allowed relative min-h-[130px]"
         >
           <div className="mb-1.5 rounded-full bg-secondary/20 p-1.5">
             <svg
