@@ -162,16 +162,16 @@ const PlayerHand: React.FC<PlayerHandProps> = React.memo(
           ];
 
     return (
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-medieval text-foreground">
+      <div className="mb-3 sm:mb-4 md:mb-6">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <h3 className="text-sm sm:text-base md:text-lg font-medieval text-foreground">
             Your Initial 5 Cards:
           </h3>
-          <div className="bg-primary/20 text-primary-foreground text-xs px-3 py-1 rounded-full">
+          <div className="bg-primary/20 text-primary-foreground text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
             First 5 of 13 cards
           </div>
         </div>
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="flex justify-center gap-1 sm:gap-1.5 md:gap-2 mb-2 sm:mb-3 md:mb-4">
           {isHandLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <LoadingSpinner size="lg" variant="primary" />
@@ -235,36 +235,36 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
   }) => {
     return (
       <>
-        <p className="text-center mb-4 text-muted-foreground">
-          {gameMode === "frenzy" 
+        <p className="text-center mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm text-muted-foreground">
+          {gameMode === "frenzy"
             ? "Select a trump suit and gain its special power!"
             : "Select a trump suit based on your hand. Your hand contains:"
           }
         </p>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6">
           {(["hearts", "diamonds", "clubs", "spades"] as Suit[]).map((suit) => (
             <button
               key={suit}
               onClick={() => !userVote && setSelectedSuit(suit)}
               disabled={!!userVote}
               className={`
-              p-4 rounded-lg flex flex-col items-center justify-center
+              p-2 sm:p-3 md:p-4 rounded-md md:rounded-lg flex flex-col items-center justify-center
               transition-all duration-300 relative
               ${
                 selectedSuit === suit && !userVote
-                  ? "bg-primary/20 border-2 border-primary/50 shadow-lg"
+                  ? "bg-primary/20 border md:border-2 border-primary/50 shadow-lg"
                   : userVote === suit
-                  ? "bg-primary/30 border-2 border-primary/40 shadow-lg"
+                  ? "bg-primary/30 border md:border-2 border-primary/40 shadow-lg"
                   : "bg-card hover:bg-muted/50 border border-border/50"
               }
               ${userVote && userVote !== suit ? "opacity-50" : ""}
             `}
             >
-              <span className={`text-4xl mb-2 ${getSuitColor(suit)}`}>
+              <span className={`text-2xl sm:text-3xl md:text-4xl mb-1 sm:mb-2 ${getSuitColor(suit)}`}>
                 {getSuitSymbol(suit)}
               </span>
-              <span className="font-medieval capitalize text-foreground">
+              <span className="text-xs sm:text-sm md:text-base font-medieval capitalize text-foreground">
                 {suit}
               </span>
               
@@ -700,17 +700,17 @@ export function TrumpSelectionPopup({
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3 md:p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-card/95 backdrop-blur-md w-full max-w-2xl p-6 rounded-lg border-2 border-primary/30 shadow-xl"
+          className="bg-card/95 backdrop-blur-md w-full max-w-md md:max-w-2xl p-3 sm:p-4 md:p-6 rounded-lg border md:border-2 border-primary/30 shadow-xl max-h-[95vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-3 sm:mb-4 md:mb-6">
             <div className="flex flex-col">
-              <h2 className="text-2xl font-medieval text-primary">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-medieval text-primary">
                 {votingComplete
                   ? "Trump Selection Complete"
                   : userVote
@@ -740,8 +740,8 @@ export function TrumpSelectionPopup({
           />
 
           {/* Trump selection */}
-          <div className="mb-6">
-            <h3 className="text-lg font-medieval text-foreground mb-3">
+          <div className="mb-3 sm:mb-4 md:mb-6">
+            <h3 className="text-sm sm:text-base md:text-lg font-medieval text-foreground mb-2 sm:mb-3">
               {votingComplete
                 ? "Voting Results"
                 : userVote

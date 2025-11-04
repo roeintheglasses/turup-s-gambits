@@ -851,15 +851,15 @@ export function GameBoard({
 
   // Render the game board
   return (
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-green-800/20 to-green-900/30">
+    <div className="relative h-full w-full bg-gradient-to-br from-green-800/20 to-green-900/30">
       {/* Background elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-700/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-700/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Game table surface */}
-      <div className="absolute inset-2 sm:inset-3 md:inset-4 rounded-lg md:rounded-xl bg-gradient-to-br from-green-800/30 to-green-900/40 border border-green-700/50 md:border-2 shadow-2xl" />
+      <div className="absolute inset-2 sm:inset-3 md:inset-4 rounded-lg md:rounded-xl bg-gradient-to-br from-green-800/30 to-green-900/40 border border-green-700/50 md:border-2 shadow-2xl pointer-events-none" />
 
       {/* Main game area */}
-      <div className="relative z-10 h-full p-2 sm:p-3 md:p-4 lg:p-6 flex flex-col">
+      <div className="relative z-10 h-full w-full p-2 sm:p-3 md:p-4 lg:p-6 flex flex-col overflow-auto">
         {/* Frenzy Mode Power Display - Keep this as it's unique to frenzy mode */}
         {gameMode === "frenzy" && trumpSuit && gameStatus === "playing" && (
           <div className="mb-2 sm:mb-3 md:mb-4 flex justify-center">
@@ -1036,8 +1036,8 @@ export function GameBoard({
           /* Rest of the original game board UI for active game */
           <>
             {/* Card Play Area */}
-            <div className="relative flex-1 min-h-0 bg-gradient-to-b from-primary/5 to-primary/10 rounded-md md:rounded-lg border border-primary/30 shadow-inner overflow-hidden">
-              <div className="absolute inset-0 bg-card-pattern opacity-20" />
+            <div className="relative flex-1 min-h-0 bg-gradient-to-b from-primary/5 to-primary/10 rounded-md md:rounded-lg border border-primary/30 shadow-inner">
+              <div className="absolute inset-0 bg-card-pattern opacity-20 rounded-md md:rounded-lg overflow-hidden" />
 
               {/* Top player */}
               <div className="absolute top-2 sm:top-4 md:top-6 lg:top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
