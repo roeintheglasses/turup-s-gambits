@@ -48,7 +48,7 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
   if (is3D) {
     return (
       <motion.button
-        className={`fantasy-card w-16 h-24 flex flex-col items-center justify-center bg-gradient-to-br from-amber-900/80 to-black ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} transition-all duration-200`}
+        className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center bg-gradient-to-br from-amber-900/80 to-black ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} transition-all duration-200`}
         onClick={onClick}
         disabled={disabled}
         initial={{ rotateY: 0 }}
@@ -62,21 +62,21 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
         onHoverEnd={() => setIsHovered(false)}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <div className="absolute top-1 left-1 flex flex-col items-center" style={{ transform: "translateZ(5px)" }}>
-          <span className="text-sm font-bold">{value}</span>
-          <span className={`text-sm ${color}`}>{symbol}</span>
+        <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 flex flex-col items-center" style={{ transform: "translateZ(5px)" }}>
+          <span className="text-xs sm:text-sm font-bold">{value}</span>
+          <span className={`text-xs sm:text-sm ${color}`}>{symbol}</span>
         </div>
 
-        <span className={`text-3xl ${color}`} style={{ transform: "translateZ(10px)" }}>
+        <span className={`text-xl sm:text-2xl md:text-3xl ${color}`} style={{ transform: "translateZ(10px)" }}>
           {symbol}
         </span>
 
         <div
-          className="absolute bottom-1 right-1 flex flex-col items-center rotate-180"
+          className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 flex flex-col items-center rotate-180"
           style={{ transform: "translateZ(5px)" }}
         >
-          <span className="text-sm font-bold">{value}</span>
-          <span className={`text-sm ${color}`}>{symbol}</span>
+          <span className="text-xs sm:text-sm font-bold">{value}</span>
+          <span className={`text-xs sm:text-sm ${color}`}>{symbol}</span>
         </div>
 
         {isHovered && (
@@ -91,20 +91,20 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
 
   return (
     <button
-      className={`fantasy-card w-16 h-24 flex flex-col items-center justify-center bg-gradient-to-br from-amber-900/80 to-black ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:shadow-xl"} transition-all duration-200`}
+      className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center bg-gradient-to-br from-amber-900/80 to-black ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:shadow-xl"} transition-all duration-200`}
       onClick={onClick}
       disabled={disabled}
     >
-      <div className="absolute top-1 left-1 flex flex-col items-center">
-        <span className="text-sm font-bold">{value}</span>
-        <span className={`text-sm ${color}`}>{symbol}</span>
+      <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 flex flex-col items-center">
+        <span className="text-xs sm:text-sm font-bold">{value}</span>
+        <span className={`text-xs sm:text-sm ${color}`}>{symbol}</span>
       </div>
 
-      <span className={`text-3xl ${color}`}>{symbol}</span>
+      <span className={`text-xl sm:text-2xl md:text-3xl ${color}`}>{symbol}</span>
 
-      <div className="absolute bottom-1 right-1 flex flex-col items-center rotate-180">
-        <span className="text-sm font-bold">{value}</span>
-        <span className={`text-sm ${color}`}>{symbol}</span>
+      <div className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 flex flex-col items-center rotate-180">
+        <span className="text-xs sm:text-sm font-bold">{value}</span>
+        <span className={`text-xs sm:text-sm ${color}`}>{symbol}</span>
       </div>
     </button>
   )

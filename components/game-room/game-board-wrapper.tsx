@@ -145,7 +145,7 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(({
       </div>
 
       {/* Game Sidebar - Only on medium+ screens */}
-      <div className="hidden md:flex md:flex-col md:w-80 lg:w-96 h-full">
+      <div className="hidden md:flex md:flex-col md:w-64 lg:w-80 xl:w-96 h-full">
         <MemoizedGameSidebar
           roomId={roomId}
           players={players}

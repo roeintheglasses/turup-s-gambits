@@ -45,13 +45,13 @@ const TrumpDisplay = memo(({ trumpSuit }: { trumpSuit: string | null }) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 bg-card/50 p-3 rounded-lg">
-      <span className={`text-3xl ${getSuitColor(trumpSuit)}`}>
+    <div className="flex items-center justify-center gap-2 md:gap-3 bg-card/50 p-2 md:p-3 rounded-lg">
+      <span className={`text-2xl md:text-3xl ${getSuitColor(trumpSuit)}`}>
         {getSuitSymbol(trumpSuit)}
       </span>
       <div>
-        <p className="font-medieval text-base capitalize">{trumpSuit}</p>
-        <p className="text-xs text-muted-foreground">Trump Suit</p>
+        <p className="font-medieval text-sm md:text-base capitalize">{trumpSuit}</p>
+        <p className="text-[10px] md:text-xs text-muted-foreground">Trump Suit</p>
       </div>
     </div>
   );
@@ -60,20 +60,20 @@ const TrumpDisplay = memo(({ trumpSuit }: { trumpSuit: string | null }) => {
 TrumpDisplay.displayName = "TrumpDisplay";
 
 const ScoreDisplay = memo(({ scores }: { scores: { royals: number; rebels: number } }) => (
-  <div className="space-y-2">
+  <div className="space-y-1.5 md:space-y-2">
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Crown size={16} className="text-yellow-500" />
-        <span className="font-medieval text-sm">Royals</span>
+      <div className="flex items-center gap-1.5 md:gap-2">
+        <Crown size={14} className="text-yellow-500 md:w-4 md:h-4" />
+        <span className="font-medieval text-xs md:text-sm">Royals</span>
       </div>
-      <span className="font-bold text-lg">{scores.royals}</span>
+      <span className="font-bold text-base md:text-lg">{scores.royals}</span>
     </div>
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Spade size={16} className="text-slate-600" />
-        <span className="font-medieval text-sm">Rebels</span>
+      <div className="flex items-center gap-1.5 md:gap-2">
+        <Spade size={14} className="text-slate-600 md:w-4 md:h-4" />
+        <span className="font-medieval text-xs md:text-sm">Rebels</span>
       </div>
-      <span className="font-bold text-lg">{scores.rebels}</span>
+      <span className="font-bold text-base md:text-lg">{scores.rebels}</span>
     </div>
   </div>
 ));
@@ -120,48 +120,48 @@ const GameInfoStatusDisplay = memo(({
   };
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm p-3 md:p-4 rounded-lg border border-primary/30">
-      <h3 className="text-base md:text-lg font-medieval text-primary mb-3 md:mb-4 flex items-center gap-2">
-        <Users size={18} />
+    <div className="bg-card/80 backdrop-blur-sm p-2 md:p-3 lg:p-4 rounded-lg border border-primary/30">
+      <h3 className="text-sm md:text-base lg:text-lg font-medieval text-primary mb-2 md:mb-3 flex items-center gap-1.5 md:gap-2">
+        <Users size={16} className="md:w-[18px] md:h-[18px]" />
         Game Information
       </h3>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
         {/* Left Column - Game Info */}
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           <div>
-            <p className="text-xs md:text-sm text-muted-foreground">Room ID</p>
-            <p className="font-medieval text-sm md:text-base truncate">{roomId}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Room ID</p>
+            <p className="font-medieval text-xs md:text-sm truncate">{roomId}</p>
           </div>
           <div>
-            <p className="text-xs md:text-sm text-muted-foreground">Player</p>
-            <p className="font-medieval text-sm md:text-base flex items-center gap-2">
+            <p className="text-[10px] md:text-xs text-muted-foreground">Player</p>
+            <p className="font-medieval text-xs md:text-sm flex items-center gap-1 md:gap-2">
               {user?.name || "Guest"}
               {isCurrentUserHost && (
-                <Crown size={14} className="text-yellow-500" />
+                <Crown size={12} className="text-yellow-500 md:w-[14px] md:h-[14px]" />
               )}
             </p>
           </div>
           <div>
-            <p className="text-xs md:text-sm text-muted-foreground">Players</p>
-            <p className="font-medieval text-sm md:text-base">{playersCount}/4</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Players</p>
+            <p className="font-medieval text-xs md:text-sm">{playersCount}/4</p>
           </div>
         </div>
 
         {/* Right Column - Game Status */}
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           <div>
-            <p className="text-xs md:text-sm text-muted-foreground">Phase</p>
-            <div className="flex items-center gap-2">
-              <span className={`inline-block w-2 h-2 rounded-full ${
+            <p className="text-[10px] md:text-xs text-muted-foreground">Phase</p>
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <span className={`inline-block w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${
                 gameStatus === "playing" ? "bg-green-500 animate-pulse" : "bg-yellow-500 animate-pulse"
               }`}></span>
-              <p className="font-medieval text-sm md:text-base">{formatGameStatus(gameStatus)}</p>
+              <p className="font-medieval text-xs md:text-sm">{formatGameStatus(gameStatus)}</p>
             </div>
           </div>
           {(gameStatus === "playing" || gameStatus === "bidding") && (
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Current Turn</p>
-              <p className="font-medieval text-sm md:text-base">{getCurrentTurnPlayerName()}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Current Turn</p>
+              <p className="font-medieval text-xs md:text-sm">{getCurrentTurnPlayerName()}</p>
             </div>
           )}
         </div>
@@ -172,10 +172,10 @@ const GameInfoStatusDisplay = memo(({
 
 GameInfoStatusDisplay.displayName = "GameInfoStatusDisplay";
 
-const ActionButtons = memo(({ 
-  roomId, 
-  isSharing, 
-  isCreatingNewGame, 
+const ActionButtons = memo(({
+  roomId,
+  isSharing,
+  isCreatingNewGame,
   isEndingGame,
   isCurrentUserHost,
   onShareGame,
@@ -191,17 +191,17 @@ const ActionButtons = memo(({
   onNewGame: () => void;
   onEndGame: () => void;
 }) => (
-  <div className="space-y-3">
+  <div className="space-y-2 md:space-y-3">
     <Button
       onClick={onShareGame}
       variant="outline"
-      className="w-full justify-start gap-2"
+      className="w-full justify-start gap-1.5 md:gap-2 text-xs md:text-sm h-8 md:h-10"
       disabled={isSharing}
     >
       {isSharing ? (
         <LoadingSpinner size="sm" />
       ) : (
-        <Share size={16} />
+        <Share size={14} className="md:w-4 md:h-4" />
       )}
       {isSharing ? "Copied!" : "Share Game"}
     </Button>
@@ -209,13 +209,13 @@ const ActionButtons = memo(({
     <Button
       onClick={onNewGame}
       variant="outline"
-      className="w-full justify-start gap-2"
+      className="w-full justify-start gap-1.5 md:gap-2 text-xs md:text-sm h-8 md:h-10"
       disabled={isCreatingNewGame}
     >
       {isCreatingNewGame ? (
         <LoadingSpinner size="sm" />
       ) : (
-        <Play size={16} />
+        <Play size={14} className="md:w-4 md:h-4" />
       )}
       {isCreatingNewGame ? "Creating..." : "New Game"}
     </Button>
@@ -224,13 +224,13 @@ const ActionButtons = memo(({
       <Button
         onClick={onEndGame}
         variant="destructive"
-        className="w-full justify-start gap-2"
+        className="w-full justify-start gap-1.5 md:gap-2 text-xs md:text-sm h-8 md:h-10"
         disabled={isEndingGame}
       >
         {isEndingGame ? (
           <LoadingSpinner size="sm" />
         ) : (
-          <LogOut size={16} />
+          <LogOut size={14} className="md:w-4 md:h-4" />
         )}
         {isEndingGame ? "Ending..." : "End Game"}
       </Button>
@@ -303,7 +303,7 @@ export const GameSidebar: React.FC<GameSidebarProps> = memo(({
   };
 
   return (
-    <div className="flex flex-col h-full p-4 gap-4 bg-card/50 backdrop-blur-sm border-l border-primary/30">
+    <div className="flex flex-col h-full p-2 md:p-3 lg:p-4 gap-2 md:gap-3 lg:gap-4 bg-card/50 backdrop-blur-sm border-l border-primary/30">
       {/* Game Info & Status Section */}
       <GameInfoStatusDisplay
         roomId={roomId}
@@ -318,13 +318,13 @@ export const GameSidebar: React.FC<GameSidebarProps> = memo(({
 
       {/* Trump & Scores Section */}
       {shouldShowProgressSection && (
-        <div className="bg-card/80 backdrop-blur-sm p-3 md:p-4 rounded-lg border border-primary/30">
-          <h3 className="text-base md:text-lg font-medieval text-primary mb-3 md:mb-4 flex items-center gap-2">
-            <Trophy size={18} />
+        <div className="bg-card/80 backdrop-blur-sm p-2 md:p-3 lg:p-4 rounded-lg border border-primary/30">
+          <h3 className="text-sm md:text-base lg:text-lg font-medieval text-primary mb-2 md:mb-3 flex items-center gap-1.5 md:gap-2">
+            <Trophy size={16} className="md:w-[18px] md:h-[18px]" />
             Game Progress
           </h3>
-          
-          <div className="space-y-4">
+
+          <div className="space-y-3 md:space-y-4">
             <TrumpDisplay trumpSuit={trumpSuit} />
             {shouldShowScores && <ScoreDisplay scores={scores} />}
           </div>
@@ -332,8 +332,8 @@ export const GameSidebar: React.FC<GameSidebarProps> = memo(({
       )}
 
       {/* Action Buttons */}
-      <div className="bg-card/80 backdrop-blur-sm p-3 md:p-4 rounded-lg border border-primary/30">
-        <h3 className="text-base md:text-lg font-medieval text-primary mb-3 md:mb-4">
+      <div className="bg-card/80 backdrop-blur-sm p-2 md:p-3 lg:p-4 rounded-lg border border-primary/30">
+        <h3 className="text-sm md:text-base lg:text-lg font-medieval text-primary mb-2 md:mb-3">
           Actions
         </h3>
         <ActionButtons

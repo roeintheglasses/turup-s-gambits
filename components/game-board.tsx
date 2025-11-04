@@ -854,16 +854,16 @@ export function GameBoard({
     <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-green-800/20 to-green-900/30">
       {/* Background elements */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-700/10 via-transparent to-transparent" />
-      
+
       {/* Game table surface */}
-      <div className="absolute inset-4 rounded-xl bg-gradient-to-br from-green-800/30 to-green-900/40 border-2 border-green-700/50 shadow-2xl" />
+      <div className="absolute inset-2 sm:inset-3 md:inset-4 rounded-lg md:rounded-xl bg-gradient-to-br from-green-800/30 to-green-900/40 border border-green-700/50 md:border-2 shadow-2xl" />
 
       {/* Main game area */}
-      <div className="relative z-10 h-full p-6 flex flex-col">
+      <div className="relative z-10 h-full p-2 sm:p-3 md:p-4 lg:p-6 flex flex-col">
         {/* Frenzy Mode Power Display - Keep this as it's unique to frenzy mode */}
         {gameMode === "frenzy" && trumpSuit && gameStatus === "playing" && (
-          <div className="mb-4 flex justify-center">
-            <div className="bg-card/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-500/30">
+          <div className="mb-2 sm:mb-3 md:mb-4 flex justify-center">
+            <div className="bg-card/80 backdrop-blur-sm px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md md:rounded-lg border border-purple-500/30">
               <FrenzyPowers
                 trumpSuit={trumpSuit}
                 gameMode={gameMode}
@@ -877,58 +877,58 @@ export function GameBoard({
 
         {/* Game Summary Screen - Show when game has ended */}
         {gameStatus === "ended" ? (
-          <div className="bg-gradient-to-b from-primary/10 to-primary/20 rounded-lg border border-primary/30 shadow-lg p-8 flex flex-col items-center">
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-medieval mb-2">Game Over!</h2>
-              <div className="text-xl">
+          <div className="bg-gradient-to-b from-primary/10 to-primary/20 rounded-lg border border-primary/30 shadow-lg p-4 sm:p-6 md:p-8 flex flex-col items-center">
+            <div className="mb-4 sm:mb-6 md:mb-8 text-center">
+              <h2 className="text-2xl sm:text-3xl font-medieval mb-2">Game Over!</h2>
+              <div className="text-lg sm:text-xl">
                 {scores.royals >= 7 ? (
                   <span className="text-amber-500 font-bold flex items-center justify-center gap-2">
-                    <span className="text-2xl">👑</span> Royals Win!{" "}
-                    <span className="text-2xl">👑</span>
+                    <span className="text-xl sm:text-2xl">👑</span> Royals Win!{" "}
+                    <span className="text-xl sm:text-2xl">👑</span>
                   </span>
                 ) : (
                   <span className="text-indigo-500 font-bold flex items-center justify-center gap-2">
-                    <span className="text-2xl">⚔️</span> Rebels Win!{" "}
-                    <span className="text-2xl">⚔️</span>
+                    <span className="text-xl sm:text-2xl">⚔️</span> Rebels Win!{" "}
+                    <span className="text-xl sm:text-2xl">⚔️</span>
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border border-primary/30 shadow-lg mb-8 w-full max-w-md">
-              <h3 className="text-xl font-semibold mb-4 text-center">
+            <div className="bg-card/80 backdrop-blur-sm p-4 sm:p-5 md:p-6 rounded-lg border border-primary/30 shadow-lg mb-4 sm:mb-6 md:mb-8 w-full max-w-md">
+              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-center">
                 Final Score
               </h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div
-                  className={`p-4 rounded-lg ${
+                  className={`p-3 sm:p-4 rounded-lg ${
                     scores.royals >= 7
                       ? "bg-amber-900/40 border border-amber-500/50"
                       : "bg-card/50"
                   }`}
                 >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl">👑</span>
-                    <span className="text-lg font-medium">Royals</span>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                    <span className="text-xl sm:text-2xl">👑</span>
+                    <span className="text-base sm:text-lg font-medium">Royals</span>
                   </div>
-                  <div className="text-4xl font-bold text-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-center">
                     {scores.royals}
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 rounded-lg ${
+                  className={`p-3 sm:p-4 rounded-lg ${
                     scores.rebels >= 7
                       ? "bg-indigo-900/40 border border-indigo-500/50"
                       : "bg-card/50"
                   }`}
                 >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl">⚔️</span>
-                    <span className="text-lg font-medium">Rebels</span>
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                    <span className="text-xl sm:text-2xl">⚔️</span>
+                    <span className="text-base sm:text-lg font-medium">Rebels</span>
                   </div>
-                  <div className="text-4xl font-bold text-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-center">
                     {scores.rebels}
                   </div>
                 </div>
@@ -970,13 +970,13 @@ export function GameBoard({
             </div>
 
             {/* Game Statistics */}
-            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border border-primary/30 shadow-lg mb-6 w-full max-w-2xl">
-              <h3 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+            <div className="bg-card/80 backdrop-blur-sm p-4 sm:p-5 md:p-6 rounded-lg border border-primary/30 shadow-lg mb-4 sm:mb-5 md:mb-6 w-full max-w-2xl">
+              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-center flex items-center justify-center gap-2">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                 Game Statistics
               </h3>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
                 <div className="bg-card/50 p-3 rounded-lg">
                   <div className="text-2xl font-bold text-primary">{scores.royals + scores.rebels}</div>
                   <div className="text-sm text-muted-foreground">Total Tricks</div>
@@ -1003,25 +1003,25 @@ export function GameBoard({
               </div>
             </div>
 
-            <div className="flex gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-5 md:mb-6 w-full max-w-2xl">
               <button
                 onClick={() => setShowReplaySummary(true)}
-                className="px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg shadow transition-colors flex items-center gap-2"
+                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg shadow transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                 View Replay
               </button>
-              
+
               <button
                 onClick={() => (window.location.href = "/")}
-                className="px-6 py-3 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg shadow transition-colors"
+                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg shadow transition-colors text-sm sm:text-base"
               >
                 New Game
               </button>
-              
+
               <button
                 onClick={() => (window.location.href = "/")}
-                className="px-6 py-3 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg shadow transition-colors"
+                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg shadow transition-colors text-sm sm:text-base"
               >
                 Return to Home
               </button>
@@ -1036,19 +1036,19 @@ export function GameBoard({
           /* Rest of the original game board UI for active game */
           <>
             {/* Card Play Area */}
-            <div className="relative flex-1 min-h-0 bg-gradient-to-b from-primary/5 to-primary/10 rounded-lg border border-primary/30 shadow-inner overflow-hidden">
+            <div className="relative flex-1 min-h-0 bg-gradient-to-b from-primary/5 to-primary/10 rounded-md md:rounded-lg border border-primary/30 shadow-inner overflow-hidden">
               <div className="absolute inset-0 bg-card-pattern opacity-20" />
 
               {/* Top player */}
-              <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                <div className="flex flex-col items-center mb-1">
+              <div className="absolute top-2 sm:top-4 md:top-6 lg:top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-0.5 sm:mb-1">
                   <div className="flex items-center">
-                    <div className="font-medieval text-primary">
+                    <div className="font-medieval text-primary text-xs sm:text-sm md:text-base">
                       {players.length > 2 ? players[2] || "Player 3" : "Player 3"}
                     </div>
                     {/* Team indicator - make more robust with optional chaining */}
                     <span
-                      className={`ml-1 ${getTeamColorClasses(
+                      className={`ml-0.5 sm:ml-1 text-xs sm:text-sm ${getTeamColorClasses(
                         players[2] ? storedTeamAssignments[players[2]] : undefined
                       )}`}
                     >
@@ -1059,29 +1059,29 @@ export function GameBoard({
                   </div>
                 </div>
                 {/* Vertical cards display */}
-                <div className="flex space-x-1">
+                <div className="flex space-x-0.5 sm:space-x-1">
                   {Array.from({
                     length:
                       gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
                   }).map((_, i) => (
                     <div
                       key={`top-card-${i}`}
-                      className="w-4 h-20 bg-card rounded-sm border border-primary/30 shadow-md"
+                      className="w-2 h-12 sm:w-3 sm:h-16 md:w-4 md:h-20 bg-card rounded-sm border border-primary/30 shadow-md"
                     />
                   ))}
                 </div>
               </div>
 
               {/* Left player */}
-              <div className="absolute left-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                <div className="flex flex-col items-center mb-1">
+              <div className="absolute left-2 sm:left-4 md:left-6 lg:left-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-0.5 sm:mb-1">
                   <div className="flex items-center">
-                    <div className="font-medieval text-primary">
+                    <div className="font-medieval text-primary text-xs sm:text-sm md:text-base">
                       {players.length > 1 ? players[1] || "Player 2" : "Player 2"}
                     </div>
                     {/* Team indicator - make more robust */}
                     <span
-                      className={`ml-1 ${getTeamColorClasses(
+                      className={`ml-0.5 sm:ml-1 text-xs sm:text-sm ${getTeamColorClasses(
                         players[1] ? storedTeamAssignments[players[1]] : undefined
                       )}`}
                     >
@@ -1092,29 +1092,29 @@ export function GameBoard({
                   </div>
                 </div>
                 {/* Vertical cards display */}
-                <div className="flex flex-col space-y-1">
+                <div className="flex flex-col space-y-0.5 sm:space-y-1">
                   {Array.from({
                     length:
                       gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
                   }).map((_, i) => (
                     <div
                       key={`left-card-${i}`}
-                      className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
+                      className="w-12 h-2 sm:w-16 sm:h-3 md:w-20 md:h-4 bg-card rounded-sm border border-primary/30 shadow-md"
                     />
                   ))}
                 </div>
               </div>
 
               {/* Right player */}
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                <div className="flex flex-col items-center mb-1">
+              <div className="absolute right-2 sm:right-4 md:right-6 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="flex flex-col items-center mb-0.5 sm:mb-1">
                   <div className="flex items-center">
-                    <div className="font-medieval text-primary">
+                    <div className="font-medieval text-primary text-xs sm:text-sm md:text-base">
                       {players.length > 3 ? players[3] || "Player 4" : "Player 4"}
                     </div>
                     {/* Team indicator - make more robust */}
                     <span
-                      className={`ml-1 ${getTeamColorClasses(
+                      className={`ml-0.5 sm:ml-1 text-xs sm:text-sm ${getTeamColorClasses(
                         players[3] ? storedTeamAssignments[players[3]] : undefined
                       )}`}
                     >
@@ -1125,14 +1125,14 @@ export function GameBoard({
                   </div>
                 </div>
                 {/* Vertical cards display */}
-                <div className="flex flex-col space-y-1">
+                <div className="flex flex-col space-y-0.5 sm:space-y-1">
                   {Array.from({
                     length:
                       gameStatus === "playing" ? 13 : initialCardsDeal ? 5 : 13,
                   }).map((_, i) => (
                     <div
                       key={`right-card-${i}`}
-                      className="w-20 h-4 bg-card rounded-sm border border-primary/30 shadow-md"
+                      className="w-12 h-2 sm:w-16 sm:h-3 md:w-20 md:h-4 bg-card rounded-sm border border-primary/30 shadow-md"
                     />
                   ))}
                 </div>
@@ -1140,7 +1140,7 @@ export function GameBoard({
 
               {/* Current trick - center cards */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-4 md:gap-8">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
                   {centerCards.map((card, index) => (
                     <motion.div
                       key={`center-card-${card.id}-${index}`}
@@ -1154,14 +1154,14 @@ export function GameBoard({
                       className="flex flex-col items-center"
                     >
                       <div className="flex flex-col items-center">
-                        <div className="text-xs md:text-sm text-muted-foreground mb-1">
+                        <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                           {card.playedBy}
                         </div>
                         {/* Team indicator with better undefined handling */}
                         <div
-                          className={`text-xs ${getTeamColorClasses(
+                          className={`text-[10px] sm:text-xs ${getTeamColorClasses(
                             storedTeamAssignments[card.playedBy]
-                          )} mb-1`}
+                          )} mb-0.5 sm:mb-1`}
                         >
                           {getTeamIcon(storedTeamAssignments[card.playedBy])}
                         </div>
@@ -1224,10 +1224,10 @@ export function GameBoard({
               </AnimatePresence>
 
               {/* Bottom player (user) */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
+              <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
                 {/* Game status message or turn indicator */}
                 {gameStatus !== "playing" && (
-                  <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
+                  <div className="mb-1 sm:mb-1.5 md:mb-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-card/80 backdrop-blur-sm rounded-md md:rounded-lg border border-primary/30 shadow text-xs sm:text-sm">
                     {gameStatus === "initial_deal" &&
                       "Waiting for initial deal to complete..."}
                     {gameStatus === "bidding" &&
@@ -1236,18 +1236,18 @@ export function GameBoard({
                   </div>
                 )}
                 {gameStatus === "playing" && !isMyTurn && (
-                  <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
+                  <div className="mb-1 sm:mb-1.5 md:mb-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-card/80 backdrop-blur-sm rounded-md md:rounded-lg border border-primary/30 shadow text-xs sm:text-sm">
                     Waiting for your turn...
                   </div>
                 )}
                 {gameStatus === "playing" && isMyTurn && (
-                  <div className="mb-2 px-4 py-2 bg-green-800/80 backdrop-blur-sm rounded-lg border border-green-500/50 shadow text-sm animate-pulse">
+                  <div className="mb-1 sm:mb-1.5 md:mb-2 px-2 sm:px-4 py-1 sm:py-2 bg-green-800/80 backdrop-blur-sm rounded-md md:rounded-lg border border-green-500/50 shadow text-xs sm:text-sm animate-pulse">
                     Your turn to play!
                   </div>
                 )}
 
                 {/* Player hand cards */}
-                <div className="flex justify-center gap-1 md:gap-2 mb-2">
+                <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5 lg:gap-2 mb-1 sm:mb-1.5 md:mb-2">
                   {playerHand.map((card: any) => (
                     <motion.div
                       key={`player-card-${card.id}`}
@@ -1287,14 +1287,14 @@ export function GameBoard({
                 </div>
 
                 {/* Player name and team - improved with better undefined handling */}
-                <div className="flex items-center justify-center mb-2">
-                  <div className="font-medieval text-primary text-lg">
+                <div className="flex items-center justify-center mb-1 sm:mb-1.5 md:mb-2">
+                  <div className="font-medieval text-primary text-sm sm:text-base md:text-lg">
                     {user?.username || "You"}
                   </div>
                   {/* Current player team indicator - make more robust */}
                   {user?.username && (
                     <span
-                      className={`ml-1 text-lg ${getTeamColorClasses(
+                      className={`ml-0.5 sm:ml-1 text-sm sm:text-base md:text-lg ${getTeamColorClasses(
                         storedTeamAssignments[user.username]
                       )}`}
                     >

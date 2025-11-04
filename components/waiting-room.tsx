@@ -60,13 +60,13 @@ export function WaitingRoom({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-md mx-auto p-4 md:p-6 border-2 border-primary/30 rounded-lg bg-card/90 backdrop-blur-sm text-center"
+      className="w-full max-w-md mx-auto p-3 sm:p-4 md:p-6 border border-primary/30 md:border-2 rounded-lg bg-card/90 backdrop-blur-sm text-center"
     >
       <motion.h2
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-2xl font-medieval mb-4"
+        className="text-xl sm:text-2xl font-medieval mb-3 sm:mb-4"
       >
         Waiting for Players
       </motion.h2>
@@ -74,7 +74,7 @@ export function WaitingRoom({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="mb-4"
+        className="mb-3 sm:mb-4 text-sm sm:text-base"
       >
         Share this room with friends to start the game
       </motion.p>
@@ -82,18 +82,18 @@ export function WaitingRoom({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.4 }}
-        className="flex justify-center mb-4"
+        className="flex justify-center mb-3 sm:mb-4"
       >
         <Button
           variant="outline"
-          className="flex items-center gap-2"
+          className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
           onClick={handleCopyLink}
         >
-          <Share className="h-4 w-4" />
+          <Share className="h-3 w-3 sm:h-4 sm:w-4" />
           Copy Room Link
         </Button>
       </motion.div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {[0, 1, 2, 3].map((index) => {
           const playerName = safePlayersArray[index];
           const playerDetails = getPlayerDetails(playerName);
@@ -105,7 +105,7 @@ export function WaitingRoom({
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 + index * 0.1 }}
-              className={`h-24 border-2 rounded-lg flex items-center justify-center ${
+              className={`h-20 sm:h-24 border border-primary/30 sm:border-2 rounded-md md:rounded-lg flex items-center justify-center ${
                 !isEmptySlot
                   ? "border-primary bg-primary/10"
                   : "border-muted bg-muted/10"
@@ -116,18 +116,18 @@ export function WaitingRoom({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex flex-col items-center gap-1"
+                  className="flex flex-col items-center gap-0.5 sm:gap-1"
                 >
-                  <span className="font-medieval text-sm truncate px-1">
+                  <span className="font-medieval text-xs sm:text-sm truncate px-1">
                     {playerDetails?.name || playerName}
                   </span>
                   <div className="flex flex-col items-center">
                     {playerDetails?.isHost && (
-                      <span className="text-xs text-primary">Host</span>
+                      <span className="text-[10px] sm:text-xs text-primary">Host</span>
                     )}
                     {playerDetails?.isBot && (
-                      <span className="text-xs text-secondary flex items-center gap-1">
-                        <span className="inline-block h-2 w-2 rounded-full bg-secondary animate-pulse"></span>
+                      <span className="text-[10px] sm:text-xs text-secondary flex items-center gap-0.5 sm:gap-1">
+                        <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse"></span>
                         Bot
                       </span>
                     )}
@@ -138,7 +138,7 @@ export function WaitingRoom({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="text-muted-foreground"
+                  className="text-muted-foreground text-xs sm:text-sm"
                 >
                   Empty
                 </motion.span>
@@ -151,16 +151,16 @@ export function WaitingRoom({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
-        className="mt-4 flex flex-col gap-2"
+        className="mt-3 sm:mt-4 flex flex-col gap-2"
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {playerCount}/4 players joined
         </p>
         <div className="space-y-2">
           {/* Debug button - only visible in development */}
           {process.env.NODE_ENV === "development" && onForceHostStatus && (
             <Button
-              className="w-full medieval-button bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-2 mb-2"
+              className="w-full medieval-button bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-1.5 sm:gap-2 mb-2 text-xs sm:text-sm h-8 sm:h-10"
               onClick={onForceHostStatus}
             >
               Debug: Force Host Status
@@ -170,7 +170,7 @@ export function WaitingRoom({
           {/* Fill with Bots button */}
           {isCurrentUserHost && !allPlayersJoined && playerCount < 4 && (
             <Button
-              className="w-full medieval-button bg-secondary hover:bg-secondary/90 text-secondary-foreground flex items-center justify-center gap-2"
+              className="w-full medieval-button bg-secondary hover:bg-secondary/90 text-secondary-foreground flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
               onClick={onAddBots}
               disabled={isAddingBots}
             >
@@ -194,7 +194,7 @@ export function WaitingRoom({
           {/* Start Game button */}
           {allPlayersJoined && (
             <Button
-              className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2"
+              className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
               onClick={onStartGame}
               disabled={isStartingGame}
             >

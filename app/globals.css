@@ -71,6 +71,23 @@
     @apply border-border;
   }
 
+  html {
+    /* Base font size - scales down on smaller screens */
+    font-size: 14px;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -86,8 +103,8 @@
   }
 
   main {
-    @apply pt-24;
-    /* Add extra spacing below navbar */
+    @apply pt-16 sm:pt-20 md:pt-24;
+    /* Add extra spacing below navbar - responsive */
   }
 }
 
@@ -95,11 +112,17 @@
 
   /* Adjust the fantasy card styling */
   .fantasy-card {
-    @apply relative rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg;
+    @apply relative rounded-md md:rounded-lg overflow-hidden border border-primary/50 md:border-2 shadow-lg;
     background-image: linear-gradient(to bottom right, #3a2a18, #1a1208);
     position: relative;
-    transform: scale(1.05);
-    /* Slightly increase card size */
+    transform: scale(1);
+    /* Removed fixed scale for responsive sizing */
+  }
+
+  @media (min-width: 768px) {
+    .fantasy-card {
+      transform: scale(1.05);
+    }
   }
 
   .fantasy-card::before {
@@ -116,11 +139,17 @@
   }
 
   .fantasy-card-home {
-    @apply relative rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg;
+    @apply relative rounded-md md:rounded-lg overflow-hidden border border-primary/50 md:border-2 shadow-lg;
     background-image: linear-gradient(to bottom right, #b1a62a, #6b700b);
     position: relative;
-    transform: scale(1.05);
-    /* Slightly increase card size */
+    transform: scale(1);
+    /* Removed fixed scale for responsive sizing */
+  }
+
+  @media (min-width: 768px) {
+    .fantasy-card-home {
+      transform: scale(1.05);
+    }
   }
 
   .fantasy-card-home::before {
@@ -172,7 +201,7 @@
   }
 
   .medieval-input {
-    @apply bg-card border-2 border-primary/30 rounded-md px-4 py-2 focus:border-primary focus:ring-1 focus:ring-primary;
+    @apply bg-card border border-primary/30 md:border-2 rounded-md px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 focus:border-primary focus:ring-1 focus:ring-primary text-sm md:text-base;
     background: linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(160, 82, 45, 0.05) 100%);
     position: relative;
   }
