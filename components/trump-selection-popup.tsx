@@ -444,7 +444,7 @@ const ActionArea: React.FC<ActionAreaProps> = React.memo(
       <div className="flex justify-between items-center border-t border-border pt-2">
         {votingComplete ? (
           <div className="w-full text-center">
-            <p className="text-xs text-muted-foreground mb-2">
+            <div className="text-xs text-muted-foreground mb-2">
               {!getWinningSuit && (
                 <div className="flex items-center justify-center gap-3">
                   <LoadingSpinner size="md" variant="primary" />
@@ -460,7 +460,7 @@ const ActionArea: React.FC<ActionAreaProps> = React.memo(
                   <span className="capitalize"> {getWinningSuit}</span> wins!
                 </span>
               )}
-            </p>
+            </div>
 
             <Button
               variant="default"
