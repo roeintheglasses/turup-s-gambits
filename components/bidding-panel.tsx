@@ -80,32 +80,35 @@ export function BiddingPanel({
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3 md:p-4">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-card/95 backdrop-blur-md w-full max-w-xl md:max-w-2xl p-3 sm:p-4 md:p-6 rounded-lg border border-primary/30 md:border-2 shadow-xl max-h-[90vh] overflow-y-auto"
+          className="bg-card/95 backdrop-blur-md w-full max-w-3xl p-4 rounded-lg border-2 border-primary/30 shadow-xl max-h-[90vh] flex flex-col"
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-3 sm:mb-4 md:mb-6">
-            <div className="flex flex-col">
-              <h2 className="text-xl sm:text-2xl font-medieval text-primary">
+          <div className="flex justify-between items-center mb-3 flex-shrink-0">
+            <div>
+              <h2 className="text-xl font-medieval text-primary">
                 Bidding Phase
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Bid on how many tricks your team will win (out of 13)
               </p>
             </div>
           </div>
 
+          {/* Scrollable content */}
+          <div className="overflow-y-auto flex-1 pr-2" style={{ scrollbarWidth: 'thin' }}>
+
           {/* Bidding Progress Bar */}
-          <div className="mb-3 sm:mb-4">
-            <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2">
-              <span>Bidding Progress</span>
-              <span>{players.filter(p => p.bid > 0).length} / {players.length} players</span>
+          <div className="mb-2">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Progress</span>
+              <span>{players.filter(p => p.bid > 0).length} / {players.length}</span>
             </div>
-            <div className="w-full bg-muted/30 rounded-full h-1.5 sm:h-2 overflow-hidden">
+            <div className="w-full bg-muted/30 rounded-full h-1.5 overflow-hidden">
               <motion.div
                 className="bg-primary h-full rounded-full"
                 initial={{ width: 0 }}
@@ -118,29 +121,24 @@ export function BiddingPanel({
           </div>
 
           {/* Current Status */}
-          <div className="mb-3 sm:mb-4 md:mb-6 p-2 sm:p-3 md:p-4 bg-muted/50 rounded-md md:rounded-lg border border-border/50">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-0">
+          <div className="mb-2 p-2 bg-muted/50 rounded-lg border border-border/50">
+            <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Current Turn:</p>
-                <motion.div
-                  animate={isMyTurn ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: isMyTurn ? Infinity : 0 }}
-                >
-                  <p className={`text-base sm:text-lg font-medieval ${isMyTurn ? 'text-primary' : 'text-foreground'}`}>
-                    {currentPlayer?.name || "Unknown"}
-                    {currentPlayer?.isHost && (
-                      <Crown className="inline h-3 w-3 sm:h-4 sm:w-4 ml-1 text-primary" />
-                    )}
-                    {isMyTurn && <span className="ml-1 sm:ml-2 text-xs sm:text-sm">(Your turn!)</span>}
-                  </p>
-                </motion.div>
+                <p className="text-xs text-muted-foreground">Current Turn:</p>
+                <p className={`text-sm font-medieval ${isMyTurn ? 'text-primary' : 'text-foreground'}`}>
+                  {currentPlayer?.name || "Unknown"}
+                  {currentPlayer?.isHost && (
+                    <Crown className="inline h-3 w-3 ml-1 text-primary" />
+                  )}
+                  {isMyTurn && <span className="ml-1 text-xs">(Your turn!)</span>}
+                </p>
               </div>
-              <div className="text-left sm:text-right">
-                <p className="text-xs sm:text-sm text-muted-foreground">Highest Bid:</p>
-                <p className="text-base sm:text-lg font-medieval text-foreground">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Highest Bid:</p>
+                <p className="text-sm font-medieval text-foreground">
                   {highestBid === 0 ? "None yet" : highestBid}
                   {highestBidder && highestBid > 0 && (
-                    <span className="text-xs sm:text-sm text-muted-foreground ml-1 sm:ml-2">
+                    <span className="text-xs text-muted-foreground ml-1">
                       by {highestBidderPlayer?.name}
                     </span>
                   )}
@@ -150,18 +148,18 @@ export function BiddingPanel({
           </div>
 
           {/* Players Status */}
-          <div className="mb-3 sm:mb-4 md:mb-6">
-            <h3 className="text-base sm:text-lg font-medieval text-foreground mb-2 sm:mb-3">
+          <div className="mb-2">
+            <h3 className="text-sm font-medieval text-foreground mb-2">
               Players
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {players.map((player, index) => (
                 <motion.div
                   key={player.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`p-2 sm:p-3 rounded-md md:rounded-lg border transition-all duration-300 ${
+                  className={`p-2 rounded-lg border transition-all duration-300 ${
                     player.id === currentTurn
                       ? "bg-primary/20 border-primary/50 shadow-lg"
                       : player.bid > 0
@@ -171,13 +169,13 @@ export function BiddingPanel({
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="font-medieval text-foreground text-sm sm:text-base">
+                      <p className="font-medieval text-foreground text-sm">
                         {player.name}
                         {player.isHost && (
-                          <Crown className="inline h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1 text-primary" />
+                          <Crown className="inline h-2.5 w-2.5 ml-1 text-primary" />
                         )}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         Team {player.team === 0 ? "Royals" : "Rebels"}
                       </p>
                     </div>
@@ -186,17 +184,17 @@ export function BiddingPanel({
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="flex items-center gap-0.5 sm:gap-1"
+                          className="flex items-center gap-0.5"
                         >
-                          <span className="text-base sm:text-lg font-bold text-foreground">
+                          <span className="text-base font-bold text-foreground">
                             {player.bid}
                           </span>
-                          <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                          <Check className="h-3 w-3 text-green-500" />
                         </motion.div>
                       ) : player.id === currentTurn ? (
                         <LoadingSpinner size="sm" />
                       ) : (
-                        <span className="text-xs sm:text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Waiting...
                         </span>
                       )}
@@ -209,27 +207,27 @@ export function BiddingPanel({
 
           {/* Bidding Interface */}
           {isMyTurn && !allPlayersBid && (
-            <div className="mb-3 sm:mb-4 md:mb-6">
-              <h3 className="text-base sm:text-lg font-medieval text-foreground mb-2 sm:mb-3">
+            <div className="mb-2">
+              <h3 className="text-sm font-medieval text-foreground mb-2">
                 Your Bid
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+              <p className="text-xs text-muted-foreground mb-2">
                 Select how many tricks you think your team can win. You must bid
                 higher than {highestBid === 0 ? "6" : highestBid} (minimum is 7).
               </p>
 
               {validBids.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                  <div className="grid grid-cols-7 gap-1.5 mb-2">
                     {validBids.map((bid) => (
                       <button
                         key={bid}
                         onClick={() => handleSelectBid(bid)}
                         className={`
-                          p-2 sm:p-2.5 md:p-3 rounded-md md:rounded-lg text-base sm:text-lg font-medieval transition-all duration-200
+                          p-2 rounded-lg text-base font-medieval transition-all duration-200
                           ${
                             selectedBid === bid
-                              ? "bg-primary text-primary-foreground border border-primary md:border-2 shadow-lg scale-105"
+                              ? "bg-primary text-primary-foreground border-2 border-primary shadow-lg scale-105"
                               : "bg-muted hover:bg-muted/80 text-foreground border border-border/50"
                           }
                         `}
@@ -239,20 +237,19 @@ export function BiddingPanel({
                     ))}
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base"
-                      onClick={handleConfirmBid}
-                      disabled={selectedBid === null}
-                    >
-                      Confirm Bid
-                      {selectedBid !== null && ` (${selectedBid})`}
-                    </Button>
-                  </div>
+                  <Button
+                    className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-1"
+                    size="sm"
+                    onClick={handleConfirmBid}
+                    disabled={selectedBid === null}
+                  >
+                    Confirm Bid
+                    {selectedBid !== null && ` (${selectedBid})`}
+                  </Button>
                 </>
               ) : (
-                <div className="text-center p-3 sm:p-4 bg-muted/50 rounded-md md:rounded-lg border border-border/50">
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                <div className="text-center p-2 bg-muted/50 rounded-lg border border-border/50">
+                  <p className="text-xs text-muted-foreground">
                     No valid bids available. The highest bid is already 13!
                   </p>
                 </div>
@@ -262,10 +259,10 @@ export function BiddingPanel({
 
           {/* Waiting Message */}
           {!isMyTurn && !allPlayersBid && (
-            <div className="text-center py-4 sm:py-6 md:py-8">
-              <div className="flex flex-col items-center gap-2 sm:gap-3">
+            <div className="text-center py-4">
+              <div className="flex flex-col items-center gap-2">
                 <LoadingSpinner size="lg" />
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Waiting for {currentPlayer?.name} to place their bid...
                 </p>
               </div>
@@ -274,21 +271,23 @@ export function BiddingPanel({
 
           {/* All Players Bid Message */}
           {allPlayersBid && (
-            <div className="text-center py-4 sm:py-6 md:py-8">
-              <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <Check className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-green-500" />
-                <p className="text-base sm:text-lg font-medieval text-foreground">
+            <div className="text-center py-4">
+              <div className="flex flex-col items-center gap-2">
+                <Check className="h-10 w-10 text-green-500" />
+                <p className="text-base font-medieval text-foreground">
                   All players have placed their bids!
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Highest bid: {highestBid} by {highestBidderPlayer?.name}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Proceeding to final deal...
                 </p>
               </div>
             </div>
           )}
+
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>
