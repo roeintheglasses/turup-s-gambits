@@ -6,6 +6,7 @@ import { Inter, MedievalSharp } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
+import { ToastNotification } from "@/components/toast-notification";
 import Link from "next/link";
 import { ClerkProvider } from '@clerk/nextjs';
 // Zustand stores are used for state management, no need for context providers
@@ -39,6 +40,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <ToastNotification />
             <div className="flex flex-col h-screen w-full">
               <Navbar />
               <main className="flex-1 w-full mx-auto overflow-auto">{children}</main>

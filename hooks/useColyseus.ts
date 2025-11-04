@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { colyseusClient, type GameRoom } from "@/lib/colyseus/ColyseusClient";
 import type { GameState, Player, Card } from "../server/schema/GameState";
+import { useUIStore } from "@/stores/uiStore";
 
 interface UseColyseusOptions {
   userId: string;
@@ -61,17 +62,19 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
 
         // Handle errors
         newRoom.onError((code, message) => {
-          console.error("❌ Room error:", code, message);
-
           // Don't kick user out for gameplay errors (like "not your turn")
           // Only set error state for critical connection issues
           if (code === 1006 || code === 1000) {
             // Connection closed - this is critical
+            console.error("❌ Room error:", code, message);
             setError(`Connection error: ${message}`);
           } else {
-            // Gameplay error - just log it, don't disconnect user
+            // Gameplay error - show user-friendly message via toast
             console.warn("⚠️ Gameplay error (non-critical):", message);
-            // You can emit an event or callback here if needed for UI feedback
+
+            // Show toast to user with friendly error message
+            const { showToast } = useUIStore.getState();
+            showToast(message || "Invalid move. Please try again.", "error");
           }
         });
 
