@@ -116,7 +116,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-4">
+    <div className="min-h-screen flex items-start justify-center p-2 sm:p-4">
       <VisualEffects enableGrain />
 
       <div className="absolute inset-0 -z-10">
@@ -135,29 +135,29 @@ export default function GamePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background" />
       </div>
 
-      <Card className="w-full max-w-md border-2 border-primary/30 shadow-xl bg-card/90 backdrop-blur-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-medieval text-primary">
+      <Card className="w-full max-w-sm sm:max-w-md border border-primary/30 md:border-2 shadow-xl bg-card/90 backdrop-blur-sm">
+        <CardHeader className="text-center p-4 sm:p-6">
+          <CardTitle className="text-2xl sm:text-3xl font-medieval text-primary">
             Game Hall
           </CardTitle>
           <CardDescription>
             Create or join a game of Turup's Gambit
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <Tabs defaultValue="create" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="create" className="font-medieval">
+            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+              <TabsTrigger value="create" className="font-medieval text-xs sm:text-sm">
                 Create Game
               </TabsTrigger>
-              <TabsTrigger value="join" className="font-medieval">
+              <TabsTrigger value="join" className="font-medieval text-xs sm:text-sm">
                 Join Game
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="create" className="space-y-6">
+            <TabsContent value="create" className="space-y-4 sm:space-y-6">
               <div>
-                <h3 className="text-lg font-medieval mb-3">Select Game Mode</h3>
+                <h3 className="text-base sm:text-lg font-medieval mb-2 sm:mb-3">Select Game Mode</h3>
                 <GameModeSelector
                   selectedMode={gameMode}
                   onSelectMode={(mode) =>
@@ -175,14 +175,14 @@ export default function GamePage() {
               </Button>
             </TabsContent>
 
-            <TabsContent value="join" className="space-y-6">
+            <TabsContent value="join" className="space-y-4 sm:space-y-6">
               <div className="space-y-2">
-                <label htmlFor="room-id" className="block text-sm font-medium">
+                <label htmlFor="room-id" className="block text-xs sm:text-sm font-medium">
                   Room Code
                 </label>
                 <Input
                   id="room-id"
-                  className="medieval-input"
+                  className="medieval-input text-sm sm:text-base"
                   placeholder="Enter 6-character room code"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value.toUpperCase())}
@@ -191,7 +191,7 @@ export default function GamePage() {
               </div>
 
               <Button
-                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base"
                 onClick={handleJoinGame}
                 disabled={isJoiningGame || !roomId}
               >
@@ -200,10 +200,10 @@ export default function GamePage() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center p-4 sm:p-6">
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-primary"
+            className="text-xs sm:text-sm text-muted-foreground hover:text-primary"
           >
             Return to the Kingdom
           </Link>
