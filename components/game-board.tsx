@@ -56,13 +56,15 @@ interface GameBoardProps {
   gameState: any;
   gameStatus: string;
   initialCardsDeal: boolean;
-  currentTrick: any[];
+  currentTrick: { cards: any[]; playedBy: string[] };
   onUpdateGameState: (newState: any) => void;
   onRecordMove: (move: any) => void;
   onPlayCard: (card: any) => void;
   onBid: (bid: number) => void;
   sendMessage: (message: any) => Promise<boolean>;
   playerHand?: any[]; // Optional prop for Colyseus player hand
+  currentTurn?: string; // ID of player whose turn it is (from Colyseus)
+  currentPlayerId?: string; // Current user's player ID (from Colyseus session)
 }
 
 // Define a type for card to avoid implicit any
@@ -86,6 +88,8 @@ export function GameBoard({
   onPlayCard,
   sendMessage,
   playerHand: colyseusPlayerHand,
+  currentTurn,
+  currentPlayerId,
 }: GameBoardProps) {
   // Use primitive selectors instead of object selectors to prevent reference instability
   const trumpSuit = useGameStore((state) => state.trumpSuit);
@@ -107,8 +111,10 @@ export function GameBoard({
 
   const { user } = useAuthStore();
 
+  // Calculate if it's the current user's turn using Colyseus state
+  const isMyTurn = currentTurn && currentPlayerId && currentTurn === currentPlayerId;
+
   const [centerCards, setCenterCards] = useState<CenterCard[]>([]);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [emotes, setEmotes] = useState<Emote[]>([]);
   const [lastTrickResult, setLastTrickResult] = useState<TrickResult | null>(
     null
@@ -127,19 +133,13 @@ export function GameBoard({
   // Use playerHandCards directly
   const playerHand = playerHandCards;
 
-  // Add refs to track player hand and current player index for bot logic
+  // Add refs to track state for effects
   const playerHandRef = useRef<any[]>([]);
   const centerCardsRef = useRef<any[]>([]);
-  const currentPlayerIndexRef = useRef<number>(0);
   const gameStatusRef = useRef<string>("");
 
   // Get player hand from game state or use mock data if not available
   const getPlayerHand = useCallback(() => {
-    // Get played cards from the store for this user
-    const playedCardIds = user
-      ? useGameStore.getState().playedCards[user.id] || []
-      : [];
-
     // If Colyseus player hand is provided, use it directly
     // Check for undefined (not just length) to avoid fallback during state transitions
     if (colyseusPlayerHand !== undefined) {
@@ -152,21 +152,15 @@ export function GameBoard({
       console.log(`[GameBoard] Using Colyseus player hand: ${colyseusPlayerHand.length} cards`);
 
       const cards = colyseusPlayerHand.map((card: any, index: number) => ({
-        id: index,
+        id: card.id, // Use the actual Colyseus card ID (e.g., "hearts-A-0")
         suit: card.suit,
         value: card.rank || card.value,
-        apiId: `${card.suit}-${card.rank || card.value}`,
+        apiId: card.id, // Keep the actual card ID for backward compat
       }));
 
-      // Filter out played cards
-      const filteredCards = cards.filter(
-        (card: HandCard) =>
-          !playedCardIds.includes(card.apiId) &&
-          !playedCardIds.includes(`${card.suit}-${card.value}`)
-      );
-
-      console.log(`[GameBoard] Returning ${filteredCards.length} cards from Colyseus hand (filtered from ${cards.length})`);
-      return filteredCards;
+      // No filtering needed - Colyseus server manages the hand correctly
+      console.log(`[GameBoard] Returning ${cards.length} cards from Colyseus hand`);
+      return cards;
     }
 
     if (gameState && user) {
@@ -175,7 +169,6 @@ export function GameBoard({
       console.log(
         `[GameBoard] Current game status: ${gameStatus}, initialCardsDeal: ${initialCardsDeal}`
       );
-      console.log("[GameBoard] Previously played cards:", playedCardIds);
 
       const player = gameState.players?.find(
         (p: PlayerInterface) => p.id === user.id
@@ -189,22 +182,16 @@ export function GameBoard({
           id: index,
           suit: card.suit,
           value: card.rank || card.value,
-          apiId: `${card.suit}-${card.rank || card.value}`, // Add API ID for filtering
+          apiId: `${card.suit}-${card.rank || card.value}`, // Add API ID for backward compat
         }));
 
         // In playing state, always return all cards regardless of initialCardsDeal flag
-        // But filter out cards that have been played
+        // No filtering needed - server manages the hand
         if (gameStatus === "playing") {
-          const filteredCards = cards.filter(
-            (card: { apiId: string; suit: string; value: string }) =>
-              !playedCardIds.includes(card.apiId) &&
-              !playedCardIds.includes(`${card.suit}-${card.value}`)
-          );
-
           console.log(
-            `[GameBoard] In playing state - returning ${filteredCards.length} cards (filtered from ${cards.length})`
+            `[GameBoard] In playing state - returning ${cards.length} cards`
           );
-          return filteredCards;
+          return cards;
         }
 
         // For other states, respect the initialCardsDeal flag
@@ -216,7 +203,7 @@ export function GameBoard({
       }
     }
 
-    // Fallback to mock data if no hand is found
+    // Fallback to mock data if no hand is found (should not happen with Colyseus)
     const mockHand = [
       { id: 1, suit: "hearts", value: "A", apiId: "hearts-A" },
       { id: 2, suit: "spades", value: "K", apiId: "spades-K" },
@@ -233,31 +220,33 @@ export function GameBoard({
       { id: 13, suit: "hearts", value: "2", apiId: "hearts-2" },
     ];
 
-    // Filter mock hand by played cards too
-    const filteredMockHand = mockHand.filter(
-      (card: HandCard) =>
-        !playedCardIds.includes(card.apiId) &&
-        !playedCardIds.includes(`${card.suit}-${card.value}`)
-    );
-
-    // Return appropriate number of cards, but filtered by played cards
+    // Return appropriate number of cards (no filtering - this is just mock data)
     if (gameStatus === "playing") {
       console.log(
-        `[GameBoard] Using mock hand in playing state: ${filteredMockHand.length} cards (filtered from ${mockHand.length})`
+        `[GameBoard] Using mock hand in playing state: ${mockHand.length} cards`
       );
-      return filteredMockHand;
+      return mockHand;
     } else if (initialCardsDeal) {
-      return filteredMockHand.slice(0, 5);
+      return mockHand.slice(0, 5);
     } else {
-      return filteredMockHand;
+      return mockHand;
     }
   }, [gameState, user, gameStatus, initialCardsDeal, colyseusPlayerHand]);
+
+  // Ref to prevent double-click/double-execution
+  const isPlayingCardRef = useRef(false);
 
   // Memoize card click handler to prevent infinite rerenders
   const handleCardClick = useCallback(
     (cardId: number) => {
       // Get a fresh reference to UIStore to avoid stale state
       const { showToast } = useUIStore.getState();
+
+      // CRITICAL: Check if a card play is already in progress using ref
+      if (isPlayingCardRef.current) {
+        console.log("[GameBoard] Card play already in progress (ref check)");
+        return;
+      }
 
       // Check if we're in the playing phase
       if (gameStatus !== "playing") {
@@ -269,8 +258,9 @@ export function GameBoard({
         return;
       }
 
-      // Check if it's the player's turn
-      if (currentPlayerIndex !== 0) {
+      // Check if it's the player's turn using Colyseus state
+      if (!isMyTurn) {
+        console.log("[GameBoard] Not your turn. currentTurn:", currentTurn, "currentPlayerId:", currentPlayerId);
         showToast("Not your turn to play", "warning");
         return;
       }
@@ -281,6 +271,9 @@ export function GameBoard({
         return;
       }
 
+      // Set the ref immediately to prevent double-execution
+      isPlayingCardRef.current = true;
+
       setSelectedCard(cardId);
       setPlayingCardId(cardId);
       setCardPlayLoading(true);
@@ -289,6 +282,7 @@ export function GameBoard({
       const card = playerHand.find((c: any) => c.id === cardId);
       if (!card) {
         console.error("[GameBoard] Card not found in player hand:", cardId);
+        isPlayingCardRef.current = false; // Reset ref on error
         setCardPlayLoading(false);
         setPlayingCardId(null);
         return;
@@ -323,9 +317,6 @@ export function GameBoard({
       // Remove card from player's hand
       setPlayerHandCards((prevHand) => prevHand.filter((c) => c.id !== cardId));
 
-      // Update the current player index optimistically
-      setCurrentPlayerIndex(1); // Move to next player
-
       // Manually record this card as played in the game store
       if (user && user.id) {
         useGameStore.getState().updatePlayedCards(user.id, apiCard.id);
@@ -334,6 +325,11 @@ export function GameBoard({
       // Use the provided onPlayCard function
       try {
         onPlayCard(apiCard);
+        // Reset the ref after successful card play (will be set again on next click)
+        // We use a short timeout to allow the server to process
+        setTimeout(() => {
+          isPlayingCardRef.current = false;
+        }, 500);
       } catch (error) {
         console.error("[GameBoard] Error playing card:", error);
         // Revert the optimistic updates
@@ -342,7 +338,7 @@ export function GameBoard({
         // Restore the card to the player's hand
         setPlayerHandCards((prevHand) => [...prevHand, card]);
 
-        setCurrentPlayerIndex(0);
+        isPlayingCardRef.current = false; // Reset ref on error
         setCardPlayLoading(false);
         setPlayingCardId(null);
         showToast("Failed to play card. Please try again.", "error");
@@ -350,7 +346,7 @@ export function GameBoard({
     },
     [
       gameStatus,
-      currentPlayerIndex,
+      isMyTurn,
       cardPlayLoading,
       playerHand,
       setSelectedCard,
@@ -371,10 +367,6 @@ export function GameBoard({
   useEffect(() => {
     centerCardsRef.current = centerCards;
   }, [centerCards]);
-
-  useEffect(() => {
-    currentPlayerIndexRef.current = currentPlayerIndex;
-  }, [currentPlayerIndex]);
 
   useEffect(() => {
     gameStatusRef.current = gameStatus;
@@ -456,12 +448,7 @@ export function GameBoard({
     };
   }, [getPlayerHand, gameStatus, handInitialized]);
 
-  // Start the game with player 0 (user) when it enters playing state
-  useEffect(() => {
-    if (gameStatus === "playing") {
-      setCurrentPlayerIndex(0); // Start with the user's turn
-    }
-  }, [gameStatus]);
+  // Turn management is now handled by Colyseus server state
 
   // Add a new debug function to help track team assignments
   const logTeamAssignments = useCallback(() => {
@@ -763,7 +750,6 @@ export function GameBoard({
       if (!gameEnded) {
         // Reset the center area and start the next round immediately
         setCenterCards([]);
-        setCurrentPlayerIndex(0);
 
         // Reset card play loading states to allow new card plays
         setCardPlayLoading(false);
@@ -864,8 +850,7 @@ export function GameBoard({
         return [...prev, uiCard];
       });
 
-      // Update the current player index optimistically
-      setCurrentPlayerIndex(1); // Move to next player
+      // Turn management is now handled by Colyseus server state
 
       // Delay to show animation
       setTimeout(() => {
@@ -880,7 +865,6 @@ export function GameBoard({
             setCenterCards((prev) =>
               prev.filter((c) => c.playedBy !== playerName)
             );
-            setCurrentPlayerIndex(0);
             setCardPlayLoading(false);
             setPlayingCardId(null);
 
@@ -907,158 +891,7 @@ export function GameBoard({
     ]
   );
 
-  // Bot playing logic
-  useEffect(() => {
-    // Only run bot logic when game is in playing state and it's not the user's turn
-    if (gameStatus !== "playing" || currentPlayerIndex === 0) {
-      return;
-    }
-
-    // The bot currently playing is at index currentPlayerIndex
-    const currentBotIndex = currentPlayerIndex;
-
-    // Get the bot name from players array
-    const botName = players[currentBotIndex] || `Player ${currentBotIndex + 1}`;
-
-    console.log(`[GameBoard] Bot ${botName} is thinking...`);
-
-    // Delay to simulate thinking time (1-3 seconds)
-    const thinkingTime = 1000 + Math.random() * 2000;
-
-    const botPlayTimeout = setTimeout(() => {
-      // Generate a bot card play
-      makeBotCardPlay(currentBotIndex, botName);
-    }, thinkingTime);
-
-    return () => {
-      clearTimeout(botPlayTimeout);
-    };
-  }, [gameStatus, currentPlayerIndex, players]);
-
-  // Function to handle bot card play
-  const makeBotCardPlay = useCallback(
-    (botIndex: number, botName: string) => {
-      console.log(`[GameBoard] Bot ${botName} is playing a card`);
-
-      // Get a valid suit to play if there's a leading card
-      let leadSuit: string | null = null;
-      if (centerCards.length > 0) {
-        leadSuit = centerCards[0].suit;
-      }
-
-      // Available suits and ranks for bot to use
-      const suits = ["hearts", "diamonds", "clubs", "spades"];
-      const ranks = [
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "J",
-        "Q",
-        "K",
-        "A",
-      ];
-
-      // Create a random card for the bot to play
-      // In a real game, this would use the bot's actual hand and follow game rules
-
-      // Randomly choose a suit, but respect the lead suit if possible
-      let selectedSuit = suits[Math.floor(Math.random() * suits.length)];
-
-      // If there's a trump suit in play, sometimes play it
-      if (trumpSuit && Math.random() > 0.7) {
-        selectedSuit = trumpSuit;
-      }
-      // If there's a lead suit, follow it most of the time
-      else if (leadSuit && Math.random() > 0.2) {
-        selectedSuit = leadSuit;
-      }
-
-      // Choose a random rank
-      const selectedRank = ranks[Math.floor(Math.random() * ranks.length)];
-
-      // Create card ID
-      const cardId = `${selectedSuit}-${selectedRank}`;
-
-      // Create the bot's card
-      const botCard = {
-        id: cardId,
-        suit: selectedSuit,
-        rank: selectedRank,
-      };
-
-      // Create UI card for display
-      const uiCard: CenterCard = {
-        id: Math.floor(Math.random() * 1000), // Random ID for UI
-        suit: selectedSuit,
-        value: selectedRank,
-        playedBy: botName,
-      };
-
-      // Add card to center
-      setCenterCards((prev) => {
-        // Check if this bot already has a card in the center
-        if (prev.some((c) => c.playedBy === botName)) {
-          return prev;
-        }
-        return [...prev, uiCard];
-      });
-
-      // Move to next player
-      setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % 4);
-
-      // Record the move
-      recordMove({
-        type: "playCard",
-        player: botName,
-        card: uiCard,
-      });
-
-      // Create a synthetic bot ID for tracking played cards
-      const botPlayerId = `bot-${botIndex}-${botName}`;
-
-      // Track this card as played by the bot
-      useGameStore.getState().updatePlayedCards(botPlayerId, cardId);
-
-      // Send message to server about the bot play if needed
-      if (sendMessage) {
-        try {
-          sendMessage({
-            type: "game:play-card",
-            payload: {
-              roomId,
-              playerId: `bot-${botIndex}`,
-              playerName: botName,
-              card: botCard,
-              gamePhase: gameStatus,
-              isBot: true,
-            },
-          });
-        } catch (error) {
-          console.error(
-            `[GameBoard] Error sending bot card play message:`,
-            error
-          );
-        }
-      }
-    },
-    [
-      centerCards,
-      currentPlayerIndex,
-      gameStatus,
-      recordMove,
-      roomId,
-      sendMessage,
-      trumpSuit,
-      setCenterCards,
-      setCurrentPlayerIndex,
-    ]
-  );
+  // Note: Bot logic is now handled server-side by Colyseus GameRoom
 
   // Helper function to get team color classes
   const getTeamColorClasses = (team: "royals" | "rebels" | undefined) => {
@@ -1168,8 +1001,8 @@ export function GameBoard({
               <FrenzyPowers
                 trumpSuit={trumpSuit}
                 gameMode={gameMode}
-                currentPlayer={currentPlayerIndex === 0 ? (user?.username || "You") : (players[currentPlayerIndex] || "Player")}
-                isCurrentUserTurn={currentPlayerIndex === 0}
+                currentPlayer={user?.username || "You"}
+                isCurrentUserTurn={isMyTurn || false}
                 onUsePower={handleUseFrenzyPower}
               />
             </div>
@@ -1536,12 +1369,12 @@ export function GameBoard({
                     {gameStatus === "final_deal" && "Dealing remaining cards..."}
                   </div>
                 )}
-                {gameStatus === "playing" && currentPlayerIndex !== 0 && (
+                {gameStatus === "playing" && !isMyTurn && (
                   <div className="mb-2 px-3 py-1 bg-card/80 backdrop-blur-sm rounded-lg border border-primary/30 shadow text-sm">
                     Waiting for your turn...
                   </div>
                 )}
-                {gameStatus === "playing" && currentPlayerIndex === 0 && (
+                {gameStatus === "playing" && isMyTurn && (
                   <div className="mb-2 px-4 py-2 bg-green-800/80 backdrop-blur-sm rounded-lg border border-green-500/50 shadow text-sm animate-pulse">
                     Your turn to play!
                   </div>
@@ -1553,7 +1386,7 @@ export function GameBoard({
                     <motion.div
                       key={`player-card-${card.id}`}
                       whileHover={{
-                        y: gameStatus === "playing" ? -10 : 0,
+                        y: (gameStatus === "playing" && isMyTurn) ? -10 : 0,
                         transition: { duration: 0.2 },
                       }}
                       onClick={() => handleCardClick(card.id)}
@@ -1564,7 +1397,7 @@ export function GameBoard({
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                       } ${
-                        gameStatus !== "playing"
+                        gameStatus !== "playing" || !isMyTurn
                           ? "opacity-70 filter grayscale-[30%] cursor-not-allowed"
                           : ""
                       }`}
