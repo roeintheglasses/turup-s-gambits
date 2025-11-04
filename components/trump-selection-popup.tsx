@@ -162,16 +162,16 @@ const PlayerHand: React.FC<PlayerHandProps> = React.memo(
           ];
 
     return (
-      <div className="mb-3 sm:mb-4 md:mb-6">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <h3 className="text-sm sm:text-base md:text-lg font-medieval text-foreground">
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medieval text-foreground">
             Your Initial 5 Cards:
           </h3>
-          <div className="bg-primary/20 text-primary-foreground text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+          <div className="bg-primary/20 text-primary-foreground text-xs px-2 py-0.5 rounded-full">
             First 5 of 13 cards
           </div>
         </div>
-        <div className="flex justify-center gap-1 sm:gap-1.5 md:gap-2 mb-2 sm:mb-3 md:mb-4">
+        <div className="flex justify-center gap-1.5 mb-2">
           {isHandLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <LoadingSpinner size="lg" variant="primary" />
@@ -235,78 +235,75 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
   }) => {
     return (
       <>
-        <p className="text-center mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm text-muted-foreground">
+        <p className="text-center mb-2 text-xs text-muted-foreground">
           {gameMode === "frenzy"
             ? "Select a trump suit and gain its special power!"
             : "Select a trump suit based on your hand. Your hand contains:"
           }
         </p>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6">
+        <div className={`grid ${gameMode === "frenzy" ? "grid-cols-4" : "grid-cols-2"} gap-2 mb-3`}>
           {(["hearts", "diamonds", "clubs", "spades"] as Suit[]).map((suit) => (
             <button
               key={suit}
               onClick={() => !userVote && setSelectedSuit(suit)}
               disabled={!!userVote}
               className={`
-              p-2 sm:p-3 md:p-4 rounded-md md:rounded-lg flex flex-col items-center justify-center
-              transition-all duration-300 relative
+              p-2 rounded-lg flex flex-col items-center justify-center
+              transition-all duration-300 relative min-h-[100px]
               ${
                 selectedSuit === suit && !userVote
-                  ? "bg-primary/20 border md:border-2 border-primary/50 shadow-lg"
+                  ? "bg-primary/20 border-2 border-primary/50 shadow-lg"
                   : userVote === suit
-                  ? "bg-primary/30 border md:border-2 border-primary/40 shadow-lg"
+                  ? "bg-primary/30 border-2 border-primary/40 shadow-lg"
                   : "bg-card hover:bg-muted/50 border border-border/50"
               }
               ${userVote && userVote !== suit ? "opacity-50" : ""}
             `}
             >
-              <span className={`text-2xl sm:text-3xl md:text-4xl mb-1 sm:mb-2 ${getSuitColor(suit)}`}>
+              <span className={`text-3xl mb-1 ${getSuitColor(suit)}`}>
                 {getSuitSymbol(suit)}
               </span>
-              <span className="text-xs sm:text-sm md:text-base font-medieval capitalize text-foreground">
+              <span className="text-xs font-medieval capitalize text-foreground mb-1">
                 {suit}
               </span>
-              
-              {/* Frenzy Mode Power Preview */}
+
+              {/* Frenzy Mode Power Preview - Compact */}
               {gameMode === "frenzy" && (
-                <div className="mt-2 text-center">
-                  <div className="text-lg mb-1">{FRENZY_POWERS[suit].icon}</div>
-                  <div className="text-xs font-semibold text-primary">
+                <div className="text-center">
+                  <div className="text-sm mb-0.5">{FRENZY_POWERS[suit].icon}</div>
+                  <div className="text-[10px] font-semibold text-primary leading-tight">
                     {FRENZY_POWERS[suit].name}
                   </div>
-                  <div className="text-xs text-muted-foreground leading-tight">
-                    {FRENZY_POWERS[suit].description}
-                  </div>
-                  <div className="text-xs mt-1 px-2 py-1 rounded-full bg-primary/20 text-primary">
+                  <div className="text-[9px] px-1 py-0.5 mt-0.5 rounded-full bg-primary/20 text-primary">
                     {FRENZY_POWERS[suit].type}
                   </div>
                 </div>
               )}
-              
+
               {/* Classic Mode Card Count and Votes */}
               {gameMode === "classic" && (
-                <div className="flex justify-between w-full mt-2 px-2">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <span className="text-sm">{suitCounts[suit] || 0}</span>
-                    <span className="text-xs">cards</span>
+                <div className="flex justify-between w-full mt-1 px-1 text-xs">
+                  <div className="flex items-center gap-0.5 text-muted-foreground">
+                    <span>{suitCounts[suit] || 0}</span>
+                    <span className="text-[10px]">cards</span>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <span className="text-sm font-bold">
+                  <div className="flex items-center gap-0.5 text-muted-foreground">
+                    <span className="font-bold">
                       {trumpVotes[suit] || 0}
                     </span>
-                    <span className="text-xs">votes</span>
+                    <span className="text-[10px]">votes</span>
                   </div>
                 </div>
               )}
-              
+
               {/* Frenzy Mode Votes */}
               {gameMode === "frenzy" && (
-                <div className="mt-2 flex items-center gap-1 text-muted-foreground">
-                  <span className="text-sm font-bold">
+                <div className="mt-1 flex items-center gap-0.5 text-muted-foreground text-xs">
+                  <span className="font-bold">
                     {trumpVotes[suit] || 0}
                   </span>
-                  <span className="text-xs">votes</span>
+                  <span className="text-[10px]">votes</span>
                 </div>
               )}
               
@@ -319,10 +316,10 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
           ))}
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-2 text-center">
           {userVote ? (
-            <p className="text-foreground flex items-center justify-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
+            <p className="text-foreground flex items-center justify-center gap-2 text-sm">
+              <Check className="h-3 w-3 text-primary" />
               You voted for{" "}
               <span className={`${getSuitColor(userVote)} font-bold mx-1`}>
                 {getSuitSymbol(userVote)}
@@ -330,11 +327,11 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
               <span className="capitalize">{userVote}</span>
             </p>
           ) : (
-            <p className="text-muted-foreground">Please select a trump suit</p>
+            <p className="text-muted-foreground text-xs">Please select a trump suit</p>
           )}
 
-          <div className="flex items-center justify-center gap-2 mt-3 text-muted-foreground">
-            <Clock className="h-4 w-4" />
+          <div className="flex items-center justify-center gap-2 mt-2 text-muted-foreground text-xs">
+            <Clock className="h-3 w-3" />
             <span>
               Waiting for all players to vote... ({totalVotes} of 4 votes)
             </span>
@@ -343,9 +340,10 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
           {isCurrentUserHost && onForceBotVotes && (
             <Button
               onClick={onForceBotVotes}
-              className="mt-4 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="mt-2 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-1 px-3"
+              size="sm"
             >
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-3 w-3 mr-1" />
               Force Bots to Vote
             </Button>
           )}
@@ -360,34 +358,29 @@ SuitSelection.displayName = "SuitSelection";
 const VotingResults: React.FC<VotingResultsProps> = React.memo(
   ({ trumpVotes }) => {
     return (
-      <div className="text-center mb-6">
-        <p className="mb-3 text-muted-foreground">Voting complete! Results:</p>
-        <div className="grid grid-cols-2 gap-3">
+      <div className="text-center mb-3">
+        <p className="mb-2 text-xs text-muted-foreground">Voting complete! Results:</p>
+        <div className="grid grid-cols-4 gap-2">
           {(["hearts", "diamonds", "clubs", "spades"] as Suit[]).map((suit) => {
             const isWinner =
               Math.max(...Object.values(trumpVotes)) === trumpVotes[suit];
             return (
               <div
                 key={suit}
-                className={`p-3 border rounded-lg flex justify-between items-center ${
+                className={`p-2 border rounded-lg flex flex-col items-center ${
                   isWinner
                     ? "bg-primary/20 border-primary/50"
                     : "bg-muted/30 border-border/50"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className={`text-2xl ${getSuitColor(suit)}`}>
-                    {getSuitSymbol(suit)}
-                  </span>
-                  <span className="font-medieval capitalize text-foreground">
-                    {suit}
-                  </span>
-                </div>
+                <span className={`text-2xl mb-1 ${getSuitColor(suit)}`}>
+                  {getSuitSymbol(suit)}
+                </span>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-lg text-foreground">
+                  <span className="font-bold text-sm text-foreground">
                     {trumpVotes[suit] || 0}
                   </span>
-                  {isWinner && <Crown className="h-4 w-4 text-primary" />}
+                  {isWinner && <Crown className="h-3 w-3 text-primary" />}
                 </div>
               </div>
             );
@@ -448,10 +441,10 @@ const ActionArea: React.FC<ActionAreaProps> = React.memo(
     }, [votingComplete, trumpVotes]);
 
     return (
-      <div className="flex justify-between items-center border-t border-border pt-4">
+      <div className="flex justify-between items-center border-t border-border pt-2">
         {votingComplete ? (
           <div className="w-full text-center">
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-xs text-muted-foreground mb-2">
               {!getWinningSuit && (
                 <div className="flex items-center justify-center gap-3">
                   <LoadingSpinner size="md" variant="primary" />
@@ -472,36 +465,28 @@ const ActionArea: React.FC<ActionAreaProps> = React.memo(
             <Button
               variant="default"
               size="sm"
-              className="mt-4 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="mt-2 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-1"
               onClick={handleClose}
             >
               Continue to Next Phase{" "}
               {countdown > 0 && !isClosing ? `(${countdown})` : ""}
             </Button>
-            {countdown > 0 && !isClosing && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Automatically continuing in {countdown} second
-                {countdown !== 1 ? "s" : ""}...
-              </p>
-            )}
           </div>
         ) : userVote ? (
           <div className="w-full text-center">
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <LoadingSpinner size="sm" />
-                <span>Waiting for other players to vote...</span>
-              </div>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
+              <LoadingSpinner size="sm" />
+              <span>Waiting for other players to vote...</span>
             </div>
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              After trump selection, the dealer will deal 8 more cards to
-              complete your hand of 13 cards.
+            <p className="text-xs text-muted-foreground">
+              After trump selection, the dealer will deal 8 more cards to complete your hand of 13 cards.
             </p>
             <Button
-              className="medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-1 px-4"
+              size="sm"
               onClick={handleVote}
               disabled={!selectedSuit || isHandLoading}
             >
@@ -700,34 +685,35 @@ export function TrumpSelectionPopup({
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3 md:p-4">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-card/95 backdrop-blur-md w-full max-w-md md:max-w-2xl p-3 sm:p-4 md:p-6 rounded-lg border md:border-2 border-primary/30 shadow-xl max-h-[95vh] overflow-y-auto"
+          className="bg-card/95 backdrop-blur-md w-full max-w-4xl p-4 rounded-lg border-2 border-primary/30 shadow-xl max-h-[90vh] flex flex-col"
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-3 sm:mb-4 md:mb-6">
-            <div className="flex flex-col">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-medieval text-primary">
+          <div className="flex justify-between items-center mb-3 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-medieval text-primary">
                 {votingComplete
                   ? "Trump Selection Complete"
                   : userVote
                   ? "Waiting for Other Players"
-                  : gameMode === "frenzy" 
+                  : gameMode === "frenzy"
                     ? "Choose Trump Suit & Power"
                     : "Select Trump Suit"}
               </h2>
               {gameMode === "frenzy" && (
-                <div className="mt-2">
-                  <span className="px-3 py-1 bg-purple-600/20 text-purple-300 text-xs font-bold rounded-full border border-purple-500/30">
-                    FRENZY MODE
-                  </span>
-                </div>
+                <span className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs font-bold rounded-full border border-purple-500/30">
+                  FRENZY MODE
+                </span>
               )}
             </div>
           </div>
+
+          {/* Scrollable content */}
+          <div className="overflow-y-auto flex-1 pr-2"  style={{ scrollbarWidth: 'thin' }}>
 
           {/* Player's hand display */}
           <PlayerHand
@@ -740,8 +726,8 @@ export function TrumpSelectionPopup({
           />
 
           {/* Trump selection */}
-          <div className="mb-3 sm:mb-4 md:mb-6">
-            <h3 className="text-sm sm:text-base md:text-lg font-medieval text-foreground mb-2 sm:mb-3">
+          <div className="mb-3">
+            <h3 className="text-sm font-medieval text-foreground mb-2">
               {votingComplete
                 ? "Voting Results"
                 : userVote
@@ -768,17 +754,21 @@ export function TrumpSelectionPopup({
             )}
           </div>
 
-          {/* Action area */}
-          <ActionArea
-            votingComplete={votingComplete}
-            userVote={userVote}
-            selectedSuit={selectedSuit}
-            isHandLoading={isHandLoading}
-            isClosing={isClosing}
-            trumpVotes={trumpVotes}
-            handleVote={handleVote}
-            handleClose={handleClose}
-          />
+          </div>
+
+          {/* Action area - Fixed at bottom */}
+          <div className="flex-shrink-0 mt-3">
+            <ActionArea
+              votingComplete={votingComplete}
+              userVote={userVote}
+              selectedSuit={selectedSuit}
+              isHandLoading={isHandLoading}
+              isClosing={isClosing}
+              trumpVotes={trumpVotes}
+              handleVote={handleVote}
+              handleClose={handleClose}
+            />
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>
