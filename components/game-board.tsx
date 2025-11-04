@@ -317,10 +317,8 @@ export function GameBoard({
       // Remove card from player's hand
       setPlayerHandCards((prevHand) => prevHand.filter((c) => c.id !== cardId));
 
-      // Manually record this card as played in the game store
-      if (user && user.id) {
-        useGameStore.getState().updatePlayedCards(user.id, apiCard.id);
-      }
+      // Note: Card tracking is now handled server-side by Colyseus
+      // No need to manually track played cards client-side
 
       // Use the provided onPlayCard function
       try {

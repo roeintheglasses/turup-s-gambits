@@ -104,8 +104,7 @@ export interface GameStoreState {
   showGameAnalytics?: boolean;
   showPlayerStats?: boolean;
 
-  // Track played cards per player
-  playedCards: Record<string, string[]>; // playerId -> array of card IDs played
+  // Note: playedCards removed - now handled server-side by Colyseus
 
   // Enhanced room settings
   roomSettings?: {
@@ -191,8 +190,7 @@ export interface GameStoreState {
   // Team assignments
   setTeamAssignments: (teams: Record<string, "royals" | "rebels">) => void;
 
-  // Update played cards
-  updatePlayedCards: (playerId: string, cardId: string) => void;
+  // Note: updatePlayedCards removed - now handled server-side by Colyseus
 
   // Analytics and reporting
   generateGameReport: () => any;

@@ -30,7 +30,7 @@ export const useGameStore = create<GameStoreState>()(
           teamAssignments: {},
           specialPowers: undefined,
           remainingDeck: undefined,
-          playedCards: {},
+          // playedCards removed - now handled server-side by Colyseus
 
           showShuffleAnimation: false,
           initialCardsDeal: false,
@@ -67,12 +67,7 @@ export const useGameStore = create<GameStoreState>()(
           setVotingComplete: (value) => set({ votingComplete: value }),
 
           updateGameState: (newState) => set(newState),
-          updatePlayedCards: (playerId, cardId) => set((state) => ({
-            playedCards: {
-              ...state.playedCards,
-              [playerId]: [...(state.playedCards[playerId] || []), cardId]
-            }
-          })),
+          // updatePlayedCards removed - now handled server-side by Colyseus
 
           // ⚠️ DEPRECATED: These methods are no longer used with Colyseus
           // Use the useColyseus hook instead (see hooks/useColyseus.ts)
