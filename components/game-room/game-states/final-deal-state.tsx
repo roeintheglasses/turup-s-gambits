@@ -20,7 +20,7 @@ export const FinalDealState: React.FC<FinalDealStateProps> = ({
     
     <div className="w-full px-2 md:px-4">
       <div className="absolute inset-0 bg-background/30 backdrop-blur-sm flex items-center justify-center">
-        <div className="bg-card/90 p-4 rounded-lg shadow-lg flex flex-col items-center">
+        <div className="bg-card/90 p-3 sm:p-4 rounded-lg shadow-lg flex flex-col items-center">
           <LoadingSpinner size="lg" />
           <div className="mt-2 text-foreground">
             Dealing remaining 8 cards...

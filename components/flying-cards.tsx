@@ -100,7 +100,7 @@ function CardAnimation({ card, index }: { card: FlyingCardProps; index: number }
 
   return (
     <motion.div
-      className="absolute w-20 h-32"
+      className="absolute w-12 h-20 sm:w-16 sm:h-28 md:w-20 md:h-32"
       initial={animationProps.initial}
       animate={animationProps.animate}
       transition={{

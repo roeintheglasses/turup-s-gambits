@@ -35,7 +35,7 @@ export const EndedState: React.FC<EndedStateProps> = ({
   const playerWon = isPlayerWinner();
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 md:p-8">
+    <div className="h-full flex flex-col items-center justify-center p-3 sm:p-4 md:p-8">
       <VisualEffects enableGrain />
       <GameBackground />
 
@@ -45,7 +45,7 @@ export const EndedState: React.FC<EndedStateProps> = ({
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, type: "spring" }}
-          className="text-center mb-8"
+          className="text-center mb-4 sm:mb-6 md:mb-8"
         >
           <motion.div
             animate={{ rotate: [0, 5, -5, 0] }}
@@ -53,14 +53,13 @@ export const EndedState: React.FC<EndedStateProps> = ({
             className="inline-block mb-4"
           >
             <Trophy
-              size={80}
-              className={`${
+              className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 ${
                 playerWon ? "text-yellow-400" : "text-gray-400"
               } drop-shadow-lg`}
             />
           </motion.div>
 
-          <h1 className="text-4xl md:text-6xl font-medieval mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medieval mb-4">
             {playerWon ? (
               <span className="text-yellow-400">Victory!</span>
             ) : (
@@ -99,7 +98,7 @@ export const EndedState: React.FC<EndedStateProps> = ({
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg p-6 mb-6"
+          className="bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg p-4 md:p-6 mb-4 md:mb-6"
         >
           <h2 className="text-2xl font-medieval text-center mb-6 flex items-center justify-center gap-2">
             <Trophy size={20} />
@@ -152,7 +151,7 @@ export const EndedState: React.FC<EndedStateProps> = ({
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg p-6 mb-6"
+          className="bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg p-4 md:p-6 mb-4 md:mb-6"
         >
           <h3 className="text-xl font-medieval mb-4">Players</h3>
           <div className="grid grid-cols-2 gap-3">

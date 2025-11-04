@@ -62,7 +62,7 @@ export function FloatingCards() {
         {cards.map((card) => (
           <motion.div
             key={card.id}
-            className="absolute w-24 h-36" // Further increased size
+            className="absolute w-16 h-24 sm:w-20 sm:h-32 md:w-24 md:h-36" // Responsive card sizes
             initial={{
               x: `${card.x}vw`,
               y: `${card.y}vh`,

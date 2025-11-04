@@ -65,7 +65,7 @@ export function CardShuffleAnimation({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full h-full max-w-2xl max-h-2xl">
+      <div className="relative w-full h-full max-w-sm sm:max-w-lg md:max-w-2xl max-h-sm sm:max-h-lg md:max-h-2xl px-4">
         <AnimatePresence>
           {cards.map((card) => (
             <motion.div

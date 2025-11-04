@@ -79,7 +79,7 @@ export function AudioPlayer({ autoPlay = false }: AudioPlayerProps) {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${
+      className={`fixed bottom-4 right-4 z-50 flex flex-col sm:flex-row items-center gap-2 p-2 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-300 ${
         isMinimized ? "w-auto" : "w-auto sm:w-64"
       }`}
     >
