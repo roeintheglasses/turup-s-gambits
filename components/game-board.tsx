@@ -655,6 +655,17 @@ export function GameBoard({
     }
   }, [centerCards.length, handleTrickCompletion]);
 
+  // Reset loading state when turn changes (card was successfully played)
+  useEffect(() => {
+    // If it's not our turn and we have a loading state, it means our card was accepted
+    // Reset the loading state so we can play again when it becomes our turn
+    if (!isMyTurn && cardPlayLoading) {
+      console.log("[GameBoard] Turn changed - resetting card play loading state");
+      setCardPlayLoading(false);
+      setPlayingCardId(null);
+    }
+  }, [isMyTurn, cardPlayLoading, setCardPlayLoading, setPlayingCardId]);
+
   // Memoize emote handler to prevent unnecessary rerenders
   const handleEmote = useCallback(
     (emoji: string) => {
