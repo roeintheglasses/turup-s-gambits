@@ -498,51 +498,51 @@ export function ReplaySummary({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-background/95 backdrop-blur-md w-full max-w-full sm:max-w-4xl lg:max-w-6xl max-h-[95vh] overflow-y-auto rounded-lg border border-border shadow-xl"
+          className="bg-background/95 backdrop-blur-md w-full max-w-5xl max-h-[90vh] flex flex-col rounded-lg border-2 border-border shadow-xl"
         >
           {/* Header */}
-          <div className="sticky top-0 bg-background/95 backdrop-blur-md p-3 sm:p-6 border-b border-border">
+          <div className="flex-shrink-0 bg-background/95 backdrop-blur-md p-3 border-b border-border">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-medieval text-foreground flex items-center gap-2">
-                <Eye className="h-6 w-6" />
+              <h2 className="text-xl font-medieval text-foreground flex items-center gap-2">
+                <Eye className="h-5 w-5" />
                 Game Replay
               </h2>
-              
+
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleExport}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 text-xs px-2 py-1"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3 w-3" />
                   Export
                 </Button>
-                
+
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleShare}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 text-xs px-2 py-1"
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-3 w-3" />
                   Share
                 </Button>
-                
-                <Button size="sm" onClick={onClose}>
+
+                <Button size="sm" onClick={onClose} className="text-xs px-2 py-1">
                   Close
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 p-3 space-y-3" style={{ scrollbarWidth: 'thin' }}>
             {/* Game Summary */}
             <GameSummary gameData={mockGameData} />
             
@@ -560,13 +560,13 @@ export function ReplaySummary({
               onSpeedChange={setPlaybackSpeed}
             />
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {/* Player Statistics */}
               <PlayerStatistics
                 stats={mockPlayerStats}
                 winner={mockGameData.winner}
               />
-              
+
               {/* Move Timeline */}
               <MoveTimeline
                 moves={mockMoves}
