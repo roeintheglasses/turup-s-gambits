@@ -62,6 +62,8 @@ const config = {
       fontFamily: {
         sans: ["var(--font-inter)"],
         medieval: ["var(--font-medieval)"],
+        cinzel: ["var(--font-cinzel)", "serif"],
+        crimson: ["var(--font-crimson)", "serif"],
       },
       keyframes: {
         "accordion-down": {

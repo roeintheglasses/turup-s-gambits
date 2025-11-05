@@ -1,9 +1,9 @@
 import "./globals.css";
+import "./medieval-theme.css";
 
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter, MedievalSharp } from "next/font/google";
-import "./globals.css";
+import { Inter, MedievalSharp, Cinzel, Crimson_Text } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { ToastNotification } from "@/components/toast-notification";
@@ -16,6 +16,16 @@ const medievalSharp = MedievalSharp({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-medieval",
+});
+const cinzel = Cinzel({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-cinzel"
+});
+const crimsonText = Crimson_Text({
+  weight: ["400", "600"],
+  subsets: ["latin"],
+  variable: "--font-crimson"
 });
 
 export const metadata: Metadata = {
@@ -32,7 +42,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${inter.variable} ${medievalSharp.variable} font-sans bg-background min-h-screen`}
+          className={`${inter.variable} ${medievalSharp.variable} ${cinzel.variable} ${crimsonText.variable} font-crimson bg-background min-h-screen`}
         >
           <ThemeProvider
             attribute="class"
