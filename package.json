@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "server": "tsx watch server/index.ts",
-    "server:prod": "node --loader tsx server/index.prod.ts",
+    "server:prod": "tsx server/index.prod.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm server\"",
     "build": "next build",
     "start": "next start",
@@ -70,6 +70,7 @@
     "svix": "^1.81.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.20.6",
     "utf-8-validate": "^6.0.5",
     "uuid": "latest",
     "vaul": "^0.9.6",
@@ -90,7 +91,6 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
