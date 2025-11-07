@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "server": "tsx watch server/index.ts",
+    "server:prod": "node --loader tsx server/index.prod.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm server\"",
     "build": "next build",
     "start": "next start",
