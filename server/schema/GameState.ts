@@ -25,7 +25,6 @@ export class Player extends Schema {
   @type("boolean") isReady: boolean = false;
   @type("boolean") isConnected: boolean = true;
   @type([Card]) hand: ArraySchema<Card> = new ArraySchema<Card>();
-  @type("number") bid: number = 0;
   @type("boolean") hasVoted: boolean = false;
   @type("string") trumpVote: string = "";
 
@@ -57,17 +56,15 @@ export class Trick extends Schema {
 // Game State schema
 export class GameState extends Schema {
   @type("string") roomId: string;
-  @type("string") phase: string = "waiting"; // waiting, initial_deal, trump_selection, bidding, final_deal, playing, ended
+  @type("string") phase: string = "waiting"; // waiting, initial_deal, trump_selection, final_deal, playing, ended
   @type({ map: Player }) players: MapSchema<Player> = new MapSchema<Player>();
   @type("number") maxPlayers: number = 4;
   @type("string") hostId: string = "";
   @type("string") currentTurn: string = ""; // player ID whose turn it is
 
-  // Trump and bidding
+  // Trump
   @type("string") trumpSuit: string = "";
   @type({ map: "string" }) trumpVotes: MapSchema<string> = new MapSchema<string>(); // playerId -> suit
-  @type("number") highestBid: number = 0;
-  @type("string") highestBidder: string = "";
 
   // Current trick
   @type(Trick) currentTrick: Trick = new Trick(0);

@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 import { WaitingRoomSkeleton } from "@/components/waiting-room-skeleton";
 import { VisualEffects } from "@/components/visual-effects";
-import { BiddingPanel } from "@/components/bidding-panel";
 
 // Game room components
 import {
@@ -51,7 +50,6 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     handleStartGame,
     // Game board props
     handlePlayCard,
-    handleBid,
     currentTrick,
     // Trump voting props
     playerHand,
@@ -60,10 +58,8 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     trumpVotes,
     votingComplete,
     showTrumpPopup,
-    // Bidding props
+    // Turn management
     currentTurn,
-    highestBid,
-    highestBidder,
     statusMessage,
     // End-game data
     winner,
@@ -135,6 +131,14 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
         />
       );
 
+    case "initial_deal":
+      return (
+        <InitialDealState
+          showShuffleAnimation={false}
+          handleShuffleComplete={() => {}}
+        />
+      );
+
     case "trump_selection":
       return (
         <BiddingState
@@ -150,47 +154,12 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
         />
       );
 
-    case "bidding":
+    case "final_deal":
       return (
-        <div className="h-full flex flex-col">
-          <VisualEffects enableGrain />
-          <GameBackground />
-
-          {/* Game Header - Only on small screens */}
-          <div className="md:hidden flex-shrink-0 p-2">
-            <h1 className="text-xl font-bold text-center">{gameStatus}</h1>
-          </div>
-
-          {/* Main Game Area */}
-          <div className="flex-1 min-h-0 p-2 md:p-4">
-            <GameBoardWrapper
-              roomId={roomId}
-              mode={(mode as string) || "classic"}
-              players={players}
-              gameStatus={gameStatus}
-              currentTrick={currentTrick}
-              handlePlayCard={handlePlayCard}
-              handleBid={handleBid}
-              scores={gameRoom.scores}
-              trumpSuit={gameRoom.trumpSuit}
-              currentTurn={currentTurn}
-              currentPlayerId={currentPlayerId}
-              isCurrentUserHost={isCurrentUserHost}
-              playerHand={playerHand}
-            />
-          </div>
-
-          {/* Bidding Panel Overlay */}
-          <BiddingPanel
-            isOpen={true}
-            players={players}
-            currentTurn={currentTurn}
-            currentPlayerId={currentPlayer?.id || ""}
-            highestBid={highestBid}
-            highestBidder={highestBidder}
-            onBid={handleBid}
-          />
-        </div>
+        <FinalDealState
+          showShuffleAnimation={false}
+          handleFinalShuffleDrawComplete={() => {}}
+        />
       );
 
     case "playing":
@@ -213,7 +182,6 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
               gameStatus={gameStatus}
               currentTrick={currentTrick}
               handlePlayCard={handlePlayCard}
-              handleBid={handleBid}
               scores={gameRoom.scores}
               trumpSuit={gameRoom.trumpSuit}
               currentTurn={currentTurn}

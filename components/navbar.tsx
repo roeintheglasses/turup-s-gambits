@@ -35,7 +35,7 @@ export function Navbar() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-primary/20 bg-card/80 backdrop-blur-md"
+        className="fixed top-0 left-0 right-0 z-50 border-b-[3px] border-[hsl(var(--warm-brown))] bg-[hsl(var(--dark-panel))]/90 backdrop-blur-md shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
       >
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
@@ -53,7 +53,7 @@ export function Navbar() {
                   height={48}
                   className="[&>path]:fill-primary"
                 />
-                <span className="text-xl sm:text-2xl font-medieval text-primary">
+                <span className="text-xl sm:text-2xl font-cinzel font-bold text-[hsl(var(--amber-primary))] text-shadow-medieval">
                   Turup's Gambit
                 </span>
               </Link>
@@ -109,7 +109,7 @@ export function Navbar() {
                   <Menu size={24} />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-card/95 backdrop-blur-md border-primary/20 p-6">
+              <SheetContent className="bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-[hsl(var(--warm-brown))] p-6">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <motion.div
                   className="flex flex-col gap-6 mt-8"
@@ -156,10 +156,10 @@ export function Navbar() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-20 right-4 z-50 p-4 rounded-lg bg-card/90 backdrop-blur-md border border-primary/20 shadow-xl"
+          className="fixed top-20 right-4 z-50 p-4 rounded-xl bg-[hsl(var(--dark-panel))]/90 backdrop-blur-md border-[3px] border-[hsl(var(--warm-brown))] shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
         >
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-medieval text-primary">Music Controls</h3>
+            <h3 className="font-cinzel font-bold text-[hsl(var(--amber-primary))]">Music Controls</h3>
             <Button
               variant="ghost"
               size="icon"

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Crown, Check, Clock, Users } from "lucide-react";
+import { Crown, Check, Clock } from "lucide-react";
 import { Suit } from "@/app/types/game";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores";
@@ -47,10 +47,10 @@ const getSuitColor = (suit: string): string => {
   switch (suit) {
     case "hearts":
     case "diamonds":
-      return "text-red-500";
+      return "text-[hsl(var(--burgundy))]";
     case "clubs":
     case "spades":
-      return "text-gray-800";
+      return "text-[hsl(var(--dark-bg))]";
     default:
       return "";
   }
@@ -97,7 +97,6 @@ interface TrumpSelectionPopupProps {
   }>;
   isOpen: boolean;
   isCurrentUserHost: boolean;
-  onForceBotVotes?: () => void;
   gameMode?: "classic" | "frenzy";
 }
 
@@ -117,7 +116,6 @@ interface SuitSelectionProps {
   trumpVotes: Record<string, number>;
   suitCounts: Record<string, number>;
   isCurrentUserHost: boolean;
-  onForceBotVotes?: () => void;
   totalVotes: number;
   gameMode?: "classic" | "frenzy";
 }
@@ -162,16 +160,16 @@ const PlayerHand: React.FC<PlayerHandProps> = React.memo(
           ];
 
     return (
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medieval text-foreground">
+      <div className="mb-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <h3 className="text-xs md:text-sm font-medieval text-foreground">
             Your Initial 5 Cards:
           </h3>
-          <div className="bg-primary/20 text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+          <div className="bg-primary/20 text-primary-foreground text-[10px] md:text-xs px-2 py-0.5 rounded-full">
             First 5 of 13 cards
           </div>
         </div>
-        <div className="flex justify-center gap-1.5 mb-2">
+        <div className="flex justify-center gap-1 md:gap-1.5 mb-1.5 scale-90 md:scale-100">
           {isHandLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <LoadingSpinner size="lg" variant="primary" />
@@ -201,15 +199,15 @@ const PlayerHand: React.FC<PlayerHandProps> = React.memo(
             ))
           )}
         </div>
-        <div className="flex justify-center gap-6 text-sm bg-muted/50 py-2 px-4 rounded-lg border border-border/50">
+        <div className="flex justify-center gap-4 md:gap-6 text-xs md:text-sm bg-muted/50 py-1.5 px-3 rounded-lg border border-border/50">
           {SUITS.map((suit) => (
             <div
               key={suit.id}
-              className={`flex items-center gap-1 ${
+              className={`flex items-center gap-0.5 md:gap-1 ${
                 handAnalysis[suit.id] > 0 ? "font-medium" : "opacity-50"
               }`}
             >
-              <span className={`text-lg ${suit.color}`}>{suit.symbol}</span>
+              <span className={`text-base md:text-lg ${suit.color}`}>{suit.symbol}</span>
               <span className="text-foreground">{handAnalysis[suit.id]}</span>
             </div>
           ))}
@@ -229,20 +227,19 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
     trumpVotes,
     suitCounts,
     isCurrentUserHost,
-    onForceBotVotes,
     totalVotes,
     gameMode = "classic",
   }) => {
     return (
       <>
-        <p className="text-center mb-2 text-xs text-muted-foreground">
+        <p className="text-center mb-1.5 text-[10px] md:text-xs text-muted-foreground">
           {gameMode === "frenzy"
             ? "Select a trump suit and gain its special power!"
             : "Select a trump suit based on your hand. Your hand contains:"
           }
         </p>
 
-        <div className={`grid ${gameMode === "frenzy" ? "grid-cols-4" : "grid-cols-2"} gap-2 mb-3`}>
+        <div className={`grid ${gameMode === "frenzy" ? "grid-cols-4" : "grid-cols-2"} gap-2 mb-2`}>
           {(["hearts", "diamonds", "clubs", "spades"] as Suit[]).map((suit) => (
             <button
               key={suit}
@@ -250,7 +247,7 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
               disabled={!!userVote}
               className={`
               p-2 rounded-lg flex flex-col items-center justify-center
-              transition-all duration-300 relative min-h-[100px]
+              transition-all duration-300 relative min-h-[85px] md:min-h-[95px]
               ${
                 selectedSuit === suit && !userVote
                   ? "bg-primary/20 border-2 border-primary/50 shadow-lg"
@@ -261,10 +258,10 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
               ${userVote && userVote !== suit ? "opacity-50" : ""}
             `}
             >
-              <span className={`text-3xl mb-1 ${getSuitColor(suit)}`}>
+              <span className={`text-2xl md:text-3xl mb-0.5 md:mb-1 ${getSuitColor(suit)}`}>
                 {getSuitSymbol(suit)}
               </span>
-              <span className="text-xs font-medieval capitalize text-foreground mb-1">
+              <span className="text-[10px] md:text-xs font-medieval capitalize text-foreground mb-0.5 md:mb-1">
                 {suit}
               </span>
 
@@ -283,27 +280,27 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
 
               {/* Classic Mode Card Count and Votes */}
               {gameMode === "classic" && (
-                <div className="flex justify-between w-full mt-1 px-1 text-xs">
+                <div className="flex justify-between w-full mt-0.5 px-1 text-[10px] md:text-xs">
                   <div className="flex items-center gap-0.5 text-muted-foreground">
                     <span>{suitCounts[suit] || 0}</span>
-                    <span className="text-[10px]">cards</span>
+                    <span className="text-[9px] md:text-[10px]">cards</span>
                   </div>
-                  <div className="flex items-center gap-0.5 text-muted-foreground">
-                    <span className="font-bold">
+                  <div className="flex items-center gap-0.5 text-primary">
+                    <span className="font-bold text-sm md:text-base">
                       {trumpVotes[suit] || 0}
                     </span>
-                    <span className="text-[10px]">votes</span>
+                    <span className="text-[9px] md:text-[10px]">votes</span>
                   </div>
                 </div>
               )}
 
               {/* Frenzy Mode Votes */}
               {gameMode === "frenzy" && (
-                <div className="mt-1 flex items-center gap-0.5 text-muted-foreground text-xs">
-                  <span className="font-bold">
+                <div className="mt-0.5 flex items-center gap-0.5 text-primary text-xs">
+                  <span className="font-bold text-sm">
                     {trumpVotes[suit] || 0}
                   </span>
-                  <span className="text-[10px]">votes</span>
+                  <span className="text-[9px]">votes</span>
                 </div>
               )}
               
@@ -316,37 +313,26 @@ const SuitSelection: React.FC<SuitSelectionProps> = React.memo(
           ))}
         </div>
 
-        <div className="mt-2 text-center">
+        <div className="mt-1.5 text-center">
           {userVote ? (
-            <p className="text-foreground flex items-center justify-center gap-2 text-sm">
+            <p className="text-foreground flex items-center justify-center gap-1.5 text-xs md:text-sm">
               <Check className="h-3 w-3 text-primary" />
               You voted for{" "}
-              <span className={`${getSuitColor(userVote)} font-bold mx-1`}>
+              <span className={`${getSuitColor(userVote)} font-bold mx-0.5`}>
                 {getSuitSymbol(userVote)}
               </span>
               <span className="capitalize">{userVote}</span>
             </p>
           ) : (
-            <p className="text-muted-foreground text-xs">Please select a trump suit</p>
+            <p className="text-muted-foreground text-[10px] md:text-xs">Please select a trump suit</p>
           )}
 
-          <div className="flex items-center justify-center gap-2 mt-2 text-muted-foreground text-xs">
+          <div className="flex items-center justify-center gap-1.5 mt-1.5 text-muted-foreground text-[10px] md:text-xs">
             <Clock className="h-3 w-3" />
             <span>
               Waiting for all players to vote... ({totalVotes} of 4 votes)
             </span>
           </div>
-
-          {isCurrentUserHost && onForceBotVotes && (
-            <Button
-              onClick={onForceBotVotes}
-              className="mt-2 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-1 px-3"
-              size="sm"
-            >
-              <Users className="h-3 w-3 mr-1" />
-              Force Bots to Vote
-            </Button>
-          )}
         </div>
       </>
     );
@@ -509,7 +495,6 @@ export function TrumpSelectionPopup({
   playerHand,
   isOpen,
   isCurrentUserHost,
-  onForceBotVotes,
   gameMode = "classic",
 }: TrumpSelectionPopupProps) {
   const { showTrumpPopup, setShowTrumpPopup } = useUIStore();
@@ -685,17 +670,17 @@ export function TrumpSelectionPopup({
 
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-card/95 backdrop-blur-md w-full max-w-4xl p-4 rounded-lg border-2 border-primary/30 shadow-xl max-h-[90vh] flex flex-col"
+          className="bg-[hsl(var(--dark-panel))] backdrop-blur-md w-full max-w-3xl p-4 md:p-5 rounded-xl border-4 border-[hsl(var(--warm-brown))] shadow-[0_20px_60px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col"
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-3 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-medieval text-primary">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl md:text-2xl font-cinzel font-bold text-[hsl(var(--amber-primary))] text-shadow-medieval">
                 {votingComplete
                   ? "Trump Selection Complete"
                   : userVote
@@ -705,7 +690,7 @@ export function TrumpSelectionPopup({
                     : "Select Trump Suit"}
               </h2>
               {gameMode === "frenzy" && (
-                <span className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs font-bold rounded-full border border-purple-500/30">
+                <span className="px-3 py-1 bg-[hsl(var(--amber-primary))]/20 text-[hsl(var(--amber-bright))] text-xs font-cinzel font-bold rounded-full border-2 border-[hsl(var(--amber-primary))]/40">
                   FRENZY MODE
                 </span>
               )}
@@ -726,8 +711,8 @@ export function TrumpSelectionPopup({
           />
 
           {/* Trump selection */}
-          <div className="mb-3">
-            <h3 className="text-sm font-medieval text-foreground mb-2">
+          <div className="mb-2">
+            <h3 className="text-xs md:text-sm font-medieval text-foreground mb-1.5">
               {votingComplete
                 ? "Voting Results"
                 : userVote
@@ -747,7 +732,6 @@ export function TrumpSelectionPopup({
                 trumpVotes={trumpVotes}
                 suitCounts={suitCounts}
                 isCurrentUserHost={isCurrentUserHost}
-                onForceBotVotes={onForceBotVotes}
                 totalVotes={totalVotes}
                 gameMode={gameMode}
               />
@@ -757,7 +741,7 @@ export function TrumpSelectionPopup({
           </div>
 
           {/* Action area - Fixed at bottom */}
-          <div className="flex-shrink-0 mt-3">
+          <div className="flex-shrink-0 mt-2">
             <ActionArea
               votingComplete={votingComplete}
               userVote={userVote}

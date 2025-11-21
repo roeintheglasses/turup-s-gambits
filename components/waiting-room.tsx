@@ -93,7 +93,7 @@ export function WaitingRoom({
           Copy Room Link
         </Button>
       </motion.div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5">
         {[0, 1, 2, 3].map((index) => {
           const playerName = safePlayersArray[index];
           const playerDetails = getPlayerDetails(playerName);
@@ -105,7 +105,7 @@ export function WaitingRoom({
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 + index * 0.1 }}
-              className={`h-20 sm:h-24 border border-primary/30 sm:border-2 rounded-md md:rounded-lg flex items-center justify-center ${
+              className={`h-24 sm:h-28 md:h-32 border border-primary/30 sm:border-2 rounded-md md:rounded-lg flex items-center justify-center overflow-hidden ${
                 !isEmptySlot
                   ? "border-primary bg-primary/10"
                   : "border-muted bg-muted/10"
@@ -116,9 +116,9 @@ export function WaitingRoom({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1"
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1"
                 >
-                  <span className="font-medieval text-xs sm:text-sm truncate px-1">
+                  <span className="font-medieval text-xs sm:text-sm truncate w-full text-center">
                     {playerDetails?.name || playerName}
                   </span>
                   <div className="flex flex-col items-center">

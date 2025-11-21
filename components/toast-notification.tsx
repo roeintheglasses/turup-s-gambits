@@ -31,15 +31,15 @@ export function ToastNotification() {
   const getBgColor = () => {
     switch (toastType) {
       case "success":
-        return "bg-green-500/10 border-green-500/30";
+        return "bg-[hsl(var(--olive-green))]/20 border-[hsl(var(--olive-bright))]";
       case "error":
-        return "bg-red-500/10 border-red-500/30";
+        return "bg-[hsl(var(--burgundy))]/20 border-[hsl(var(--burgundy))]";
       case "warning":
-        return "bg-yellow-500/10 border-yellow-500/30";
+        return "bg-[hsl(var(--amber-primary))]/20 border-[hsl(var(--amber-bright))]";
       case "info":
-        return "bg-blue-500/10 border-blue-500/30";
+        return "bg-[hsl(var(--warm-brown))]/40 border-[hsl(var(--warm-brown))]";
       default:
-        return "bg-card border-border";
+        return "bg-[hsl(var(--dark-panel))] border-[hsl(var(--warm-brown))]";
     }
   };
 
@@ -53,15 +53,15 @@ export function ToastNotification() {
           className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
         >
           <div
-            className={`${getBgColor()} border-2 rounded-lg px-4 py-3 shadow-xl backdrop-blur-md flex items-center gap-3 min-w-[300px] max-w-[500px]`}
+            className={`${getBgColor()} border-[3px] rounded-xl px-6 py-4 shadow-[0_8px_16px_rgba(0,0,0,0.4)] backdrop-blur-md flex items-center gap-4 min-w-[300px] max-w-[500px]`}
           >
             {getIcon()}
-            <p className="text-sm font-medium text-foreground flex-1">
+            <p className="text-base font-crimson font-medium text-foreground flex-1">
               {toastMessage}
             </p>
             <button
               onClick={clearToast}
-              className="text-muted-foreground hover:text-foreground transition-colors pointer-events-auto"
+              className="text-muted-foreground hover:text-foreground transition-colors duration-200 pointer-events-auto min-w-[48px] min-h-[48px] flex items-center justify-center text-2xl font-bold"
               aria-label="Close"
             >
               ×

@@ -4,65 +4,63 @@
 
 @layer base {
   :root {
-    --background: 35 30% 94%;
-    --foreground: 35 10% 10%;
+    /* Medieval Color Palette */
+    --amber-primary: 30 95% 44%;      /* #D97706 */
+    --amber-bright: 38 92% 50%;       /* #F59E0B */
+    --gold: 43 96% 41%;               /* #CA8A04 */
+    --olive-green: 68 47% 34%;        /* #6B7C2E */
+    --olive-bright: 68 43% 43%;       /* #8B9A3E */
+    --dark-bg: 25 26% 8%;             /* #1C1410 */
+    --dark-panel: 30 26% 14%;         /* #2D2419 */
+    --warm-brown: 30 28% 22%;         /* #4A3728 */
+    --parchment: 38 58% 90%;          /* #F5E6D3 */
+    --cream-text: 35 75% 97%;         /* #F9F5F0 */
+    --burgundy: 0 66% 31%;            /* #7F1D1D */
 
-    --card: 35 25% 95%;
-    --card-foreground: 35 10% 10%;
-
-    --popover: 35 25% 98%;
-    --popover-foreground: 35 10% 10%;
-
-    --primary: 35 80% 45%;
-    --primary-foreground: 35 10% 98%;
-
-    --secondary: 25 70% 45%;
-    --secondary-foreground: 35 10% 98%;
-
-    --muted: 35 10% 90%;
-    --muted-foreground: 35 10% 40%;
-
-    --accent: 45 90% 50%;
-    --accent-foreground: 35 10% 10%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 35 10% 98%;
-
-    --border: 35 10% 80%;
-    --input: 35 10% 80%;
-    --ring: 35 80% 45%;
-
-    --radius: 0.5rem;
+    /* Semantic Colors (HSL format for Tailwind) */
+    --background: 25 26% 8%;          /* dark-bg */
+    --foreground: 35 75% 97%;         /* cream-text */
+    --card: 30 26% 14%;               /* dark-panel */
+    --card-foreground: 35 75% 97%;    /* cream-text */
+    --popover: 30 26% 14%;            /* dark-panel */
+    --popover-foreground: 35 75% 97%; /* cream-text */
+    --primary: 30 95% 44%;            /* amber-primary */
+    --primary-foreground: 25 26% 8%;  /* dark text on amber */
+    --secondary: 68 47% 34%;          /* olive-green */
+    --secondary-foreground: 35 75% 97%; /* cream-text */
+    --muted: 30 28% 22%;              /* warm-brown */
+    --muted-foreground: 35 10% 70%;   /* lighter brown */
+    --accent: 38 92% 50%;             /* amber-bright */
+    --accent-foreground: 25 26% 8%;   /* dark-bg */
+    --destructive: 0 66% 31%;         /* burgundy */
+    --destructive-foreground: 35 75% 97%; /* cream-text */
+    --border: 30 28% 22%;             /* warm-brown */
+    --input: 30 28% 22%;              /* warm-brown */
+    --ring: 30 95% 44%;               /* amber-primary */
+    --radius: 0.75rem;                /* 12px - medieval rounded corners */
   }
 
-  .dark {
-    --background: 35 30% 8%;
-    --foreground: 35 10% 95%;
-
-    --card: 35 25% 12%;
-    --card-foreground: 35 10% 95%;
-
-    --popover: 35 25% 12%;
-    --popover-foreground: 35 10% 95%;
-
-    --primary: 35 80% 45%;
-    --primary-foreground: 35 10% 98%;
-
-    --secondary: 25 70% 45%;
-    --secondary-foreground: 35 10% 98%;
-
-    --muted: 35 20% 20%;
-    --muted-foreground: 35 10% 70%;
-
-    --accent: 45 90% 50%;
-    --accent-foreground: 35 10% 10%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 35 10% 98%;
-
-    --border: 35 30% 20%;
-    --input: 35 30% 20%;
-    --ring: 35 80% 45%;
+  /* Light Mode (Parchment theme) */
+  .light {
+    --background: 38 58% 90%;         /* parchment */
+    --foreground: 30 26% 14%;         /* dark-panel */
+    --card: 35 75% 97%;               /* cream */
+    --card-foreground: 30 26% 14%;    /* dark-panel */
+    --popover: 35 75% 97%;            /* cream */
+    --popover-foreground: 30 26% 14%; /* dark-panel */
+    --primary: 30 95% 44%;            /* amber-primary */
+    --primary-foreground: 25 26% 8%;  /* dark-bg */
+    --secondary: 68 47% 34%;          /* olive-green */
+    --secondary-foreground: 35 75% 97%; /* cream-text */
+    --muted: 38 40% 85%;              /* lighter muted for light mode */
+    --muted-foreground: 30 28% 30%;   /* darker text */
+    --accent: 38 92% 50%;             /* amber-bright */
+    --accent-foreground: 25 26% 8%;   /* dark-bg */
+    --destructive: 0 66% 31%;         /* burgundy */
+    --destructive-foreground: 35 75% 97%; /* cream-text */
+    --border: 30 28% 22%;             /* warm-brown */
+    --input: 30 28% 22%;              /* warm-brown */
+    --ring: 30 95% 44%;               /* amber-primary */
   }
 }
 
@@ -99,24 +97,51 @@
   h4,
   h5,
   h6 {
-    @apply font-medieval;
+    font-family: 'Cinzel', 'MedievalSharp', serif;
+    font-weight: 700;
+    color: hsl(var(--amber-primary));
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    line-height: 1.2;
   }
+
+  h1 { font-size: clamp(2rem, 5vw, 3rem); }
+  h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
+  h3 { font-size: clamp(1.25rem, 3vw, 1.5rem); }
+  h4 { font-size: 1.125rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.875rem; }
 
   main {
     @apply pt-16 sm:pt-20 md:pt-24;
     /* Add extra spacing below navbar - responsive */
   }
+
+  /* Medieval focus states for accessibility */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--amber-bright));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--amber-bright));
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
 
-  /* Adjust the fantasy card styling */
+  /* Medieval playing card styling */
   .fantasy-card {
-    @apply relative rounded-md md:rounded-lg overflow-hidden border border-primary/50 md:border-2 shadow-lg;
-    background-image: linear-gradient(to bottom right, #3a2a18, #1a1208);
+    @apply relative rounded-lg overflow-hidden border-[3px] shadow-[0_4px_8px_rgba(0,0,0,0.3)];
+    background: linear-gradient(180deg, #e8dcc4 0%, #d4c4a8 100%);
+    border-color: hsl(var(--warm-brown));
     position: relative;
     transform: scale(1);
-    /* Removed fixed scale for responsive sizing */
   }
 
   @media (min-width: 768px) {
@@ -125,12 +150,21 @@
     }
   }
 
+  /* Parchment texture overlay */
   .fantasy-card::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), transparent 60%);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.02) 2px,
+      rgba(139, 69, 19, 0.02) 4px
+    );
+    opacity: 0.3;
     z-index: 1;
+    pointer-events: none;
   }
 
   .fantasy-card>* {
@@ -443,5 +477,32 @@
 
   .animate-fadeUp {
     animation: fadeUp 3s ease-in-out forwards;
+  }
+}
+
+@layer utilities {
+  /* Medieval font utilities */
+  .font-cinzel {
+    font-family: 'Cinzel', 'MedievalSharp', serif;
+  }
+
+  .font-crimson {
+    font-family: 'Crimson Text', 'Lora', serif;
+  }
+
+  /* Medieval text shadow */
+  .text-shadow-medieval {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Touch target sizes for accessibility */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .touch-target-comfortable {
+    min-width: 56px;
+    min-height: 56px;
   }
 }

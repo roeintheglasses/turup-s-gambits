@@ -20,7 +20,6 @@ interface UseColyseusReturn {
   startGame: () => void;
   addBots: () => void;
   voteTrump: (suit: string) => void;
-  placeBid: (bid: number) => void;
   playCard: (cardId: string) => void;
   markReady: () => void;
   stateVersion: number;
@@ -118,10 +117,6 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
     colyseusClient.voteTrump(suit);
   }, []);
 
-  const placeBid = useCallback((bid: number) => {
-    colyseusClient.placeBid(bid);
-  }, []);
-
   const playCard = useCallback((cardId: string) => {
     colyseusClient.playCard(cardId);
   }, []);
@@ -169,7 +164,6 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
     startGame,
     addBots,
     voteTrump,
-    placeBid,
     playCard,
     markReady,
     stateVersion, // Export this so components can use it as dependency

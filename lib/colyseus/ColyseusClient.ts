@@ -124,13 +124,6 @@ class ColyseusClientService {
   }
 
   /**
-   * Place a bid
-   */
-  placeBid(bid: number) {
-    this.send("place_bid", { bid });
-  }
-
-  /**
    * Play a card
    */
   playCard(cardId: string) {

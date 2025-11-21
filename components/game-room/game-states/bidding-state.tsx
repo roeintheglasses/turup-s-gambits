@@ -43,7 +43,6 @@ export const BiddingState: React.FC<BiddingStateProps> = ({
         votingComplete={votingComplete}
         playerHand={playerHand}
         isOpen={showTrumpPopup}
-        onForceBotVotes={() => console.log("Force bot votes not implemented")}
         isCurrentUserHost={isCurrentUserHost}
         gameMode={mode as "classic" | "frenzy"}
       />

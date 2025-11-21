@@ -1,5 +1,4 @@
 import "./globals.css";
-import "./medieval-theme.css";
 
 import type React from "react";
 import type { Metadata } from "next";

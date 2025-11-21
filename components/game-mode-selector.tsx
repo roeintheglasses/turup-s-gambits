@@ -9,14 +9,14 @@ interface GameModeSelectorProps {
 
 export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelectorProps) {
   return (
-    <RadioGroup value={selectedMode} onValueChange={onSelectMode} className="grid grid-cols-3 gap-2">
+    <RadioGroup value={selectedMode} onValueChange={onSelectMode} className="grid grid-cols-3 gap-3">
       <div>
         <RadioGroupItem value="classic" id="classic" className="peer sr-only" />
         <Label
           htmlFor="classic"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[130px]"
+          className="flex flex-col items-center justify-center rounded-xl border-[3px] border-[hsl(var(--warm-brown))] bg-[hsl(var(--dark-panel))] p-4 hover:bg-[hsl(var(--warm-brown))]/20 hover:border-[hsl(var(--amber-primary))] hover:-translate-y-0.5 peer-data-[state=checked]:border-[hsl(var(--amber-primary))] peer-data-[state=checked]:shadow-[0_0_20px_rgba(217,119,6,0.3)] [&:has([data-state=checked])]:border-[hsl(var(--amber-primary))] cursor-pointer transition-all duration-200 min-h-[130px] shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
         >
-          <div className="mb-1.5 rounded-full bg-primary/20 p-1.5">
+          <div className="mb-2 rounded-full bg-[hsl(var(--amber-primary))]/20 p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -27,7 +27,7 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-primary"
+              className="text-[hsl(var(--amber-primary))]"
             >
               <path d="M2 15h20"></path>
               <path d="M2 7h20"></path>
@@ -35,8 +35,8 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
               <path d="M18 7v8"></path>
             </svg>
           </div>
-          <div className="font-medieval text-base mb-1">Classic</div>
-          <p className="text-xs text-muted-foreground text-center leading-tight">Traditional rules</p>
+          <div className="font-cinzel text-base mb-1 text-[hsl(var(--cream-text))]">Classic</div>
+          <p className="text-xs font-crimson text-[hsl(var(--muted-foreground))] text-center leading-tight">Traditional rules</p>
         </Label>
       </div>
 
@@ -44,9 +44,9 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
         <RadioGroupItem value="frenzy" id="frenzy" className="peer sr-only" />
         <Label
           htmlFor="frenzy"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card p-2 hover:bg-accent/20 hover:border-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 min-h-[130px]"
+          className="flex flex-col items-center justify-center rounded-xl border-[3px] border-[hsl(var(--warm-brown))] bg-[hsl(var(--dark-panel))] p-4 hover:bg-[hsl(var(--warm-brown))]/20 hover:border-[hsl(var(--amber-bright))] hover:-translate-y-0.5 peer-data-[state=checked]:border-[hsl(var(--amber-bright))] peer-data-[state=checked]:shadow-[0_0_20px_rgba(245,158,11,0.3)] [&:has([data-state=checked])]:border-[hsl(var(--amber-bright))] cursor-pointer transition-all duration-200 min-h-[130px] shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
         >
-          <div className="mb-1.5 rounded-full bg-accent/20 p-1.5">
+          <div className="mb-2 rounded-full bg-[hsl(var(--amber-bright))]/20 p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -57,15 +57,15 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-accent"
+              className="text-[hsl(var(--amber-bright))]"
             >
               <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path>
               <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path>
               <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path>
             </svg>
           </div>
-          <div className="font-medieval text-base mb-1">Frenzy</div>
-          <p className="text-xs text-muted-foreground text-center leading-tight">Special powers</p>
+          <div className="font-cinzel text-base mb-1 text-[hsl(var(--cream-text))]">Frenzy</div>
+          <p className="text-xs font-crimson text-[hsl(var(--muted-foreground))] text-center leading-tight">Special powers</p>
         </Label>
       </div>
 
@@ -74,9 +74,9 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
         <RadioGroupItem value="tutorial" id="tutorial" className="peer sr-only" disabled />
         <Label
           htmlFor="tutorial"
-          className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-card/50 p-2 opacity-80 cursor-not-allowed relative min-h-[130px]"
+          className="flex flex-col items-center justify-center rounded-xl border-[3px] border-[hsl(var(--warm-brown))] bg-[hsl(var(--dark-panel))]/50 p-4 opacity-60 cursor-not-allowed relative min-h-[130px] shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
         >
-          <div className="mb-1.5 rounded-full bg-secondary/20 p-1.5">
+          <div className="mb-2 rounded-full bg-[hsl(var(--olive-green))]/20 p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -87,7 +87,7 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-secondary"
+              className="text-[hsl(var(--olive-green))]"
             >
               <path d="M12 9V4"></path>
               <path d="M15.17 6 12 9.17 8.83 6"></path>
@@ -97,9 +97,9 @@ export function GameModeSelector({ selectedMode, onSelectMode }: GameModeSelecto
               <rect width="20" height="14" x="2" y="6" rx="2"></rect>
             </svg>
           </div>
-          <div className="font-medieval text-base mb-1">Tutorial</div>
-          <p className="text-xs text-muted-foreground text-center leading-tight">Guided lessons</p>
-          <div className="absolute bottom-1 right-1 bg-secondary/80 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+          <div className="font-cinzel text-base mb-1 text-[hsl(var(--cream-text))]">Tutorial</div>
+          <p className="text-xs font-crimson text-[hsl(var(--muted-foreground))] text-center leading-tight">Guided lessons</p>
+          <div className="absolute bottom-1.5 right-1.5 bg-[hsl(var(--olive-green))]/80 text-[hsl(var(--cream-text))] text-[10px] font-cinzel font-bold px-2 py-1 rounded-full">
             Soon
           </div>
         </Label>

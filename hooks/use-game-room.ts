@@ -127,11 +127,29 @@ export function useGameRoom(roomId: string) {
     [voteTrump]
   );
 
-  // Get trump votes for display
+  // Get trump votes for display - convert from playerId->suit to suit->count
   const trumpVotes = useMemo(() => {
-    if (!gameState?.trumpVotes) return new Map();
-    return new Map(Object.entries(gameState.trumpVotes));
-  }, [gameState?.trumpVotes]);
+    if (!gameState?.trumpVotes) return {};
+
+    // Count votes per suit
+    const voteCounts: Record<string, number> = {
+      hearts: 0,
+      diamonds: 0,
+      clubs: 0,
+      spades: 0,
+    };
+
+    // Iterate through the MapSchema using forEach (proper way for Colyseus)
+    gameState.trumpVotes.forEach((suit: string, playerId: string) => {
+      if (suit && suit in voteCounts) {
+        voteCounts[suit]++;
+      }
+    });
+
+    console.log("[use-game-room] Trump vote counts:", voteCounts, "raw votes:", Array.from(gameState.trumpVotes.entries()));
+
+    return voteCounts;
+  }, [gameState?.trumpVotes, stateVersion]); // Add stateVersion to ensure updates
 
   // Check if voting is complete (all players voted)
   const votingComplete = useMemo(() => {

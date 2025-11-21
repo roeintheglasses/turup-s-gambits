@@ -60,7 +60,6 @@ interface GameBoardProps {
   onUpdateGameState: (newState: any) => void;
   onRecordMove: (move: any) => void;
   onPlayCard: (card: any) => void;
-  onBid: (bid: number) => void;
   sendMessage: (message: any) => Promise<boolean>;
   playerHand?: any[]; // Optional prop for Colyseus player hand
   currentTurn?: string; // ID of player whose turn it is (from Colyseus)
@@ -1242,8 +1241,6 @@ export function GameBoard({
                   <div className="mb-1 sm:mb-1.5 md:mb-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-card/80 backdrop-blur-sm rounded-md md:rounded-lg border border-primary/30 shadow text-xs sm:text-sm">
                     {gameStatus === "initial_deal" &&
                       "Waiting for initial deal to complete..."}
-                    {gameStatus === "bidding" &&
-                      "Trump selected. Waiting for final deal..."}
                     {gameStatus === "final_deal" && "Dealing remaining cards..."}
                   </div>
                 )}

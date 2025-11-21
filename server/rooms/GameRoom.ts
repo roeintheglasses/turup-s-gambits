@@ -18,6 +18,16 @@ export class GameRoom extends Room<GameState> {
   private deck: Card[] = [];
   private botSessionIds: Set<string> = new Set();
 
+  // Medieval bot names pool
+  private readonly medievalBotNames = [
+    "Sir Aldric", "Lady Isolde", "Lord Cedric", "Dame Guinevere",
+    "Sir Percival", "Lady Rosalind", "Lord Tristan", "Dame Eleanor",
+    "Sir Gawain", "Lady Beatrice", "Lord Roland", "Dame Morgana",
+    "Sir Lancelot", "Lady Evangeline", "Lord Arthur", "Dame Vivienne",
+    "Sir Galahad", "Lady Rowena", "Lord Edmund", "Dame Cordelia"
+  ];
+  private usedBotNames: Set<string> = new Set();
+
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
     this.state.isPublic = options.isPublic !== false;
@@ -29,7 +39,6 @@ export class GameRoom extends Room<GameState> {
     this.onMessage("start_game", (client) => this.handleStartGame(client));
     this.onMessage("add_bots", (client) => this.handleAddBots(client));
     this.onMessage("vote_trump", (client, data) => this.handleTrumpVote(client, data));
-    this.onMessage("place_bid", (client, data) => this.handlePlaceBid(client, data));
     this.onMessage("play_card", (client, data) => this.handlePlayCard(client, data));
     this.onMessage("ready", (client) => this.handlePlayerReady(client));
 
@@ -163,7 +172,7 @@ export class GameRoom extends Room<GameState> {
 
       const botPlayer = new Player(
         botId,
-        `Bot ${position + 1}`,
+        this.getRandomBotName(),
         botId,
         position,
         team
@@ -181,6 +190,31 @@ export class GameRoom extends Room<GameState> {
 
       console.log(`🤖 ${botPlayer.name} joined as ${team === 0 ? 'Royals' : 'Rebels'}`);
     }
+  }
+
+  /**
+   * Get a random unused medieval bot name
+   */
+  private getRandomBotName(): string {
+    // Get available names (not yet used)
+    const availableNames = this.medievalBotNames.filter(
+      name => !this.usedBotNames.has(name)
+    );
+
+    // If all names are used, reset and start over
+    if (availableNames.length === 0) {
+      this.usedBotNames.clear();
+      return this.medievalBotNames[0];
+    }
+
+    // Pick a random name from available ones
+    const randomIndex = Math.floor(Math.random() * availableNames.length);
+    const selectedName = availableNames[randomIndex];
+
+    // Mark as used
+    this.usedBotNames.add(selectedName);
+
+    return selectedName;
   }
 
   private startInitialDeal() {
@@ -216,19 +250,25 @@ export class GameRoom extends Room<GameState> {
   private handleTrumpVote(client: Client, data: { suit: string }) {
     const player = this.state.players.get(client.sessionId);
 
-    if (!player) return;
+    if (!player) {
+      console.log(`❌ Vote failed: Player ${client.sessionId} not found`);
+      return;
+    }
     if (this.state.phase !== "trump_selection") {
+      console.log(`❌ Vote failed: Not in trump_selection phase (current: ${this.state.phase})`);
       client.error(0, "Not in trump selection phase");
       return;
     }
 
     if (player.hasVoted) {
+      console.log(`❌ Vote failed: ${player.name} already voted`);
       client.error(0, "Already voted");
       return;
     }
 
     const validSuits = ["hearts", "diamonds", "clubs", "spades"];
     if (!validSuits.includes(data.suit)) {
+      console.log(`❌ Vote failed: Invalid suit ${data.suit}`);
       client.error(0, "Invalid suit");
       return;
     }
@@ -237,6 +277,9 @@ export class GameRoom extends Room<GameState> {
     player.hasVoted = true;
     this.state.trumpVotes.set(client.sessionId, data.suit);
 
+    console.log(`✅ ${player.name} voted for ${data.suit}. Total votes: ${this.state.trumpVotes.size}/4`);
+    console.log(`   Current vote map:`, Array.from(this.state.trumpVotes.entries()));
+
     this.broadcast("trump_vote_received", {
       playerId: client.sessionId,
       votesRemaining: 4 - this.state.trumpVotes.size,
@@ -244,6 +287,7 @@ export class GameRoom extends Room<GameState> {
 
     // Check if all players have voted
     if (this.state.trumpVotes.size === 4) {
+      console.log(`🎉 All players voted! Determining trump suit...`);
       this.determineTrumpSuit();
     }
   }
@@ -276,73 +320,10 @@ export class GameRoom extends Room<GameState> {
       votes,
     });
 
-    // Move to bidding phase
+    // Move directly to final deal (skip bidding phase)
     this.clock.setTimeout(() => {
-      this.startBiddingPhase();
-    }, 2000);
-  }
-
-  private startBiddingPhase() {
-    this.state.phase = "bidding";
-    // Start with player 0 (or first player)
-    const firstPlayer = Array.from(this.state.players.values())[0];
-    this.state.currentTurn = firstPlayer.id;
-    this.state.turnStartedAt = Date.now();
-
-    // Log hand sizes at bidding start
-    console.log("🎲 Starting bidding phase - hand sizes:");
-    Array.from(this.state.players.values()).forEach((player) => {
-      console.log(`   ${player.name}: ${player.hand.length} cards`);
-    });
-
-    this.broadcast("phase_changed", {
-      phase: "bidding",
-      currentTurn: this.state.currentTurn,
-    });
-
-    this.triggerBotActions(); // First player might be bot
-  }
-
-  private handlePlaceBid(client: Client, data: { bid: number }) {
-    const player = this.state.players.get(client.sessionId);
-
-    if (!player) return;
-    if (this.state.phase !== "bidding") {
-      client.error(0, "Not in bidding phase");
-      return;
-    }
-
-    if (client.sessionId !== this.state.currentTurn) {
-      client.error(0, "Not your turn");
-      return;
-    }
-
-    if (data.bid < 7 || data.bid > 13) {
-      client.error(0, "Bid must be between 7 and 13");
-      return;
-    }
-
-    player.bid = data.bid;
-
-    if (data.bid > this.state.highestBid) {
-      this.state.highestBid = data.bid;
-      this.state.highestBidder = client.sessionId;
-    }
-
-    this.broadcast("bid_placed", {
-      playerId: client.sessionId,
-      bid: data.bid,
-    });
-
-    // Check if all players have bid
-    const allBid = Array.from(this.state.players.values()).every(p => p.bid > 0);
-
-    if (allBid) {
       this.startFinalDeal();
-    } else {
-      // Move to next player
-      this.nextTurn();
-    }
+    }, 2000);
   }
 
   private startFinalDeal() {
@@ -370,8 +351,11 @@ export class GameRoom extends Room<GameState> {
 
   private startPlayingPhase() {
     this.state.phase = "playing";
-    // Highest bidder leads first trick
-    this.state.currentTurn = this.state.highestBidder;
+    // Player 0 (dealer) leads first trick
+    const firstPlayer = Array.from(this.state.players.values()).sort(
+      (a, b) => a.position - b.position
+    )[0];
+    this.state.currentTurn = firstPlayer.id;
     this.state.turnStartedAt = Date.now();
     this.state.currentTrick = new Trick(0);
 
@@ -572,9 +556,7 @@ export class GameRoom extends Room<GameState> {
     if (this.state.currentTurn && this.botSessionIds.has(this.state.currentTurn)) {
       // Add delay for more realistic gameplay
       this.clock.setTimeout(() => {
-        if (this.state.phase === "bidding") {
-          this.botPlaceBid(this.state.currentTurn);
-        } else if (this.state.phase === "playing") {
+        if (this.state.phase === "playing") {
           this.botPlayCard(this.state.currentTurn);
         }
       }, 1000 + Math.random() * 1500); // 1-2.5 second delay
@@ -587,7 +569,7 @@ export class GameRoom extends Room<GameState> {
         if (bot && !bot.hasVoted) {
           this.clock.setTimeout(() => {
             this.botVoteTrump(botId);
-          }, 500 + Math.random() * 1500); // 0.5-2 second delay
+          }, 100 + Math.random() * 400); // 0.1-0.5 second delay (bots vote quickly)
         }
       });
     }
@@ -595,7 +577,10 @@ export class GameRoom extends Room<GameState> {
 
   private botVoteTrump(botId: string) {
     const bot = this.state.players.get(botId);
-    if (!bot || bot.hasVoted) return;
+    if (!bot || bot.hasVoted) {
+      console.log(`⚠️ Bot ${botId} skipped: ${!bot ? 'not found' : 'already voted'}`);
+      return;
+    }
 
     // Count cards by suit in hand
     const suitCounts: { [suit: string]: number } = {
@@ -615,49 +600,11 @@ export class GameRoom extends Room<GameState> {
       suitCounts[a] > suitCounts[b] ? a : b
     );
 
+    console.log(`🤖 ${bot.name} voting for ${preferredSuit} (hand: ${JSON.stringify(suitCounts)})`);
     this.handleTrumpVote({ sessionId: botId } as Client, { suit: preferredSuit });
-    console.log(`🤖 ${bot.name} voted for ${preferredSuit}`);
-  }
 
-  private botPlaceBid(botId: string) {
-    const bot = this.state.players.get(botId);
-    if (!bot) return;
-
-    // Calculate hand strength
-    let strength = 0;
-    const valuePoints: { [value: string]: number } = {
-      "A": 4,
-      "K": 3,
-      "Q": 2,
-      "J": 1,
-    };
-
-    bot.hand.forEach((card) => {
-      // Points for high cards
-      if (valuePoints[card.value]) {
-        strength += valuePoints[card.value];
-      }
-      // Extra points for trump cards
-      if (card.suit === this.state.trumpSuit) {
-        strength += 2;
-      }
-    });
-
-    // Calculate bid based on strength
-    // Strength ranges: 0-10 = bid 7, 11-20 = bid 8, 21-30 = bid 9, etc.
-    let bid = Math.min(7 + Math.floor(strength / 10), 13);
-
-    // Add some randomness (-1, 0, or +1)
-    bid += Math.floor(Math.random() * 3) - 1;
-    bid = Math.max(7, Math.min(bid, 13)); // Clamp between 7-13
-
-    // Don't bid same as current highest (slightly competitive)
-    if (bid === this.state.highestBid && bid < 13) {
-      bid++;
-    }
-
-    this.handlePlaceBid({ sessionId: botId } as Client, { bid });
-    console.log(`🤖 ${bot.name} bid ${bid} (strength: ${strength})`);
+    // Log state after vote
+    console.log(`   ✓ Vote registered. Total votes: ${this.state.trumpVotes.size}/4, Bot hasVoted: ${bot.hasVoted}`);
   }
 
   private botPlayCard(botId: string) {

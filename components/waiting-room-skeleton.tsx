@@ -37,7 +37,7 @@ export function WaitingRoomSkeleton() {
         <Skeleton className="h-10 w-40 mx-auto" />
       </motion.div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5">
         {[0, 1, 2, 3].map((index) => (
           <PlayerSkeleton key={index} index={index} delay={0.5 + index * 0.1} />
         ))}
