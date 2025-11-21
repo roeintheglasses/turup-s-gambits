@@ -82,10 +82,10 @@ export default function RootLayout({
           // Footer links
           footerActionLink: 'text-primary hover:text-accent underline font-medium',
 
-          // Social buttons
+          // Social buttons - make them look like proper buttons
           socialButtonsBlockButton:
-            'border-2 border-border hover:border-primary bg-card hover:bg-muted ' +
-            'text-foreground transition-all duration-200',
+            'border-2 border-primary/30 hover:border-primary bg-card hover:bg-muted ' +
+            'text-foreground transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20',
 
           // Divider
           dividerLine: 'bg-border',
@@ -113,8 +113,8 @@ export default function RootLayout({
           // Input fields
           formFieldInputShowPasswordButton: 'text-primary hover:text-accent',
 
-          // Social buttons
-          socialButtonsIconButton: 'border-2 border-border hover:border-primary',
+          // Social buttons (icon variant)
+          socialButtonsIconButton: 'border-2 border-primary/30 hover:border-primary shadow-md hover:shadow-lg hover:shadow-primary/20',
 
           // Loading
           spinner: 'text-primary',
@@ -126,7 +126,7 @@ export default function RootLayout({
           backLink: 'text-primary hover:text-accent',
 
           // Footer - connect to card seamlessly
-          footer: 'bg-card border-2 border-t-0 border-primary/30 rounded-b-xl pt-4 pb-4 shadow-2xl',
+          footer: 'bg-card border-2 border-t-0 border-primary/30 rounded-b-xl pt-4 shadow-2xl',
           footerActionText: 'text-muted-foreground',
 
           // Footer pages container
