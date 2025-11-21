@@ -8,6 +8,7 @@ import { Navbar } from "@/components/navbar";
 import { ToastNotification } from "@/components/toast-notification";
 import Link from "next/link";
 import { ClerkProvider } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 // Zustand stores are used for state management, no need for context providers
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -40,6 +41,7 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
+        baseTheme: dark,
         variables: {
           colorPrimary: 'hsl(30, 95%, 44%)', // amber-primary
           colorBackground: 'hsl(25, 26%, 8%)', // dark-bg
@@ -100,6 +102,32 @@ export default function RootLayout({
           // Profile button
           userButtonPopoverCard: 'bg-card/95 backdrop-blur-md border-2 border-primary/20',
           userButtonPopoverActionButton: 'hover:bg-primary/10 text-foreground',
+
+          // Additional element styling
+          formHeaderTitle: 'font-cinzel text-primary text-2xl tracking-wide',
+          formHeaderSubtitle: 'text-muted-foreground',
+
+          // Card and modal
+          rootBox: 'font-crimson',
+
+          // Input fields
+          formFieldInputShowPasswordButton: 'text-primary hover:text-accent',
+
+          // Social buttons
+          socialButtonsIconButton: 'border-2 border-border hover:border-primary',
+
+          // Loading
+          spinner: 'text-primary',
+
+          // Badges
+          badge: 'bg-primary/20 text-primary border border-primary/30',
+
+          // Back button
+          backLink: 'text-primary hover:text-accent',
+
+          // Footer
+          footer: 'bg-card/50',
+          footerActionText: 'text-muted-foreground',
         },
       }}
     >
