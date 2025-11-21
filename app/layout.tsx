@@ -60,8 +60,8 @@ export default function RootLayout({
           // Modal background
           modalBackdrop: 'backdrop-blur-sm bg-black/50',
 
-          // Card styling
-          card: 'bg-card border-2 border-primary/30 shadow-2xl backdrop-blur-md',
+          // Card styling - remove bottom border radius so footer can connect
+          card: 'bg-card border-2 border-b-0 border-primary/30 shadow-2xl backdrop-blur-md rounded-t-xl rounded-b-none',
 
           // Header styling
           headerTitle: 'font-cinzel text-primary text-2xl',
@@ -125,9 +125,12 @@ export default function RootLayout({
           // Back button
           backLink: 'text-primary hover:text-accent',
 
-          // Footer
-          footer: 'bg-card/50',
+          // Footer - connect to card seamlessly
+          footer: 'bg-card border-2 border-t-0 border-primary/30 rounded-b-xl pt-4 pb-4 shadow-2xl',
           footerActionText: 'text-muted-foreground',
+
+          // Footer pages container
+          footerPages: 'bg-card border-2 border-primary/30 rounded-xl p-4 shadow-2xl',
         },
       }}
     >
