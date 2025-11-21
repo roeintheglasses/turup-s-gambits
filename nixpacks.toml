@@ -5,7 +5,9 @@ nixPkgs = ["nodejs_22"]
 cmds = ["npm install -g pnpm@9", "pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["echo 'Skipping Next.js build - deploying Colyseus server only'"]
 
 [start]
 cmd = "pnpm run server:prod"
+
+[variables]
+NODE_ENV = "production"
