@@ -88,7 +88,11 @@ export function AuthButton() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
     >
-      <SignInButton mode="modal">
+      <SignInButton
+        mode="modal"
+        afterSignInUrl="/"
+        afterSignUpUrl="/"
+      >
         <Button
           variant="default"
           size="sm"
