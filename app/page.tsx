@@ -9,7 +9,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="relative h-full flex flex-col items-center justify-center overflow-hidden pt-16 pb-16">
+    <div className="relative h-full flex flex-col items-center justify-center overflow-hidden pt-16 pb-32">
       <VisualEffects enableGrain enableCRT />
       <FlyingCards />
 

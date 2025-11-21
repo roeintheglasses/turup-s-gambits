@@ -90,8 +90,7 @@ export function AuthButton() {
     >
       <SignInButton
         mode="modal"
-        afterSignInUrl="/"
-        afterSignUpUrl="/"
+        forceRedirectUrl="/"
       >
         <Button
           variant="default"
