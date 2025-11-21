@@ -7,7 +7,8 @@
     "server": "tsx watch server/index.ts",
     "server:prod": "tsx server/index.prod.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm server\"",
-    "build": "next build",
+    "build": "echo 'Skipping Next.js build for Colyseus server deployment'",
+    "build:nextjs": "next build",
     "start": "next start",
     "lint": "next lint"
   },
