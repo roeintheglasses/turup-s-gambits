@@ -1,8 +1,11 @@
-import { motion } from "framer-motion";
-import { Share } from "lucide-react";
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { Share, Copy, Check, Users, Crown, Swords, Bot, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { GameRoom } from "@/app/types/game"; // Assuming GameRoom type is defined here
+import { GameRoom } from "@/app/types/game";
+import { useState } from "react";
 
 interface WaitingRoomProps {
   roomId: string;
@@ -14,7 +17,7 @@ interface WaitingRoomProps {
   isStartingGame: boolean;
   onAddBots: () => void;
   onStartGame: () => void;
-  onForceHostStatus?: () => void; // Optional debug prop
+  onForceHostStatus?: () => void;
 }
 
 export function WaitingRoom({
@@ -27,194 +30,351 @@ export function WaitingRoom({
   isStartingGame,
   onAddBots,
   onStartGame,
-  onForceHostStatus,
 }: WaitingRoomProps) {
+  const [copied, setCopied] = useState(false);
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    // Consider adding a toast notification here instead of alert
-    // alert("Room link copied to clipboard!");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  // Helper to find player details safely
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const getPlayerDetails = (playerName: string) => {
-    console.log("getPlayerDetails currentRoom:", currentRoom);
     if (!currentRoom || !currentRoom.players || !playerName) return null;
     return currentRoom.players.find((p) => p.name === playerName);
   };
 
-  // Safe access to players array
   const safePlayersArray = Array.isArray(players) ? players : [];
   const playerCount = safePlayersArray.length;
 
-  // Debug logging
-  console.log("[WaitingRoom] Debug:", {
-    isCurrentUserHost,
-    allPlayersJoined,
-    playerCount,
-    shouldShowAddBots: isCurrentUserHost && !allPlayersJoined && playerCount < 4,
-    onAddBots: typeof onAddBots
-  });
+  // Team assignments: 0, 2 = Royals (team 0), 1, 3 = Rebels (team 1)
+  const royalsPlayers = [safePlayersArray[0], safePlayersArray[2]].filter(Boolean);
+  const rebelsPlayers = [safePlayersArray[1], safePlayersArray[3]].filter(Boolean);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-md mx-auto p-3 sm:p-4 md:p-6 border border-primary/30 md:border-2 rounded-lg bg-card/90 backdrop-blur-sm text-center"
+      className="w-full max-w-2xl mx-auto"
     >
-      <motion.h2
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="text-xl sm:text-2xl font-medieval mb-3 sm:mb-4"
-      >
-        Waiting for Players
-      </motion.h2>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mb-3 sm:mb-4 text-sm sm:text-base"
-      >
-        Share this room with friends to start the game
-      </motion.p>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.4 }}
-        className="flex justify-center mb-3 sm:mb-4"
-      >
-        <Button
-          variant="outline"
-          className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
-          onClick={handleCopyLink}
-        >
-          <Share className="h-3 w-3 sm:h-4 sm:w-4" />
-          Copy Room Link
-        </Button>
-      </motion.div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5">
-        {[0, 1, 2, 3].map((index) => {
-          const playerName = safePlayersArray[index];
-          const playerDetails = getPlayerDetails(playerName);
-          const isEmptySlot = !playerName;
+      {/* Header Card */}
+      <div className="bg-card/90 backdrop-blur-md border-2 border-primary/30 rounded-xl p-6 mb-4">
+        <div className="text-center mb-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/30 mb-3"
+          >
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Waiting for Players</span>
+          </motion.div>
 
-          return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 + index * 0.1 }}
-              className={`h-24 sm:h-28 md:h-32 border border-primary/30 sm:border-2 rounded-md md:rounded-lg flex items-center justify-center overflow-hidden ${
-                !isEmptySlot
-                  ? "border-primary bg-primary/10"
-                  : "border-muted bg-muted/10"
-              }`}
+          <h2 className="text-2xl sm:text-3xl font-medieval text-primary mb-2">
+            Game Room
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Share the room code with friends to start the game
+          </p>
+        </div>
+
+        {/* Room Code Display */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          <div className="bg-muted/50 rounded-lg px-6 py-3 border border-border">
+            <p className="text-xs text-muted-foreground mb-1 text-center">Room Code</p>
+            <p className="text-2xl sm:text-3xl font-mono font-bold tracking-[0.3em] text-foreground">
+              {roomId}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={handleCopyCode}
             >
-              {!isEmptySlot ? (
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copy Code
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={handleCopyLink}
+            >
+              <Share className="h-4 w-4" />
+              Share Link
+            </Button>
+          </div>
+        </div>
+
+        {/* Player Count */}
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex -space-x-2">
+            {[0, 1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 + i * 0.1 }}
+                className={`w-8 h-8 rounded-full border-2 border-card flex items-center justify-center ${
+                  i < playerCount
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {i < playerCount ? (
+                  <User className="w-4 h-4" />
+                ) : (
+                  <span className="text-xs">?</span>
+                )}
+              </motion.div>
+            ))}
+          </div>
+          <span className="text-sm font-medium">
+            {playerCount}/4 players
+          </span>
+        </div>
+      </div>
+
+      {/* Teams Display */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* Royals Team */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-amber-950/40 backdrop-blur-sm border-2 border-amber-600/40 rounded-xl p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full bg-amber-600/20 flex items-center justify-center">
+              <Crown className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="font-medieval text-amber-500 text-lg">Royals</h3>
+              <p className="text-xs text-amber-500/60">Positions 1 & 3</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {[0, 2].map((position, idx) => {
+              const playerName = safePlayersArray[position];
+              const playerDetails = getPlayerDetails(playerName);
+              const isEmpty = !playerName;
+
+              return (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1"
+                  key={position}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + idx * 0.1 }}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${
+                    isEmpty
+                      ? "bg-muted/20 border border-dashed border-muted-foreground/30"
+                      : "bg-amber-600/10 border border-amber-600/30"
+                  }`}
                 >
-                  <span className="font-medieval text-xs sm:text-sm truncate w-full text-center">
-                    {playerDetails?.name || playerName}
-                  </span>
-                  <div className="flex flex-col items-center">
-                    {playerDetails?.isHost && (
-                      <span className="text-[10px] sm:text-xs text-primary">Host</span>
-                    )}
-                    {playerDetails?.isBot && (
-                      <span className="text-[10px] sm:text-xs text-secondary flex items-center gap-0.5 sm:gap-1">
-                        <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary animate-pulse"></span>
-                        Bot
-                      </span>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    isEmpty ? "bg-muted/30" : "bg-amber-600/20"
+                  }`}>
+                    {isEmpty ? (
+                      <User className="w-5 h-5 text-muted-foreground/50" />
+                    ) : playerDetails?.isBot ? (
+                      <Bot className="w-5 h-5 text-amber-500" />
+                    ) : (
+                      <User className="w-5 h-5 text-amber-500" />
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium truncate ${
+                      isEmpty ? "text-muted-foreground/50" : "text-foreground"
+                    }`}>
+                      {isEmpty ? "Waiting..." : playerName}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs">
+                      {playerDetails?.isHost && (
+                        <span className="text-amber-500">Host</span>
+                      )}
+                      {playerDetails?.isBot && (
+                        <span className="text-muted-foreground">Bot</span>
+                      )}
+                      {!isEmpty && !playerDetails?.isHost && !playerDetails?.isBot && (
+                        <span className="text-muted-foreground">Player</span>
+                      )}
+                    </div>
+                  </div>
+                  {!isEmpty && (
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  )}
                 </motion.div>
-              ) : (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                  className="text-muted-foreground text-xs sm:text-sm"
-                >
-                  Empty
-                </motion.span>
-              )}
-            </motion.div>
-          );
-        })}
-      </div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9 }}
-        className="mt-3 sm:mt-4 flex flex-col gap-2"
-      >
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          {playerCount}/4 players joined
-        </p>
-        <div className="space-y-2">
-          {/* Debug button - only visible in development */}
-          {process.env.NODE_ENV === "development" && onForceHostStatus && (
-            <Button
-              className="w-full medieval-button bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-1.5 sm:gap-2 mb-2 text-xs sm:text-sm h-8 sm:h-10"
-              onClick={onForceHostStatus}
-            >
-              Debug: Force Host Status
-            </Button>
-          )}
+              );
+            })}
+          </div>
+        </motion.div>
 
+        {/* Rebels Team */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-blue-950/40 backdrop-blur-sm border-2 border-blue-600/40 rounded-xl p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center">
+              <Swords className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-medieval text-blue-500 text-lg">Rebels</h3>
+              <p className="text-xs text-blue-500/60">Positions 2 & 4</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {[1, 3].map((position, idx) => {
+              const playerName = safePlayersArray[position];
+              const playerDetails = getPlayerDetails(playerName);
+              const isEmpty = !playerName;
+
+              return (
+                <motion.div
+                  key={position}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + idx * 0.1 }}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${
+                    isEmpty
+                      ? "bg-muted/20 border border-dashed border-muted-foreground/30"
+                      : "bg-blue-600/10 border border-blue-600/30"
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    isEmpty ? "bg-muted/30" : "bg-blue-600/20"
+                  }`}>
+                    {isEmpty ? (
+                      <User className="w-5 h-5 text-muted-foreground/50" />
+                    ) : playerDetails?.isBot ? (
+                      <Bot className="w-5 h-5 text-blue-500" />
+                    ) : (
+                      <User className="w-5 h-5 text-blue-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium truncate ${
+                      isEmpty ? "text-muted-foreground/50" : "text-foreground"
+                    }`}>
+                      {isEmpty ? "Waiting..." : playerName}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs">
+                      {playerDetails?.isHost && (
+                        <span className="text-blue-500">Host</span>
+                      )}
+                      {playerDetails?.isBot && (
+                        <span className="text-muted-foreground">Bot</span>
+                      )}
+                      {!isEmpty && !playerDetails?.isHost && !playerDetails?.isBot && (
+                        <span className="text-muted-foreground">Player</span>
+                      )}
+                    </div>
+                  </div>
+                  {!isEmpty && (
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Action Buttons */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="bg-card/90 backdrop-blur-md border-2 border-primary/30 rounded-xl p-4"
+      >
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* Fill with Bots button */}
           {isCurrentUserHost && !allPlayersJoined && playerCount < 4 && (
             <Button
-              className="w-full medieval-button bg-secondary hover:bg-secondary/90 text-secondary-foreground flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
+              className="flex-1 h-12 medieval-button bg-secondary hover:bg-secondary/90 text-secondary-foreground"
               onClick={onAddBots}
               disabled={isAddingBots}
             >
               {isAddingBots ? (
                 <>
-                  <LoadingSpinner size="sm" />
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    Adding Bots...
-                  </motion.span>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding Bots...
                 </>
               ) : (
-                "Fill with Bots"
+                <>
+                  <Bot className="w-4 h-4 mr-2" />
+                  Fill with Bots
+                </>
               )}
             </Button>
           )}
 
           {/* Start Game button */}
-          {allPlayersJoined && (
+          {allPlayersJoined && isCurrentUserHost && (
             <Button
-              className="w-full medieval-button bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
+              className="flex-1 h-12 medieval-button bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={onStartGame}
               disabled={isStartingGame}
             >
               {isStartingGame ? (
                 <>
-                  <LoadingSpinner size="sm" />
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    Starting Game...
-                  </motion.span>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Starting Game...
                 </>
               ) : (
-                "Start Game"
+                <>
+                  <Swords className="w-4 h-4 mr-2" />
+                  Start Game
+                </>
               )}
             </Button>
           )}
+
+          {/* Waiting message for non-hosts */}
+          {allPlayersJoined && !isCurrentUserHost && (
+            <div className="flex-1 h-12 flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Waiting for host to start...</span>
+            </div>
+          )}
+
+          {/* Waiting for players message */}
+          {!allPlayersJoined && !isCurrentUserHost && (
+            <div className="flex-1 h-12 flex items-center justify-center gap-2 text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span>Waiting for more players to join...</span>
+            </div>
+          )}
         </div>
+
+        {/* Tip */}
+        <p className="text-xs text-center text-muted-foreground mt-3">
+          {isCurrentUserHost
+            ? "As the host, you can add bots to fill empty slots or start the game when ready."
+            : "The host will start the game when all players are ready."}
+        </p>
       </motion.div>
     </motion.div>
   );
