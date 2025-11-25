@@ -1,8 +1,10 @@
 "use client";
 
+import { memo, useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/card";
 import { Trophy, Crown, Swords } from "lucide-react";
+import { playSoundEffect } from "@/hooks/use-sound-effects";
 
 interface CenterCard {
   id: number;
@@ -23,6 +25,7 @@ interface CenterTrickAreaProps {
     bottom: string;
   };
   teamAssignments?: Record<string, "royals" | "rebels">;
+  isCollecting?: boolean;
 }
 
 /**
@@ -34,60 +37,77 @@ interface CenterTrickAreaProps {
  * - Leading suit indicator
  * - Smooth entry animations
  */
-export function CenterTrickArea({
+export const CenterTrickArea = memo(function CenterTrickArea({
   cards,
   trumpSuit,
   leadingSuit,
   winningCardIndex,
   playerPositions,
   teamAssignments = {},
+  isCollecting = false,
 }: CenterTrickAreaProps) {
-  // Get card position and animation based on who played it
-  // Using fixed pixel offsets from center to avoid transform conflicts
-  const getCardConfig = (playerName: string) => {
-    // Normalize player name for comparison (trim whitespace, lowercase)
-    const normalizedName = playerName?.trim().toLowerCase();
-    const normalizedTop = playerPositions.top?.trim().toLowerCase();
-    const normalizedBottom = playerPositions.bottom?.trim().toLowerCase();
-    const normalizedLeft = playerPositions.left?.trim().toLowerCase();
-    const normalizedRight = playerPositions.right?.trim().toLowerCase();
+  // Memoize mobile check - only re-evaluate on mount/resize
+  const [isMobile, setIsMobile] = useState(false);
+  const prevCardCountRef = useRef(0);
 
-    if (normalizedName === normalizedBottom) {
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Play sound when a card is added
+  useEffect(() => {
+    if (cards.length > prevCardCountRef.current && cards.length > 0) {
+      playSoundEffect("cardPlay", 0.4);
+    }
+    prevCardCountRef.current = cards.length;
+  }, [cards.length]);
+
+  // Memoize normalized player positions
+  const normalizedPositions = useMemo(() => ({
+    top: playerPositions.top?.trim().toLowerCase(),
+    bottom: playerPositions.bottom?.trim().toLowerCase(),
+    left: playerPositions.left?.trim().toLowerCase(),
+    right: playerPositions.right?.trim().toLowerCase(),
+  }), [playerPositions]);
+
+  // Get card position and animation based on who played it
+  const getCardConfig = useCallback((playerName: string) => {
+    const normalizedName = playerName?.trim().toLowerCase();
+
+    if (normalizedName === normalizedPositions.bottom) {
       return {
         position: "bottom" as const,
-        // Position below center
-        top: "60%",
+        top: isMobile ? "55%" : "60%",
         left: "50%",
-        initialY: 60,
+        initialY: isMobile ? 40 : 60,
       };
-    } else if (normalizedName === normalizedTop) {
+    } else if (normalizedName === normalizedPositions.top) {
       return {
         position: "top" as const,
-        // Position above center
-        top: "10%",
+        top: isMobile ? "15%" : "10%",
         left: "50%",
-        initialY: -60,
+        initialY: isMobile ? -40 : -60,
       };
-    } else if (normalizedName === normalizedLeft) {
+    } else if (normalizedName === normalizedPositions.left) {
       return {
         position: "left" as const,
-        // Position left of center
         top: "35%",
-        left: "15%",
-        initialX: -60,
+        left: isMobile ? "20%" : "15%",
+        initialX: isMobile ? -40 : -60,
       };
-    } else if (normalizedName === normalizedRight) {
+    } else if (normalizedName === normalizedPositions.right) {
       return {
         position: "right" as const,
-        // Position right of center
         top: "35%",
-        left: "85%",
-        initialX: 60,
+        left: isMobile ? "80%" : "85%",
+        initialX: isMobile ? 40 : 60,
       };
     }
 
     // Default: center (shouldn't happen normally)
-    console.log(`[CenterTrickArea] Unknown player: "${playerName}" - positions:`, playerPositions);
     return {
       position: "center" as const,
       top: "35%",
@@ -95,7 +115,66 @@ export function CenterTrickArea({
       initialX: 0,
       initialY: 0,
     };
-  };
+  }, [normalizedPositions, isMobile]);
+
+  // Calculate exit animation direction based on winning player position
+  const getExitAnimation = useCallback((winnerName: string | undefined) => {
+    if (!winnerName) {
+      return { opacity: 0, scale: 0.5, transition: { duration: 0.3 } };
+    }
+
+    const normalizedWinner = winnerName.trim().toLowerCase();
+    const exitDistance = isMobile ? 80 : 120;
+    const exitScale = 0.3;
+
+    if (normalizedWinner === normalizedPositions.bottom) {
+      return {
+        y: exitDistance,
+        x: 0,
+        scale: exitScale,
+        opacity: 0,
+        rotate: 10,
+        transition: { duration: 0.4, ease: "easeIn" },
+      };
+    } else if (normalizedWinner === normalizedPositions.top) {
+      return {
+        y: -exitDistance,
+        x: 0,
+        scale: exitScale,
+        opacity: 0,
+        rotate: -10,
+        transition: { duration: 0.4, ease: "easeIn" },
+      };
+    } else if (normalizedWinner === normalizedPositions.left) {
+      return {
+        x: -exitDistance,
+        y: 0,
+        scale: exitScale,
+        opacity: 0,
+        rotate: -15,
+        transition: { duration: 0.4, ease: "easeIn" },
+      };
+    } else if (normalizedWinner === normalizedPositions.right) {
+      return {
+        x: exitDistance,
+        y: 0,
+        scale: exitScale,
+        opacity: 0,
+        rotate: 15,
+        transition: { duration: 0.4, ease: "easeIn" },
+      };
+    }
+
+    return { opacity: 0, scale: 0.5, transition: { duration: 0.3 } };
+  }, [normalizedPositions, isMobile]);
+
+  // Get the winner name for exit animations
+  const winnerName = useMemo(() => {
+    if (winningCardIndex !== null && cards[winningCardIndex]) {
+      return cards[winningCardIndex].playedBy;
+    }
+    return undefined;
+  }, [winningCardIndex, cards]);
 
   const getSuitSymbol = (suit: string): string => {
     switch (suit?.toLowerCase()) {
@@ -126,14 +205,14 @@ export function CenterTrickArea({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20 z-30"
+            className="absolute top-1 sm:top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-2 bg-black/60 backdrop-blur-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/20 z-30"
           >
-            <span className="text-xs text-white/70">Lead:</span>
-            <span className={`text-lg ${getSuitColor(leadingSuit)}`}>
+            <span className="text-[10px] sm:text-xs text-white/70">Lead:</span>
+            <span className={`text-base sm:text-lg ${getSuitColor(leadingSuit)}`}>
               {getSuitSymbol(leadingSuit)}
             </span>
             {trumpSuit && leadingSuit === trumpSuit && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">
+              <span className="text-[8px] sm:text-[10px] bg-amber-500/20 text-amber-400 px-1 sm:px-1.5 py-0.5 rounded border border-amber-500/30">
                 Trump!
               </span>
             )}
@@ -143,8 +222,8 @@ export function CenterTrickArea({
 
       {/* Center decoration when no cards */}
       {cards.length === 0 && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
-          <span className="text-white/20 text-xs font-medieval">Play area</span>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">
+          <span className="text-white/20 text-[10px] sm:text-xs font-medieval">Play area</span>
         </div>
       )}
 
@@ -170,11 +249,7 @@ export function CenterTrickArea({
                 opacity: 1,
                 scale: isWinning ? 1.1 : 1,
               }}
-              exit={{
-                opacity: 0,
-                scale: 0.5,
-                transition: { duration: 0.2 },
-              }}
+              exit={getExitAnimation(winnerName)}
               transition={{
                 type: "spring",
                 stiffness: 300,
@@ -201,7 +276,7 @@ export function CenterTrickArea({
               {/* Winning card indicator */}
               {isWinning && (
                 <>
-                  {/* Glow effect */}
+                  {/* Glow effect - limited repeats for performance */}
                   <motion.div
                     animate={{
                       boxShadow: [
@@ -212,7 +287,7 @@ export function CenterTrickArea({
                     }}
                     transition={{
                       duration: 1.5,
-                      repeat: Infinity,
+                      repeat: 2,
                       ease: "easeInOut",
                     }}
                     className="absolute inset-0 rounded-lg pointer-events-none"
@@ -247,7 +322,7 @@ export function CenterTrickArea({
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 + 0.3 }}
-                className={`absolute -bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-md whitespace-nowrap ${
+                className={`absolute -bottom-5 sm:-bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md whitespace-nowrap ${
                   team === "royals"
                     ? "bg-amber-900/80 border border-amber-500/50"
                     : team === "rebels"
@@ -255,9 +330,9 @@ export function CenterTrickArea({
                       : "bg-black/60 border border-white/20"
                 }`}
               >
-                {team === "royals" && <Crown className="w-3 h-3 text-amber-400" />}
-                {team === "rebels" && <Swords className="w-3 h-3 text-blue-400" />}
-                <span className="text-[10px] font-medieval text-white">
+                {team === "royals" && <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />}
+                {team === "rebels" && <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-400" />}
+                <span className="text-[8px] sm:text-[10px] font-medieval text-white truncate max-w-[50px] sm:max-w-none">
                   {card.playedBy}
                 </span>
               </motion.div>
@@ -268,13 +343,13 @@ export function CenterTrickArea({
 
       {/* Trump suit reminder in corner */}
       {trumpSuit && (
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-xs text-white/50">
-          <span>Trump:</span>
-          <span className={`text-base ${getSuitColor(trumpSuit)}`}>
+        <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-white/50">
+          <span className="hidden sm:inline">Trump:</span>
+          <span className={`text-sm sm:text-base ${getSuitColor(trumpSuit)}`}>
             {getSuitSymbol(trumpSuit)}
           </span>
         </div>
       )}
     </div>
   );
-}
+});

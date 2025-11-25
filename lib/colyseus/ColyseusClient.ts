@@ -41,7 +41,7 @@ class ColyseusClientService {
         isPublic: options?.isPublic ?? true,
         gameMode: "classic",
       });
-      console.log("✅ Joined/Created room:", this.currentRoom.id);
+      console.log("✅ Joined/Created room:", this.currentRoom.roomId);
 
       return this.currentRoom;
     } catch (error) {
@@ -146,15 +146,22 @@ class ColyseusClientService {
 
   /**
    * Get available rooms
+   * Note: This uses the matchmaking API which may require server configuration
    */
-  async getAvailableRooms() {
+  async getAvailableRooms(): Promise<any[]> {
     if (!this.client) {
       this.initialize();
     }
 
     try {
-      const rooms = await this.client!.getAvailableRooms("game_room");
-      return rooms.filter((room) => room.metadata?.isPublic !== false);
+      // Cast to any to handle different Colyseus versions
+      const client = this.client as any;
+      if (typeof client.getAvailableRooms !== "function") {
+        console.warn("getAvailableRooms not available in this Colyseus version");
+        return [];
+      }
+      const rooms = await client.getAvailableRooms("game_room");
+      return rooms.filter((room: any) => room.metadata?.isPublic !== false);
     } catch (error) {
       console.error("❌ Error fetching rooms:", error);
       return [];
@@ -170,9 +177,11 @@ class ColyseusClientService {
     }
 
     try {
-      this.currentRoom = await this.client!.reconnect<GameState>(roomId, sessionId);
+      // Cast to any to handle different Colyseus versions
+      const client = this.client as any;
+      this.currentRoom = await client.reconnect(roomId, sessionId);
       console.log("✅ Reconnected to room:", roomId);
-      return this.currentRoom;
+      return this.currentRoom!;
     } catch (error) {
       console.error("❌ Failed to reconnect:", error);
       throw error;

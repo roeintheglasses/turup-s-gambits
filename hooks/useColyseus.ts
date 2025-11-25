@@ -15,7 +15,7 @@ interface UseColyseusReturn {
   gameState: GameState | null;
   isConnected: boolean;
   error: string | null;
-  joinRoom: (roomId?: string) => Promise<void>;
+  joinRoom: (roomId?: string) => Promise<GameRoom>;
   leaveRoom: () => Promise<void>;
   startGame: () => void;
   addBots: () => void;

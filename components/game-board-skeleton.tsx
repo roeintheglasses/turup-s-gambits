@@ -144,7 +144,7 @@ function BottomBarSkeleton() {
 // Main game table skeleton
 function GameTableSkeleton() {
   return (
-    <div className="relative w-full h-full min-h-[400px] md:min-h-[500px] lg:min-h-[550px] border-2 border-primary/30 rounded-xl bg-card/80 backdrop-blur-sm overflow-hidden">
+    <div className="relative w-full max-w-4xl aspect-[4/3] border-2 border-primary/30 rounded-xl bg-card/80 backdrop-blur-sm overflow-hidden">
       {/* Decorative Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div

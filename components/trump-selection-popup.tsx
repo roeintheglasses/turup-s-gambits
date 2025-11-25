@@ -8,6 +8,7 @@ import { Crown, Check, Clock } from "lucide-react";
 import { Suit } from "@/app/types/game";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores";
+import { playSoundEffect } from "@/hooks/use-sound-effects";
 
 // Constants
 const SUITS = [
@@ -217,6 +218,9 @@ export function TrumpSelectionPopup({
     }
 
     if (DEBUG) console.log(`[Trump Selection] Voting for ${selectedSuit}`);
+
+    // Play button click sound
+    playSoundEffect("buttonClick", 0.4);
 
     // Call the onVote callback with the selected suit
     onVote(selectedSuit);
@@ -625,7 +629,7 @@ export function TrumpSelectionPopup({
                 }`}
                 size="lg"
                 onClick={handleVote}
-                disabled={!selectedSuit || isHandLoading || userVote}
+                disabled={!selectedSuit || isHandLoading || !!userVote}
               >
                 {isHandLoading ? (
                   <span className="flex items-center gap-2">

@@ -40,7 +40,6 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
     startGame,
     addBots,
     voteTrump,
-    placeBid,
     playCard,
     markReady,
     stateVersion,
@@ -119,14 +118,6 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
       }
     },
     [playCard]
-  );
-
-  // Handle bid
-  const handleBid = useCallback(
-    (bid: number) => {
-      placeBid(bid);
-    },
-    [placeBid]
   );
 
   // Handle trump vote
@@ -246,10 +237,8 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
     votingComplete,
     handleTrumpVote,
 
-    // Bidding
+    // Turn tracking
     currentTurn: gameState?.currentTurn || "",
-    highestBid: gameState?.highestBid || 0,
-    highestBidder: gameState?.highestBidder || "",
 
     // End-game data
     winner,
@@ -263,7 +252,6 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
     handleStartGame,
     handleAddBots,
     handlePlayCard,
-    handleBid,
     markReady,
 
     // UI state

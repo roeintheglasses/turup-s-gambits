@@ -6,7 +6,7 @@ import { Inter, MedievalSharp, Cinzel, Crimson_Text } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { ToastNotification } from "@/components/toast-notification";
-import Link from "next/link";
+import { Footer } from "@/components/footer";
 import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 // Zustand stores are used for state management, no need for context providers
@@ -145,40 +145,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ToastNotification />
-            <div className="flex flex-col h-screen w-full">
+            <div className="flex flex-col min-h-screen w-full">
               <Navbar />
-              <main className="flex-1 w-full mx-auto overflow-auto">{children}</main>
-              <footer className="text-center text-sm text-foreground/60 py-4 z-10 flex-shrink-0">
-                <div className="container mx-auto px-4">
-                  <p className="mb-2">© {2025} Turup's Gambit Fantasy Edition</p>
-                  <div className="flex justify-center gap-6">
-                    <Link
-                      href="/privacy-policy"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Privacy Policy
-                    </Link>
-                    <Link
-                      href="/terms-of-service"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Terms of Service
-                    </Link>
-                    <Link
-                      href="/about"
-                      className="hover:text-primary transition-colors"
-                    >
-                      About
-                    </Link>
-                    <Link
-                      href="/game"
-                      className="hover:text-primary transition-colors"
-                    >
-                      Play Game
-                    </Link>
-                  </div>
-                </div>
-              </footer>
+              <main className="flex-1 w-full mx-auto">{children}</main>
+              <Footer />
             </div>
           </ThemeProvider>
         </body>

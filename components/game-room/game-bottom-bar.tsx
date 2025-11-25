@@ -47,11 +47,11 @@ const TrumpBadge = memo(({ trumpSuit }: { trumpSuit: string | null }) => {
   const config = suitConfig[trumpSuit] || { symbol: trumpSuit, color: "text-muted-foreground", bg: "bg-muted" };
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${config.bg} border border-primary/20`}>
+    <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg ${config.bg} border border-primary/20`}>
       <motion.span
         animate={{ scale: [1, 1.1, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
-        className={`text-xl ${config.color}`}
+        className={`text-lg sm:text-xl ${config.color}`}
       >
         {config.symbol}
       </motion.span>
@@ -68,19 +68,21 @@ TrumpBadge.displayName = "TrumpBadge";
 // Compact score display
 const ScoreBadge = memo(({ scores }: { scores: { royals: number; rebels: number } }) => {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       {/* Royals */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
-        <Crown size={14} className="text-amber-500" />
-        <span className="text-sm font-bold text-amber-500">{scores.royals}</span>
+      <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
+        <Crown size={12} className="text-amber-500 sm:hidden" />
+        <Crown size={14} className="text-amber-500 hidden sm:block" />
+        <span className="text-xs sm:text-sm font-bold text-amber-500">{scores.royals}</span>
       </div>
 
-      <span className="text-muted-foreground text-xs px-1">vs</span>
+      <span className="text-muted-foreground text-[10px] sm:text-xs px-0.5 sm:px-1">vs</span>
 
       {/* Rebels */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30">
-        <Swords size={14} className="text-blue-500" />
-        <span className="text-sm font-bold text-blue-500">{scores.rebels}</span>
+      <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30">
+        <Swords size={12} className="text-blue-500 sm:hidden" />
+        <Swords size={14} className="text-blue-500 hidden sm:block" />
+        <span className="text-xs sm:text-sm font-bold text-blue-500">{scores.rebels}</span>
       </div>
     </div>
   );
@@ -88,7 +90,7 @@ const ScoreBadge = memo(({ scores }: { scores: { royals: number; rebels: number 
 
 ScoreBadge.displayName = "ScoreBadge";
 
-// Current turn indicator - compact
+// Current turn indicator - compact with mobile optimization
 const TurnIndicator = memo(({
   currentPlayer,
   players,
@@ -106,13 +108,13 @@ const TurnIndicator = memo(({
 
   const player = players.find(p => p.id === currentPlayer);
   const isYourTurn = player?.id === userId;
-  const playerName = isYourTurn ? "Your Turn!" : player?.name || "Waiting...";
+  const playerName = isYourTurn ? "You!" : player?.name?.split(" ")[0] || "...";
   const playerIndex = players.findIndex(p => p.id === currentPlayer);
   const isRoyals = playerIndex === 0 || playerIndex === 2;
 
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+      className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg border ${
         isYourTurn
           ? "bg-primary/20 border-primary animate-pulse"
           : isRoyals
@@ -120,8 +122,8 @@ const TurnIndicator = memo(({
             : "bg-blue-500/10 border-blue-500/30"
       }`}
     >
-      <Timer size={14} className={isYourTurn ? "text-primary" : isRoyals ? "text-amber-500" : "text-blue-500"} />
-      <span className={`text-sm font-medium ${isYourTurn ? "text-primary" : ""}`}>
+      <Timer size={14} className={`flex-shrink-0 ${isYourTurn ? "text-primary" : isRoyals ? "text-amber-500" : "text-blue-500"}`} />
+      <span className={`text-xs sm:text-sm font-medium truncate max-w-[60px] sm:max-w-[100px] ${isYourTurn ? "text-primary" : ""}`}>
         {playerName}
       </span>
     </div>
@@ -146,9 +148,9 @@ const StatusBadge = memo(({ status }: { status: string }) => {
   const config = statusConfig[status] || { label: status, color: "bg-muted text-muted-foreground", icon: null };
 
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium border ${config.color}`}>
       {config.icon}
-      <span className="hidden sm:inline">{config.label}</span>
+      <span className="hidden xs:inline sm:inline">{config.label}</span>
     </div>
   );
 });
@@ -207,10 +209,10 @@ const ExpandedPanel = memo(({
       exit={{ height: 0, opacity: 0 }}
       className="overflow-hidden border-t border-border/30"
     >
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Teams */}
-        <div className="space-y-3">
-          <div>
+      <div className="p-3 sm:p-4 space-y-3 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4">
+        {/* Teams - horizontal on mobile, vertical on desktop */}
+        <div className="flex sm:flex-col gap-3 sm:space-y-3">
+          <div className="flex-1 sm:flex-none">
             <div className="flex items-center gap-1.5 mb-1">
               <Crown size={12} className="text-amber-500" />
               <span className="text-xs font-medium text-amber-500">Royals</span>
@@ -219,7 +221,7 @@ const ExpandedPanel = memo(({
               <PlayerItem key={p?.id || i} player={p} team="royals" />
             ))}
           </div>
-          <div>
+          <div className="flex-1 sm:flex-none">
             <div className="flex items-center gap-1.5 mb-1">
               <Swords size={12} className="text-blue-500" />
               <span className="text-xs font-medium text-blue-500">Rebels</span>
@@ -230,29 +232,36 @@ const ExpandedPanel = memo(({
           </div>
         </div>
 
-        {/* Room Info */}
-        <div className="flex flex-col justify-center">
-          <p className="text-xs text-muted-foreground mb-1">Room Code</p>
+        {/* Room Info & Actions - combined row on mobile */}
+        <div className="flex items-center justify-between sm:flex-col sm:justify-center col-span-1 sm:col-span-2">
           <div className="flex items-center gap-2">
-            <code className="font-mono font-bold text-lg tracking-wider">{roomId}</code>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCopyRoomId}>
-              {isCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-            </Button>
+            <div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">Room Code</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <code className="font-mono font-bold text-base sm:text-lg tracking-wider">{roomId}</code>
+                <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-7 sm:w-7" onClick={onCopyRoomId}>
+                  {isCopied ? <Check size={12} className="text-green-500 sm:hidden" /> : <Copy size={12} className="sm:hidden" />}
+                  {isCopied ? <Check size={14} className="text-green-500 hidden sm:block" /> : <Copy size={14} className="hidden sm:block" />}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-2">
-          <Button onClick={onShareGame} variant="outline" size="sm" disabled={isSharing}>
-            {isSharing ? <LoadingSpinner size="xs" className="mr-1" /> : <Share size={14} className="mr-1" />}
-            Share
-          </Button>
-          {isCurrentUserHost && (
-            <Button onClick={onEndGame} variant="destructive" size="sm" disabled={isEndingGame}>
-              {isEndingGame ? <LoadingSpinner size="xs" className="mr-1" /> : <LogOut size={14} className="mr-1" />}
-              End
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 sm:mt-3">
+            <Button onClick={onShareGame} variant="outline" size="sm" disabled={isSharing} className="h-8 text-xs sm:text-sm">
+              {isSharing ? <LoadingSpinner size="xs" className="mr-1" /> : <Share size={12} className="mr-1 sm:hidden" />}
+              {!isSharing && <Share size={14} className="mr-1 hidden sm:block" />}
+              <span className="hidden xs:inline">Share</span>
             </Button>
-          )}
+            {isCurrentUserHost && (
+              <Button onClick={onEndGame} variant="destructive" size="sm" disabled={isEndingGame} className="h-8 text-xs sm:text-sm">
+                {isEndingGame ? <LoadingSpinner size="xs" className="mr-1" /> : <LogOut size={12} className="mr-1 sm:hidden" />}
+                {!isEndingGame && <LogOut size={14} className="mr-1 hidden sm:block" />}
+                <span className="hidden xs:inline">End</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -318,11 +327,11 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
   };
 
   return (
-    <div className="mx-4 mb-4 rounded-xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-lg overflow-hidden">
+    <div className="mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-lg overflow-hidden">
       {/* Main Bar */}
-      <div className="px-3 py-2 flex items-center justify-between gap-2">
+      <div className="px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2">
         {/* Left: Status & Turn */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-shrink">
           <StatusBadge status={gameStatus} />
           <TurnIndicator
             currentPlayer={currentPlayer}
@@ -333,13 +342,13 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
         </div>
 
         {/* Center: Trump & Scores */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <TrumpBadge trumpSuit={trumpSuit} />
           {showScores && <ScoreBadge scores={scores} />}
         </div>
 
         {/* Right: Room Code & Expand */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* Room code - compact */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border">
             <code className="font-mono text-sm font-bold">{roomId}</code>
@@ -352,10 +361,11 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 p-0"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            {isExpanded ? <ChevronDown size={14} className="sm:hidden" /> : <ChevronUp size={14} className="sm:hidden" />}
+            {isExpanded ? <ChevronDown size={16} className="hidden sm:block" /> : <ChevronUp size={16} className="hidden sm:block" />}
           </Button>
         </div>
       </div>

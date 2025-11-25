@@ -9,8 +9,7 @@ interface GameBoardWrapperProps {
   gameStatus: string;
   currentTrick: { cards: any[]; playedBy: string[] };
   handlePlayCard: (card: any) => void;
-  handleBid: (bid: number) => void;
-  // Sidebar props
+  // Bottom bar props
   scores?: { royals: number; rebels: number };
   trumpSuit?: string | null;
   currentTurn?: string;
@@ -30,7 +29,6 @@ const GameBoardContent = memo(
     gameStatus,
     currentTrick,
     handlePlayCard,
-    handleBid,
     playerHand,
     currentTurn,
     currentPlayerId,
@@ -41,7 +39,6 @@ const GameBoardContent = memo(
     gameStatus: string;
     currentTrick: { cards: any[]; playedBy: string[] };
     handlePlayCard: (card: any) => void;
-    handleBid: (bid: number) => void;
     playerHand?: any[];
     currentTurn?: string;
     currentPlayerId?: string;
@@ -130,7 +127,6 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
     gameStatus,
     currentTrick,
     handlePlayCard,
-    handleBid,
     scores,
     trumpSuit,
     currentTurn,
@@ -149,7 +145,6 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
             gameStatus={gameStatus}
             currentTrick={currentTrick}
             handlePlayCard={handlePlayCard}
-            handleBid={handleBid}
             playerHand={playerHand}
             currentTurn={currentTurn}
             currentPlayerId={currentPlayerId}

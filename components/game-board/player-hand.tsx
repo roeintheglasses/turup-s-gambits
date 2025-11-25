@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { playSoundEffect } from "@/hooks/use-sound-effects";
 
 interface HandCard {
   id: number | string;
@@ -24,14 +25,9 @@ interface PlayerHandProps {
 
 /**
  * Player Hand - Arc/fan layout for the current player's cards
- * Features:
- * - Fan layout for natural feel (on larger screens)
- * - Clear playable/non-playable card states
- * - Hover effects with lift
- * - Loading state for card being played
- * - Responsive: linear on mobile, arc on desktop
+ * Optimized for 60fps with memoization and limited animations
  */
-export function PlayerHand({
+export const PlayerHand = memo(function PlayerHand({
   cards,
   isMyTurn,
   gameStatus,
@@ -40,52 +36,91 @@ export function PlayerHand({
   onCardClick,
   leadingSuit,
 }: PlayerHandProps) {
-  const [hoveredCard, setHoveredCard] = useState<number | string | null>(null);
+  // Memoize mobile check - only re-evaluate on mount/resize
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const isPlaying = gameStatus === "playing";
   const canPlay = isPlaying && isMyTurn;
+  const prevCardCountRef = useRef(0);
+  const [isDealing, setIsDealing] = useState(false);
 
-  // Check if a card can be played (follows suit rule)
-  const canPlayCard = useCallback((card: HandCard): boolean => {
-    if (!canPlay) return false;
-    if (!leadingSuit) return true; // First card of trick, any card is valid
+  // Track card dealing for animations and sounds
+  useEffect(() => {
+    const prevCount = prevCardCountRef.current;
+    const newCount = cards.length;
 
-    // Check if player has any cards of the leading suit
-    const hasLeadingSuit = cards.some(c => c.suit === leadingSuit);
-    if (!hasLeadingSuit) return true; // Can play any card if no cards of leading suit
-
-    // Must play a card of the leading suit
-    return card.suit === leadingSuit;
-  }, [canPlay, leadingSuit, cards]);
-
-  // Calculate arc positioning for each card
-  const getCardTransform = (index: number, total: number, isHovered: boolean) => {
-    if (total <= 1) return { rotate: 0, x: 0, y: 0 };
-
-    // For mobile (< 7 cards visible at once), use linear layout
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-
-    if (isMobile || total <= 5) {
-      // Linear layout with slight overlap
-      return { rotate: 0, x: 0, y: isHovered ? -12 : 0 };
+    // Cards were added (dealing)
+    if (newCount > prevCount && prevCount >= 0) {
+      setIsDealing(true);
+      // Play deal sound for each new card with slight delay
+      const newCards = newCount - prevCount;
+      for (let i = 0; i < newCards; i++) {
+        setTimeout(() => {
+          playSoundEffect("cardDeal", 0.3);
+        }, i * 80);
+      }
+      // Reset dealing state after animation completes
+      setTimeout(() => setIsDealing(false), newCards * 100 + 300);
     }
 
-    // Arc layout for desktop with many cards
+    prevCardCountRef.current = newCount;
+  }, [cards.length]);
+
+  // Memoize playable cards set for O(1) lookup
+  const playableCardIds = useMemo(() => {
+    if (!canPlay) return new Set<number | string>();
+    if (!leadingSuit) {
+      // All cards are playable
+      return new Set(cards.map(c => c.id));
+    }
+    // Check if player has leading suit
+    const hasLeadingSuit = cards.some(c => c.suit === leadingSuit);
+    if (!hasLeadingSuit) {
+      return new Set(cards.map(c => c.id));
+    }
+    // Only leading suit cards are playable
+    return new Set(cards.filter(c => c.suit === leadingSuit).map(c => c.id));
+  }, [canPlay, leadingSuit, cards]);
+
+  // Memoize card transforms based on card count and mobile
+  const cardTransforms = useMemo(() => {
+    const total = cards.length;
+    if (total <= 1) return cards.map(() => ({ rotate: 0, y: 0 }));
+
+    if (isMobile || total <= 5) {
+      return cards.map(() => ({ rotate: 0, y: 0 }));
+    }
+
     const centerIndex = (total - 1) / 2;
-    const offset = index - centerIndex;
-    const maxRotation = 15; // Max rotation in degrees
+    const maxRotation = 15;
     const rotationStep = maxRotation / Math.max(centerIndex, 1);
-    const rotate = offset * rotationStep;
 
-    // Y offset to create arc curve
-    const yOffset = Math.abs(offset) * 3;
+    return cards.map((_, index) => {
+      const offset = index - centerIndex;
+      return {
+        rotate: offset * rotationStep,
+        y: Math.abs(offset) * 3,
+      };
+    });
+  }, [cards.length, isMobile, cards]);
 
-    return {
-      rotate,
-      x: 0,
-      y: isHovered ? -20 : yOffset,
-    };
-  };
+  const handleCardClick = useCallback((cardId: number | string) => {
+    if (canPlay && playableCardIds.has(cardId) && playingCardId !== cardId) {
+      onCardClick(cardId);
+    }
+  }, [canPlay, playableCardIds, playingCardId, onCardClick]);
+
+  // Memoize gap style
+  const gapStyle = useMemo(() => ({
+    gap: cards.length > 8 ? "-12px" : cards.length > 5 ? "-2px" : "2px",
+  }), [cards.length]);
 
   return (
     <div className="relative w-full flex justify-center items-end pb-2">
@@ -96,50 +131,59 @@ export function PlayerHand({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`absolute -top-10 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-lg border text-sm font-medieval whitespace-nowrap ${
+            className={`absolute -top-8 sm:-top-10 left-1/2 -translate-x-1/2 px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg border text-[10px] sm:text-sm font-medieval whitespace-nowrap ${
               isMyTurn
                 ? "bg-green-600/90 border-green-400 text-white animate-pulse"
                 : "bg-card/80 border-border text-muted-foreground"
             }`}
           >
-            {isMyTurn ? "🎴 Your turn to play!" : "Waiting for your turn..."}
+            {isMyTurn ? "Your turn!" : "Waiting..."}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Cards container */}
-      <div
-        className="flex justify-center items-end"
-        style={{
-          gap: cards.length > 8 ? "-8px" : cards.length > 5 ? "2px" : "4px",
-        }}
-      >
+      <div className="flex justify-center items-end" style={gapStyle}>
         <AnimatePresence mode="popLayout">
           {cards.map((card, index) => {
-            const isPlayable = canPlayCard(card);
+            const isPlayable = playableCardIds.has(card.id);
             const isSelected = selectedCard === card.id;
             const isBeingPlayed = playingCardId === card.id;
-            const isHovered = hoveredCard === card.id;
-            const transform = getCardTransform(index, cards.length, isHovered && canPlay);
+            const transform = cardTransforms[index] || { rotate: 0, y: 0 };
 
             return (
               <motion.div
                 key={card.id}
                 layout
-                initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                initial={{
+                  opacity: 0,
+                  y: -150,
+                  x: (index - cards.length / 2) * -20,
+                  scale: 0.6,
+                  rotateZ: -10 + Math.random() * 20,
+                }}
                 animate={{
                   opacity: 1,
                   y: isSelected ? -16 : transform.y,
+                  x: 0,
                   scale: isBeingPlayed ? 0.9 : 1,
                   rotate: transform.rotate,
+                  rotateZ: 0,
                   filter: !isPlaying || !isMyTurn ? "brightness(0.7)" :
                           !isPlayable && canPlay ? "brightness(0.5) saturate(0.5)" : "brightness(1)",
                 }}
-                exit={{ opacity: 0, y: -100, scale: 0.5 }}
+                exit={{
+                  opacity: 0,
+                  y: -120,
+                  scale: 0.4,
+                  rotate: -15 + Math.random() * 30,
+                  transition: { duration: 0.3, ease: "easeIn" }
+                }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 25,
+                  stiffness: 280,
+                  damping: 22,
+                  delay: isDealing ? index * 0.08 : 0,
                 }}
                 whileHover={canPlay && isPlayable ? {
                   y: -16,
@@ -147,37 +191,17 @@ export function PlayerHand({
                   zIndex: 50,
                   transition: { duration: 0.15 },
                 } : undefined}
-                onHoverStart={() => setHoveredCard(card.id)}
-                onHoverEnd={() => setHoveredCard(null)}
-                onClick={() => {
-                  if (canPlay && isPlayable && !isBeingPlayed) {
-                    onCardClick(card.id);
-                  }
-                }}
+                onClick={() => handleCardClick(card.id)}
                 className={`relative ${
                   canPlay && isPlayable && !isBeingPlayed
                     ? "cursor-pointer"
                     : "cursor-not-allowed"
                 }`}
-                style={{ zIndex: isHovered ? 50 : index }}
+                style={{ zIndex: index }}
               >
-                {/* Playable card indicator glow */}
+                {/* Playable card indicator - CSS glow instead of infinite animation */}
                 {canPlay && isPlayable && !isBeingPlayed && (
-                  <motion.div
-                    animate={{
-                      boxShadow: [
-                        "0 0 0px rgba(34, 197, 94, 0)",
-                        "0 0 15px rgba(34, 197, 94, 0.5)",
-                        "0 0 0px rgba(34, 197, 94, 0)",
-                      ],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute inset-0 rounded-lg pointer-events-none"
-                  />
+                  <div className="absolute inset-0 rounded-lg pointer-events-none shadow-[0_0_12px_rgba(34,197,94,0.4)]" />
                 )}
 
                 {/* The card */}
@@ -199,8 +223,9 @@ export function PlayerHand({
                 {/* Non-playable indicator (must follow suit) */}
                 {canPlay && !isPlayable && leadingSuit && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-black/70 text-white text-[10px] px-1 py-0.5 rounded">
-                      Must follow suit
+                    <div className="bg-black/70 text-white text-[8px] sm:text-[10px] px-0.5 sm:px-1 py-0.5 rounded text-center leading-tight">
+                      <span className="hidden sm:inline">Must follow suit</span>
+                      <span className="sm:hidden">Follow suit</span>
                     </div>
                   </div>
                 )}
@@ -218,4 +243,4 @@ export function PlayerHand({
       )}
     </div>
   );
-}
+});

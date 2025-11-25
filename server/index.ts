@@ -3,7 +3,7 @@ import { createServer } from "http";
 import express from "express";
 import { GameRoom } from "./rooms/GameRoom";
 
-const port = process.env.COLYSEUS_PORT || 2567;
+const port = parseInt(process.env.COLYSEUS_PORT || "2567", 10);
 const app = express();
 
 // Colyseus server

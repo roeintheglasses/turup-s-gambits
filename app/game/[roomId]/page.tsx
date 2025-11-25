@@ -145,7 +145,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
           mode={(mode as string) || "classic"}
           playerHand={playerHand}
           handleTrumpVote={handleTrumpVote}
-          userVote={userVote}
+          userVote={userVote as any}
           trumpVotes={trumpVotes}
           votingComplete={votingComplete}
           showTrumpPopup={showTrumpPopup}

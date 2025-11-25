@@ -12,6 +12,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useReplay } from "@/hooks/use-replay";
 import { ReplaySummary } from "./replay-summary";
 import { BarChart3, Eye, Crown, Swords } from "lucide-react";
+import { playSoundEffect } from "@/hooks/use-sound-effects";
 import { TrumpSelectionPopup } from "@/components/trump-selection-popup";
 import { FrenzyPowers } from "@/components/frenzy-powers";
 
@@ -95,7 +96,6 @@ export function GameBoard({
 }: GameBoardProps) {
   const trumpSuit = useGameStore((state) => state.trumpSuit);
   const scores = useGameStore((state) => state.scores);
-  const playCardAction = useGameStore((state) => state.playCard);
   const storedTeamAssignments = useGameStore((state) => state.teamAssignments);
   const setTeamAssignments = useGameStore((state) => state.setTeamAssignments);
 
@@ -524,6 +524,10 @@ export function GameBoard({
 
     setLastTrickResult(trickResult);
     setShowTrickWinnerMessage(true);
+
+    // Play trick win sound
+    playSoundEffect("trickWin", 0.5);
+
     recordMove({
       type: "trickComplete",
       winner: winningPlayerName,
@@ -539,6 +543,17 @@ export function GameBoard({
 
     const gameEnded = newScores.royals >= 7 || newScores.rebels >= 7;
     if (gameEnded) {
+      // Play game end sound based on whether current player's team won
+      const currentUserTeam = storedTeamAssignments[user?.username || ""];
+      const winningTeam = newScores.royals >= 7 ? "royals" : "rebels";
+      setTimeout(() => {
+        if (currentUserTeam === winningTeam) {
+          playSoundEffect("gameWin", 0.6);
+        } else {
+          playSoundEffect("gameLose", 0.5);
+        }
+      }, 600);
+
       onUpdateGameState({
         scores: newScores,
         gameStatus: "ended",
@@ -572,6 +587,15 @@ export function GameBoard({
       return () => clearTimeout(timer);
     }
   }, [centerCards.length, handleTrickCompletion]);
+
+  // Play turn notification sound when it becomes the player's turn
+  const prevIsMyTurnRef = useRef(false);
+  useEffect(() => {
+    if (isMyTurn && !prevIsMyTurnRef.current && gameStatus === "playing") {
+      playSoundEffect("turnNotify", 0.4);
+    }
+    prevIsMyTurnRef.current = !!isMyTurn;
+  }, [isMyTurn, gameStatus]);
 
   useEffect(() => {
     if (cardPlayLoading) {
@@ -852,7 +876,7 @@ export function GameBoard({
               </div>
 
               {/* Center trick area */}
-              <div className="flex-1 max-w-md mx-2 sm:mx-4 h-full min-h-[300px] relative">
+              <div className="flex-1 max-w-xs sm:max-w-md mx-1 sm:mx-4 h-full min-h-[200px] sm:min-h-[300px] relative">
                 <CenterTrickArea
                   cards={centerCards}
                   trumpSuit={trumpSuit}
@@ -944,25 +968,25 @@ export function GameBoard({
             </div>
 
             {/* Bottom: Current player */}
-            <div className="pb-4 sm:pb-6 px-2 sm:px-4">
+            <div className="pb-2 sm:pb-6 px-1 sm:px-4">
               {/* Player info badge */}
-              <div className="flex justify-center mb-2">
+              <div className="flex justify-center mb-1 sm:mb-2">
                 <div
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg border-2 transition-all ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg border-2 transition-all ${
                     storedTeamAssignments[user?.username || ""] === "royals"
                       ? "border-amber-500/50 bg-amber-500/10"
                       : "border-blue-500/50 bg-blue-500/10"
                   } ${isMyTurn ? "shadow-[0_0_20px_rgba(34,197,94,0.4)] border-green-500" : ""}`}
                 >
                   {storedTeamAssignments[user?.username || ""] === "royals" ? (
-                    <Crown className="w-4 h-4 text-amber-400" />
+                    <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />
                   ) : (
-                    <Swords className="w-4 h-4 text-blue-400" />
+                    <Swords className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
                   )}
-                  <span className="text-sm font-medieval text-white">
+                  <span className="text-xs sm:text-sm font-medieval text-white truncate max-w-[80px] sm:max-w-none">
                     {user?.username || "You"}
                   </span>
-                  <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30">
+                  <span className="text-[10px] sm:text-xs bg-green-500/20 text-green-400 px-1 sm:px-1.5 py-0.5 rounded border border-green-500/30">
                     You
                   </span>
                 </div>
@@ -980,7 +1004,7 @@ export function GameBoard({
               />
 
               {/* Emote controls */}
-              <div className="flex justify-center mt-2">
+              <div className="flex justify-center mt-1 sm:mt-2">
                 <InGameEmotes onEmote={handleEmote} />
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { memo } from "react"
 import { motion } from "framer-motion"
 
 interface CardProps {
@@ -11,8 +11,11 @@ interface CardProps {
   is3D?: boolean
 }
 
-export function Card({ suit, value, onClick, disabled = false, is3D = false }: CardProps) {
-  const [isHovered, setIsHovered] = useState(false)
+/**
+ * Card component - Memoized for performance
+ * Uses CSS hover effects instead of React state to prevent re-renders
+ */
+export const Card = memo(function Card({ suit, value, onClick, disabled = false, is3D = false }: CardProps) {
 
   const getSuitSymbol = (suit: string) => {
     switch (suit.toLowerCase()) {
@@ -48,7 +51,7 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
   if (is3D) {
     return (
       <motion.button
-        className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} transition-all duration-200`}
+        className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} transition-all duration-200 group`}
         onClick={onClick}
         disabled={disabled}
         initial={{ rotateY: 0 }}
@@ -58,8 +61,6 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
           y: -10,
           boxShadow: "0 12px 20px rgba(0, 0, 0, 0.4)",
         }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
         style={{ transformStyle: "preserve-3d" }}
       >
         <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 flex flex-col items-center" style={{ transform: "translateZ(5px)" }}>
@@ -79,12 +80,11 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
           <span className={`text-xs sm:text-sm ${color}`}>{symbol}</span>
         </div>
 
-        {isHovered && (
-          <div
-            className="absolute inset-0 bg-[hsl(var(--amber-primary))]/10 rounded-lg"
-            style={{ transform: "translateZ(2px)" }}
-          />
-        )}
+        {/* CSS-based hover overlay - no React state needed */}
+        <div
+          className="absolute inset-0 bg-[hsl(var(--amber-primary))]/0 group-hover:bg-[hsl(var(--amber-primary))]/10 rounded-lg transition-colors duration-200"
+          style={{ transform: "translateZ(2px)" }}
+        />
       </motion.button>
     )
   }
@@ -108,5 +108,5 @@ export function Card({ suit, value, onClick, disabled = false, is3D = false }: C
       </div>
     </button>
   )
-}
+})
 

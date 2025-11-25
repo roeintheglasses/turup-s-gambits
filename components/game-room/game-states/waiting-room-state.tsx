@@ -23,11 +23,12 @@ export const WaitingRoomState: React.FC<WaitingRoomStateProps> = ({
   handleStartGame,
 }) => {
   // Build a minimal currentRoom object for compatibility
+  // Cast to any since WaitingRoom only uses a subset of GameRoom properties
   const currentRoom = {
     id: roomId,
     players: players,
     maxPlayers: 4,
-  };
+  } as any;
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-2 md:p-4">

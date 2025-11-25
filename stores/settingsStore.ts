@@ -37,6 +37,10 @@ interface SettingsState {
   currentTrackIndex: number;
   tracks: Track[];
 
+  // Sound effects settings
+  soundEffectsEnabled: boolean;
+  soundEffectsVolume: number;
+
   // Game settings
   cardAnimationSpeed: "slow" | "normal" | "fast";
   showTutorialTips: boolean;
@@ -51,6 +55,10 @@ interface SettingsState {
   setVolume: (volume: number) => void;
   nextTrack: () => void;
   previousTrack: () => void;
+
+  // Sound effects actions
+  setSoundEffectsEnabled: (enabled: boolean) => void;
+  setSoundEffectsVolume: (volume: number) => void;
 
   // Game settings actions
   setCardAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
@@ -69,6 +77,9 @@ export const useSettingsStore = create<SettingsState>()(
       isMuted: false,
       currentTrackIndex: 0,
       tracks: defaultTracks,
+
+      soundEffectsEnabled: true,
+      soundEffectsVolume: 0.5,
 
       cardAnimationSpeed: "normal",
       showTutorialTips: true,
@@ -165,6 +176,12 @@ export const useSettingsStore = create<SettingsState>()(
           }
         }, 50);
       },
+
+      setSoundEffectsEnabled: (soundEffectsEnabled) =>
+        set({ soundEffectsEnabled }),
+
+      setSoundEffectsVolume: (soundEffectsVolume) =>
+        set({ soundEffectsVolume }),
 
       setCardAnimationSpeed: (cardAnimationSpeed) =>
         set({ cardAnimationSpeed }),
