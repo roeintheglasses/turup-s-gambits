@@ -30,7 +30,34 @@ const crimsonText = Crimson_Text({
 
 export const metadata: Metadata = {
   title: "Turup's Gambit - Fantasy Card Game",
-  description: "Turup's Gambit card game",
+  description: "A medieval-themed multiplayer card game. Challenge your friends in the classic Court Piece card game!",
+  manifest: "/manifest.json",
+  themeColor: "#D4AF37",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Turup's Gambit",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Turup's Gambit",
+    title: "Turup's Gambit - Fantasy Card Game",
+    description: "A medieval-themed multiplayer card game. Challenge your friends in the classic Court Piece card game!",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Turup's Gambit - Fantasy Card Game",
+    description: "A medieval-themed multiplayer card game. Challenge your friends in the classic Court Piece card game!",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -135,6 +162,15 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="apple-mobile-web-app-title" content="Turup's Gambit" />
+        </head>
         <body
           className={`${inter.variable} ${medievalSharp.variable} ${cinzel.variable} ${crimsonText.variable} font-crimson bg-background min-h-screen`}
         >

@@ -27,3 +27,14 @@ yarn-error.log*
 next-env.d.ts
 
 .playwright-mcp
+
+# PWA
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
