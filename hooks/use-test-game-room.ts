@@ -1,15 +1,25 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useColyseus, usePlayers, usePlayerHand, useCurrentPlayer } from "@/hooks/useColyseus";
+import type { User } from "@/stores/authStore";
 
 /**
- * Main hook for game room functionality using Colyseus
+ * Test version of useGameRoom that bypasses authentication
+ * Uses a mock test user instead of requiring real auth
+ *
+ * ONLY USE FOR LOCAL TESTING/DEVELOPMENT
  */
-export function useGameRoom(roomId: string) {
+export function useTestGameRoom(roomId: string, testUserId: string) {
   const router = useRouter();
-  const { user } = useAuthStore();
+
+  // Create a mock test user
+  const testUser: User = useMemo(() => ({
+    id: testUserId,
+    username: `TestUser-${testUserId.slice(-4)}`,
+    name: `Test User ${testUserId.slice(-4)}`,
+    email: `${testUserId}@test.local`,
+  }), [testUserId]);
 
   // Get UI state
   const {
@@ -19,7 +29,7 @@ export function useGameRoom(roomId: string) {
     setShowTrumpPopup,
   } = useUIStore();
 
-  // Initialize Colyseus connection
+  // Initialize Colyseus connection with test user
   const {
     room,
     gameState,
@@ -35,10 +45,10 @@ export function useGameRoom(roomId: string) {
     markReady,
     stateVersion,
   } = useColyseus({
-    userId: user?.id || "",
-    userName: user?.username || "",
+    userId: testUser.id,
+    userName: testUser.username,
     roomId,
-    autoConnect: !!user && !!roomId, // Auto-connect if user and roomId are available
+    autoConnect: !!testUser && !!roomId, // Auto-connect if test user and roomId are available
   });
 
   // Local UI state
@@ -97,14 +107,14 @@ export function useGameRoom(roomId: string) {
       const cardId = card?.id || card?.apiId;
 
       if (!cardId) {
-        console.error("[GameRoom] Cannot play card: No card ID provided", card);
+        console.error("[TestGameRoom] Cannot play card: No card ID provided", card);
         return;
       }
 
       try {
         playCard(cardId);
       } catch (error) {
-        console.error("[GameRoom] Error playing card:", error);
+        console.error("[TestGameRoom] Error playing card:", error);
         useUIStore.getState().showToast("Error playing card. Please try again.", "error");
       }
     },
@@ -146,7 +156,7 @@ export function useGameRoom(roomId: string) {
       }
     });
 
-    console.log("[use-game-room] Trump vote counts:", voteCounts, "raw votes:", Array.from(gameState.trumpVotes.entries()));
+    console.log("[use-test-game-room] Trump vote counts:", voteCounts, "raw votes:", Array.from(gameState.trumpVotes.entries()));
 
     return voteCounts;
   }, [gameState?.trumpVotes, stateVersion]); // Add stateVersion to ensure updates
@@ -209,8 +219,8 @@ export function useGameRoom(roomId: string) {
   }, [error, isConnected, gameStatus, players, gameState, currentPlayer]);
 
   return {
-    // Core state
-    user,
+    // Core state - use test user instead of auth store
+    user: testUser,
     room,
     gameState,
     isConnected,

@@ -27,6 +27,31 @@ node scripts/check-tables.js        # Verify database tables exist
 node scripts/verify-env.ts          # Verify environment configuration
 ```
 
+### Test Mode (Development Only)
+For easier local testing without authentication:
+```bash
+# Navigate to test game lobby
+http://localhost:3000/test-game
+
+# Or directly join a test room
+http://localhost:3000/test-game/test-room-123
+```
+
+**Test Mode Features:**
+- Bypasses authentication (uses mock test users)
+- Auto-generates test user IDs
+- Supports custom user IDs via URL params: `?userId=custom-id`
+- Only available in development mode (auto-redirects in production)
+- Shows test mode banner for easy identification
+
+**Testing Multiplayer:**
+1. Open `/test-game` in your browser
+2. Create a test room
+3. Copy the room ID from the URL
+4. Open new browser tabs/windows
+5. Join the same room with "Join with Custom User ID"
+6. Use different user IDs for each tab to simulate multiple players
+
 ## New Architecture (Colyseus-based)
 
 ### Game Server (`/server`)
