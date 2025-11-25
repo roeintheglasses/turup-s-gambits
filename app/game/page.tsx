@@ -24,7 +24,6 @@ import {
   Users,
   ArrowLeft,
   Loader2,
-  Sparkles,
   Crown,
   Swords,
   Hash
@@ -190,19 +189,6 @@ export default function GamePage() {
                     />
                   </div>
 
-                  {/* Game Info */}
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                    <h4 className="font-medium text-sm flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      {gameMode === "classic" ? "Classic Mode" : "Frenzy Mode"}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {gameMode === "classic"
-                        ? "Traditional Court Piece rules. Trump suit is voted by all players. First team to win 7 tricks wins!"
-                        : "Fast-paced variant with special powers and abilities. Coming soon!"}
-                    </p>
-                  </div>
-
                   {/* Create Button */}
                   <Button
                     className="w-full medieval-button h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -221,12 +207,6 @@ export default function GamePage() {
                       </>
                     )}
                   </Button>
-
-                  {gameMode === "frenzy" && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      Frenzy mode is coming soon!
-                    </p>
-                  )}
                 </TabsContent>
 
                 <TabsContent value="join" className="p-6 space-y-6 mt-0">

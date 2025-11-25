@@ -1,6 +1,6 @@
 import React, { useMemo, memo } from "react";
 import { GameBoard } from "@/components/game-board";
-import { GameSidebar } from "./game-sidebar";
+import { GameBottomBar } from "./game-bottom-bar";
 
 interface GameBoardWrapperProps {
   roomId: string;
@@ -89,8 +89,8 @@ const GameBoardContent = memo(
 
 GameBoardContent.displayName = "GameBoardContent";
 
-// Memoized sidebar component
-const MemoizedGameSidebar = memo(
+// Memoized bottom bar component
+const MemoizedGameBottomBar = memo(
   ({
     roomId,
     players,
@@ -108,7 +108,7 @@ const MemoizedGameSidebar = memo(
     currentTurn?: string;
     isCurrentUserHost?: boolean;
   }) => (
-    <GameSidebar
+    <GameBottomBar
       roomId={roomId}
       players={players}
       gameStatus={gameStatus}
@@ -120,7 +120,7 @@ const MemoizedGameSidebar = memo(
   ),
 );
 
-MemoizedGameSidebar.displayName = "MemoizedGameSidebar";
+MemoizedGameBottomBar.displayName = "MemoizedGameBottomBar";
 
 export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
   ({
@@ -139,9 +139,9 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
     currentPlayerId,
   }) => {
     return (
-      <div className="h-full flex">
+      <div className="h-full flex flex-col">
         {/* Main Game Board - Takes most of the space */}
-        <div className="flex-1 flex items-center justify-center min-h-0">
+        <div className="flex-1 flex items-center justify-center p-4 min-h-0">
           <GameBoardContent
             roomId={roomId}
             mode={mode}
@@ -156,18 +156,16 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
           />
         </div>
 
-        {/* Game Sidebar - Only on medium+ screens */}
-        <div className="hidden md:flex md:flex-col md:w-64 lg:w-80 xl:w-96 h-full">
-          <MemoizedGameSidebar
-            roomId={roomId}
-            players={players}
-            gameStatus={gameStatus}
-            scores={scores}
-            trumpSuit={trumpSuit}
-            currentTurn={currentTurn}
-            isCurrentUserHost={isCurrentUserHost}
-          />
-        </div>
+        {/* Game Bottom Bar - Always visible */}
+        <MemoizedGameBottomBar
+          roomId={roomId}
+          players={players}
+          gameStatus={gameStatus}
+          scores={scores}
+          trumpSuit={trumpSuit}
+          currentTurn={currentTurn}
+          isCurrentUserHost={isCurrentUserHost}
+        />
       </div>
     );
   },
