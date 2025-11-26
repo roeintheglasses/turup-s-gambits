@@ -193,28 +193,6 @@ export const CenterTrickArea = memo(function CenterTrickArea({
 
   return (
     <div className="absolute inset-0">
-      {/* Leading suit indicator */}
-      <AnimatePresence>
-        {leadingSuit && cards.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-1 sm:top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-2 bg-black/60 backdrop-blur-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/20 z-30"
-          >
-            <span className="text-[10px] sm:text-xs text-white/70">Lead:</span>
-            <span className={`text-base sm:text-lg ${getSuitColor(leadingSuit)}`}>
-              {getSuitSymbol(leadingSuit)}
-            </span>
-            {trumpSuit && leadingSuit === trumpSuit && (
-              <span className="text-[8px] sm:text-[10px] bg-amber-500/20 text-amber-400 px-1 sm:px-1.5 py-0.5 rounded border border-amber-500/30">
-                Trump!
-              </span>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Center decoration when no cards */}
       {cards.length === 0 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center">

@@ -23,6 +23,8 @@ interface GameBoardWrapperProps {
   // Connection quality
   connectionQuality?: ConnectionQuality;
   latency?: number | null;
+  // Leading suit for current trick
+  leadingSuit?: string | null;
 }
 
 // Memoized component for the main game board
@@ -110,6 +112,10 @@ const MemoizedGameBottomBar = memo(
     trumpSuit,
     currentTurn,
     isCurrentUserHost,
+    turnStartedAt,
+    connectionQuality,
+    latency,
+    leadingSuit,
   }: {
     roomId: string;
     players?: any[];
@@ -118,6 +124,10 @@ const MemoizedGameBottomBar = memo(
     trumpSuit?: string | null;
     currentTurn?: string;
     isCurrentUserHost?: boolean;
+    turnStartedAt?: number;
+    connectionQuality?: ConnectionQuality;
+    latency?: number | null;
+    leadingSuit?: string | null;
   }) => (
     <GameBottomBar
       roomId={roomId}
@@ -127,6 +137,10 @@ const MemoizedGameBottomBar = memo(
       trumpSuit={trumpSuit}
       currentTurn={currentTurn}
       isCurrentUserHost={isCurrentUserHost}
+      turnStartedAt={turnStartedAt}
+      connectionQuality={connectionQuality}
+      latency={latency}
+      leadingSuit={leadingSuit}
     />
   ),
 );
@@ -150,7 +164,17 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
     currentPlayerId,
     connectionQuality,
     latency,
+    leadingSuit,
   }) => {
+    // Compute leading suit from current trick if not provided
+    const computedLeadingSuit = useMemo(() => {
+      if (leadingSuit !== undefined) return leadingSuit;
+      if (currentTrick.cards.length > 0) {
+        return currentTrick.cards[0]?.suit || null;
+      }
+      return null;
+    }, [leadingSuit, currentTrick.cards]);
+
     return (
       <div className="h-full flex flex-col">
         {/* Main Game Board - Takes most of the space */}
@@ -180,6 +204,10 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
           trumpSuit={trumpSuit}
           currentTurn={currentTurn}
           isCurrentUserHost={isCurrentUserHost}
+          turnStartedAt={turnStartedAt}
+          connectionQuality={connectionQuality}
+          latency={latency}
+          leadingSuit={computedLeadingSuit}
         />
       </div>
     );

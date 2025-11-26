@@ -17,11 +17,15 @@ import {
   Users,
   Play,
   Sparkles,
+  Wifi,
+  WifiLow,
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useAuthStore } from "@/stores/authStore";
 import { useGameStore } from "@/stores/gameStore";
+import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 
 interface GameBottomBarProps {
   roomId: string;
@@ -31,6 +35,10 @@ interface GameBottomBarProps {
   scores?: { royals: number; rebels: number };
   currentTurn?: string;
   isCurrentUserHost?: boolean;
+  turnStartedAt?: number;
+  connectionQuality?: ConnectionQuality;
+  latency?: number | null;
+  leadingSuit?: string | null;
 }
 
 // Trump suit display - compact
@@ -64,6 +72,37 @@ const TrumpBadge = memo(({ trumpSuit }: { trumpSuit: string | null }) => {
 });
 
 TrumpBadge.displayName = "TrumpBadge";
+
+// Leading suit display - compact
+const LeadBadge = memo(({ leadingSuit, trumpSuit }: { leadingSuit: string | null; trumpSuit: string | null }) => {
+  if (!leadingSuit) return null;
+
+  const suitConfig: Record<string, { symbol: string; color: string; bg: string }> = {
+    hearts: { symbol: "♥", color: "text-red-500", bg: "bg-red-500/20" },
+    diamonds: { symbol: "♦", color: "text-red-500", bg: "bg-red-500/20" },
+    clubs: { symbol: "♣", color: "text-foreground", bg: "bg-foreground/20" },
+    spades: { symbol: "♠", color: "text-foreground", bg: "bg-foreground/20" },
+  };
+
+  const config = suitConfig[leadingSuit] || { symbol: leadingSuit, color: "text-muted-foreground", bg: "bg-muted" };
+  const isTrump = trumpSuit && leadingSuit === trumpSuit;
+
+  return (
+    <div className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg ${config.bg} border border-primary/20`}>
+      <span className={`text-base sm:text-lg ${config.color}`}>
+        {config.symbol}
+      </span>
+      <span className="text-[10px] sm:text-xs text-muted-foreground">Lead</span>
+      {isTrump && (
+        <span className="text-[8px] sm:text-[10px] bg-amber-500/20 text-amber-400 px-1 py-0.5 rounded border border-amber-500/30">
+          Trump!
+        </span>
+      )}
+    </div>
+  );
+});
+
+LeadBadge.displayName = "LeadBadge";
 
 // Compact score display
 const ScoreBadge = memo(({ scores }: { scores: { royals: number; rebels: number } }) => {
@@ -156,6 +195,87 @@ const StatusBadge = memo(({ status }: { status: string }) => {
 });
 
 StatusBadge.displayName = "StatusBadge";
+
+// Latency indicator - compact
+const LatencyBadge = memo(({
+  quality,
+  latency
+}: {
+  quality: ConnectionQuality;
+  latency: number | null;
+}) => {
+  const qualityConfig: Record<ConnectionQuality, { icon: React.ReactNode; color: string; bg: string }> = {
+    excellent: { icon: <Wifi size={12} />, color: "text-green-500", bg: "bg-green-500/20 border-green-500/30" },
+    good: { icon: <Wifi size={12} />, color: "text-emerald-400", bg: "bg-emerald-400/20 border-emerald-400/30" },
+    fair: { icon: <WifiLow size={12} />, color: "text-yellow-500", bg: "bg-yellow-500/20 border-yellow-500/30" },
+    poor: { icon: <WifiLow size={12} />, color: "text-red-500", bg: "bg-red-500/20 border-red-500/30" },
+    unknown: { icon: <WifiOff size={12} />, color: "text-gray-500", bg: "bg-gray-500/20 border-gray-500/30" },
+  };
+
+  const config = qualityConfig[quality];
+
+  return (
+    <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full border ${config.bg}`}>
+      <span className={config.color}>{config.icon}</span>
+      <span className={`text-[10px] sm:text-xs font-medium ${config.color}`}>
+        {latency !== null ? `${latency}ms` : "--"}
+      </span>
+    </div>
+  );
+});
+
+LatencyBadge.displayName = "LatencyBadge";
+
+// Turn timer badge - compact countdown
+const TurnTimerBadge = memo(({
+  turnStartedAt,
+  isMyTurn,
+}: {
+  turnStartedAt: number;
+  isMyTurn: boolean;
+}) => {
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  React.useEffect(() => {
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - turnStartedAt) / 1000);
+      const remaining = Math.max(0, 30 - elapsed);
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [turnStartedAt]);
+
+  const isLow = timeLeft <= 10;
+  const isCritical = timeLeft <= 5;
+
+  return (
+    <div
+      className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full border ${
+        isCritical
+          ? "bg-red-500/20 border-red-500/30 animate-pulse"
+          : isLow
+            ? "bg-yellow-500/20 border-yellow-500/30"
+            : isMyTurn
+              ? "bg-green-500/20 border-green-500/30"
+              : "bg-muted/50 border-border"
+      }`}
+    >
+      <Timer size={12} className={
+        isCritical ? "text-red-500" : isLow ? "text-yellow-500" : isMyTurn ? "text-green-500" : "text-muted-foreground"
+      } />
+      <span className={`text-[10px] sm:text-xs font-bold tabular-nums ${
+        isCritical ? "text-red-500" : isLow ? "text-yellow-500" : isMyTurn ? "text-green-500" : "text-muted-foreground"
+      }`}>
+        {timeLeft}s
+      </span>
+    </div>
+  );
+});
+
+TurnTimerBadge.displayName = "TurnTimerBadge";
 
 // Expanded details panel
 const ExpandedPanel = memo(({
@@ -250,15 +370,13 @@ const ExpandedPanel = memo(({
           {/* Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 sm:mt-3">
             <Button onClick={onShareGame} variant="outline" size="sm" disabled={isSharing} className="h-8 text-xs sm:text-sm">
-              {isSharing ? <LoadingSpinner size="xs" className="mr-1" /> : <Share size={12} className="mr-1 sm:hidden" />}
-              {!isSharing && <Share size={14} className="mr-1 hidden sm:block" />}
-              <span className="hidden xs:inline">Share</span>
+              {isSharing ? <LoadingSpinner size="xs" className="mr-1.5" /> : <Share size={14} className="mr-1.5" />}
+              Share
             </Button>
             {isCurrentUserHost && (
               <Button onClick={onEndGame} variant="destructive" size="sm" disabled={isEndingGame} className="h-8 text-xs sm:text-sm">
-                {isEndingGame ? <LoadingSpinner size="xs" className="mr-1" /> : <LogOut size={12} className="mr-1 sm:hidden" />}
-                {!isEndingGame && <LogOut size={14} className="mr-1 hidden sm:block" />}
-                <span className="hidden xs:inline">End</span>
+                {isEndingGame ? <LoadingSpinner size="xs" className="mr-1.5" /> : <LogOut size={14} className="mr-1.5" />}
+                End Game
               </Button>
             )}
           </div>
@@ -278,6 +396,10 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
   scores: propScores,
   currentTurn: propCurrentTurn,
   isCurrentUserHost: propIsCurrentUserHost,
+  turnStartedAt,
+  connectionQuality,
+  latency,
+  leadingSuit,
 }) => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -289,6 +411,10 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
   const scores = propScores || { royals: 0, rebels: 0 };
   const currentPlayer = propCurrentTurn || "";
   const isCurrentUserHost = propIsCurrentUserHost !== undefined ? propIsCurrentUserHost : false;
+
+  const isMyTurn = useMemo(() => {
+    return players.find(p => p.id === currentPlayer)?.id === user?.id;
+  }, [players, currentPlayer, user?.id]);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -341,14 +467,25 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
           />
         </div>
 
-        {/* Center: Trump & Scores */}
+        {/* Center: Trump, Lead & Scores */}
         <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           <TrumpBadge trumpSuit={trumpSuit} />
+          {gameStatus === "playing" && <LeadBadge leadingSuit={leadingSuit ?? null} trumpSuit={trumpSuit} />}
           {showScores && <ScoreBadge scores={scores} />}
         </div>
 
-        {/* Right: Room Code & Expand */}
+        {/* Right: Timer, Latency, Room Code & Expand */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* Turn Timer */}
+          {gameStatus === "playing" && turnStartedAt && (
+            <TurnTimerBadge turnStartedAt={turnStartedAt} isMyTurn={isMyTurn} />
+          )}
+
+          {/* Latency */}
+          {connectionQuality && (
+            <LatencyBadge quality={connectionQuality} latency={latency ?? null} />
+          )}
+
           {/* Room code - compact */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border">
             <code className="font-mono text-sm font-bold">{roomId}</code>

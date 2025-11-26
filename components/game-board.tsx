@@ -21,8 +21,6 @@ import { CenterTrickArea } from "@/components/game-board/center-trick-area";
 import { OpponentArea } from "@/components/game-board/opponent-area";
 import { PlayerHand } from "@/components/game-board/player-hand";
 import { TableSurface } from "@/components/game-board/table-surface";
-import { TurnTimer } from "@/components/game-board/turn-timer";
-import { ConnectionIndicator } from "@/components/game-board/connection-indicator";
 import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
 
@@ -126,13 +124,13 @@ export function GameBoard({
 
   const [centerCards, setCenterCards] = useState<CenterCard[]>([]);
   const [lastTrickResult, setLastTrickResult] = useState<TrickResult | null>(
-    null,
+    null
   );
   const [showTrickWinnerMessage, setShowTrickWinnerMessage] = useState(false);
   const [playerHandCards, setPlayerHandCards] = useState<any[]>([]);
   const [handInitialized, setHandInitialized] = useState(false);
   const [processedTrickIds, setProcessedTrickIds] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
 
   const playerHand = playerHandCards;
@@ -157,7 +155,7 @@ export function GameBoard({
 
     if (gameState && user) {
       const player = gameState.players?.find(
-        (p: PlayerInterface) => p.id === user.id,
+        (p: PlayerInterface) => p.id === user.id
       );
       if (player && player.hand && player.hand.length > 0) {
         const cards = player.hand.map((card: any, index: number) => ({
@@ -184,8 +182,8 @@ export function GameBoard({
     return gameStatus === "playing"
       ? mockHand
       : initialCardsDeal
-        ? mockHand.slice(0, 5)
-        : mockHand;
+      ? mockHand.slice(0, 5)
+      : mockHand;
   }, [gameState, user, gameStatus, initialCardsDeal, colyseusPlayerHand]);
 
   const isPlayingCardRef = useRef(false);
@@ -198,7 +196,7 @@ export function GameBoard({
       if (gameStatus !== "playing") {
         showToast(
           `Cannot play card yet. Current phase: ${gameStatus}`,
-          "warning",
+          "warning"
         );
         return;
       }
@@ -210,10 +208,10 @@ export function GameBoard({
 
       isPlayingCardRef.current = true;
       setSelectedCard(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId,
+        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
       );
       setPlayingCardId(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId,
+        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
       );
       setCardPlayLoading(true);
 
@@ -275,7 +273,7 @@ export function GameBoard({
       setCardPlayLoading,
       onPlayCard,
       user,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -322,7 +320,7 @@ export function GameBoard({
       Object.keys(storedTeamAssignments).length > 0;
     if (hasExistingAssignments) {
       const allPlayersHaveTeams = players.every(
-        (playerName) => !!storedTeamAssignments[playerName],
+        (playerName) => !!storedTeamAssignments[playerName]
       );
       if (!allPlayersHaveTeams) {
         const updatedTeams = { ...storedTeamAssignments };
@@ -365,23 +363,28 @@ export function GameBoard({
         // Method 1: Try to find player by ID in gameState.players (array of Player objects)
         if (gameState?.players && Array.isArray(gameState.players)) {
           const player = gameState.players.find((p: any) => {
-            if (typeof p === 'object' && p !== null) {
+            if (typeof p === "object" && p !== null) {
               return p.id === playerId;
             }
             return false;
           });
-          if (player && typeof player === 'object') {
+          if (player && typeof player === "object") {
             playerName = player.name || player.id || playerName;
           }
         }
 
         // Method 2: If still not found, check if players prop has objects (via gameState.players fallback)
-        if (playerName.startsWith('Player ') && gameState?.players && Array.isArray(gameState.players)) {
-          const playerFromState = gameState.players.find((p: any) =>
-            typeof p === 'object' && p !== null && p.id === playerId
+        if (
+          playerName.startsWith("Player ") &&
+          gameState?.players &&
+          Array.isArray(gameState.players)
+        ) {
+          const playerFromState = gameState.players.find(
+            (p: any) => typeof p === "object" && p !== null && p.id === playerId
           );
-          if (playerFromState && typeof playerFromState === 'object') {
-            const pName = (playerFromState as any).name || (playerFromState as any).id;
+          if (playerFromState && typeof playerFromState === "object") {
+            const pName =
+              (playerFromState as any).name || (playerFromState as any).id;
             if (pName) {
               playerName = pName;
             }
@@ -391,10 +394,14 @@ export function GameBoard({
         // Method 3: If players prop is strings and we still don't have a name,
         // use the card's playedBy position to map to player position
         // Note: This assumes cards are played in order by position, which may not be true
-        if (playerName.startsWith('Player ') && Array.isArray(players) && players.length > 0) {
+        if (
+          playerName.startsWith("Player ") &&
+          Array.isArray(players) &&
+          players.length > 0
+        ) {
           // Get the player who played this card by finding them in the full players list
           // and using their position to determine table position
-          if (typeof players[0] === 'string') {
+          if (typeof players[0] === "string") {
             // players is an array of names, can't map by ID
             // Just use the index as fallback (not accurate but better than "Player X")
             if (players[index]) {
@@ -409,7 +416,7 @@ export function GameBoard({
           value: card.value || "A",
           playedBy: playerName,
         };
-      },
+      }
     );
     setCenterCards(convertedCards);
   }, [currentTrick, players, gameState]);
@@ -427,8 +434,19 @@ export function GameBoard({
     let winningIndex = 0;
     let winningCard = centerCards[0];
     const cardValues: Record<string, number> = {
-      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
-      J: 11, Q: 12, K: 13, A: 14,
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 9,
+      "10": 10,
+      J: 11,
+      Q: 12,
+      K: 13,
+      A: 14,
     };
     for (let i = 1; i < centerCards.length; i++) {
       const card = centerCards[i];
@@ -454,8 +472,14 @@ export function GameBoard({
   }, [centerCards, trumpSuit]);
 
   // Keep callback version for handleTrickCompletion compatibility
-  const getLeadingSuit = useCallback((): string | null => leadingSuit, [leadingSuit]);
-  const calculateWinningCardIndex = useCallback((): number | null => winningCardIndex, [winningCardIndex]);
+  const getLeadingSuit = useCallback(
+    (): string | null => leadingSuit,
+    [leadingSuit]
+  );
+  const calculateWinningCardIndex = useCallback(
+    (): number | null => winningCardIndex,
+    [winningCardIndex]
+  );
 
   const handleTrickCompletion = useCallback(() => {
     if (centerCards.length !== 4) return;
@@ -640,23 +664,32 @@ export function GameBoard({
         },
       });
     },
-    [user, roomId, sendMessage],
+    [user, roomId, sendMessage]
   );
 
   // Get player positions with names and connection status for center trick area
   // Rotate based on current player's position so they always appear at bottom
   const playerPositions = useMemo(() => {
     // Build sorted players array by position
-    const sortedPlayers: Array<{ id: string; name: string; position: number; isConnected: boolean; isBot: boolean }> = [];
+    const sortedPlayers: Array<{
+      id: string;
+      name: string;
+      position: number;
+      isConnected: boolean;
+      isBot: boolean;
+    }> = [];
 
     if (gameState?.players && Array.isArray(gameState.players)) {
       // gameState.players is an array of Player objects sorted by position
       gameState.players.forEach((p: any) => {
-        if (typeof p === 'object' && p !== null) {
+        if (typeof p === "object" && p !== null) {
           sortedPlayers.push({
-            id: p.id || '',
+            id: p.id || "",
             name: p.name || p.id || `Player ${sortedPlayers.length + 1}`,
-            position: typeof p.position === 'number' ? p.position : sortedPlayers.length,
+            position:
+              typeof p.position === "number"
+                ? p.position
+                : sortedPlayers.length,
             isConnected: p.isConnected !== false, // Default to true if not specified
             isBot: p.isBot === true,
           });
@@ -670,7 +703,9 @@ export function GameBoard({
     // Find current player's position
     let currentPlayerPosition = 0;
     if (currentPlayerId) {
-      const currentPlayerIndex = sortedPlayers.findIndex(p => p.id === currentPlayerId);
+      const currentPlayerIndex = sortedPlayers.findIndex(
+        (p) => p.id === currentPlayerId
+      );
       if (currentPlayerIndex >= 0) {
         currentPlayerPosition = sortedPlayers[currentPlayerIndex].position;
       }
@@ -680,7 +715,7 @@ export function GameBoard({
     // Table positions: bottom (current), left (+1), top (+2), right (+3)
     const getRotatedPlayer = (offset: number) => {
       const targetPosition = (currentPlayerPosition + offset) % 4;
-      const player = sortedPlayers.find(p => p.position === targetPosition);
+      const player = sortedPlayers.find((p) => p.position === targetPosition);
       return {
         name: player?.name || `Player ${targetPosition + 1}`,
         isConnected: player?.isConnected ?? true,
@@ -690,9 +725,9 @@ export function GameBoard({
 
     const positions = {
       bottom: getRotatedPlayer(0), // Current player
-      left: getRotatedPlayer(1),   // Next player clockwise
-      top: getRotatedPlayer(2),    // Opposite player
-      right: getRotatedPlayer(3),  // Previous player clockwise
+      left: getRotatedPlayer(1), // Next player clockwise
+      top: getRotatedPlayer(2), // Opposite player
+      right: getRotatedPlayer(3), // Previous player clockwise
     };
 
     return positions;
@@ -728,7 +763,11 @@ export function GameBoard({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div
-                className={`p-4 rounded-lg ${scores.royals >= 7 ? "bg-amber-900/40 border border-amber-500/50" : "bg-card/50"}`}
+                className={`p-4 rounded-lg ${
+                  scores.royals >= 7
+                    ? "bg-amber-900/40 border border-amber-500/50"
+                    : "bg-card/50"
+                }`}
               >
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Crown className="w-5 h-5 text-amber-500" />
@@ -739,7 +778,11 @@ export function GameBoard({
                 </div>
               </div>
               <div
-                className={`p-4 rounded-lg ${scores.rebels >= 7 ? "bg-blue-900/40 border border-blue-500/50" : "bg-card/50"}`}
+                className={`p-4 rounded-lg ${
+                  scores.rebels >= 7
+                    ? "bg-blue-900/40 border border-blue-500/50"
+                    : "bg-card/50"
+                }`}
               >
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Swords className="w-5 h-5 text-blue-500" />
@@ -788,29 +831,6 @@ export function GameBoard({
         />
       )}
 
-      {/* Connection Quality Indicator */}
-      {gameStatus === "playing" && connectionQuality && (
-        <div className="fixed top-4 left-4 z-40 mt-20">
-          <ConnectionIndicator
-            quality={connectionQuality}
-            latency={latency ?? null}
-          />
-        </div>
-      )}
-
-      {/* Turn Timer */}
-      {gameStatus === "playing" && turnStartedAt && (
-        <div className="fixed top-4 right-4 z-40">
-          <TurnTimer
-            turnStartedAt={turnStartedAt}
-            isMyTurn={!!isMyTurn}
-            currentPlayerName={
-              gameState?.players?.find((p: any) => p.id === currentTurn)?.name || "Opponent"
-            }
-          />
-        </div>
-      )}
-
       {/* Frenzy Mode Powers */}
       {gameMode === "frenzy" && trumpSuit && gameStatus === "playing" && (
         <div className="fixed top-20 right-4 z-40">
@@ -827,7 +847,7 @@ export function GameBoard({
       )}
 
       {/* Game Table */}
-      <div className="h-full w-full p-2 sm:p-3 md:p-4">
+      <div className="h-full w-full p-2 sm:p-3 md:p-2">
         <TableSurface>
           <div className="relative w-full h-full flex flex-col">
             {/* Top opponent */}
@@ -836,16 +856,20 @@ export function GameBoard({
                 <OpponentArea
                   name={playerPositions.top.name}
                   position="top"
-                  team={storedTeamAssignments[playerPositions.top.name] || "rebels"}
+                  team={
+                    storedTeamAssignments[playerPositions.top.name] || "rebels"
+                  }
                   isCurrentTurn={
                     currentTurn !== currentPlayerId && centerCards.length === 2
                   }
-                  isConnected={playerPositions.top.isBot || playerPositions.top.isConnected}
+                  isConnected={
+                    playerPositions.top.isBot || playerPositions.top.isConnected
+                  }
                   cardCount={
                     gameStatus === "playing"
                       ? Math.max(
                           0,
-                          13 - Math.floor((scores.royals + scores.rebels) / 4),
+                          13 - Math.floor((scores.royals + scores.rebels) / 4)
                         )
                       : 5
                   }
@@ -862,19 +886,22 @@ export function GameBoard({
                     name={playerPositions.left.name}
                     position="left"
                     team={
-                      storedTeamAssignments[playerPositions.left.name] || "royals"
+                      storedTeamAssignments[playerPositions.left.name] ||
+                      "royals"
                     }
                     isCurrentTurn={
                       currentTurn !== currentPlayerId &&
                       centerCards.length === 1
                     }
-                    isConnected={playerPositions.left.isBot || playerPositions.left.isConnected}
+                    isConnected={
+                      playerPositions.left.isBot ||
+                      playerPositions.left.isConnected
+                    }
                     cardCount={
                       gameStatus === "playing"
                         ? Math.max(
                             0,
-                            13 -
-                              Math.floor((scores.royals + scores.rebels) / 4),
+                            13 - Math.floor((scores.royals + scores.rebels) / 4)
                           )
                         : 5
                     }
@@ -934,7 +961,6 @@ export function GameBoard({
                     </motion.div>
                   )}
                 </AnimatePresence>
-
               </div>
 
               {/* Right opponent */}
@@ -944,19 +970,22 @@ export function GameBoard({
                     name={playerPositions.right.name}
                     position="right"
                     team={
-                      storedTeamAssignments[playerPositions.right.name] || "rebels"
+                      storedTeamAssignments[playerPositions.right.name] ||
+                      "rebels"
                     }
                     isCurrentTurn={
                       currentTurn !== currentPlayerId &&
                       centerCards.length === 3
                     }
-                    isConnected={playerPositions.right.isBot || playerPositions.right.isConnected}
+                    isConnected={
+                      playerPositions.right.isBot ||
+                      playerPositions.right.isConnected
+                    }
                     cardCount={
                       gameStatus === "playing"
                         ? Math.max(
                             0,
-                            13 -
-                              Math.floor((scores.royals + scores.rebels) / 4),
+                            13 - Math.floor((scores.royals + scores.rebels) / 4)
                           )
                         : 5
                     }
@@ -974,7 +1003,11 @@ export function GameBoard({
                     storedTeamAssignments[user?.username || ""] === "royals"
                       ? "border-amber-500/50 bg-amber-500/10"
                       : "border-blue-500/50 bg-blue-500/10"
-                  } ${isMyTurn ? "shadow-[0_0_20px_rgba(34,197,94,0.4)] border-green-500" : ""}`}
+                  } ${
+                    isMyTurn
+                      ? "shadow-[0_0_20px_rgba(34,197,94,0.4)] border-green-500"
+                      : ""
+                  }`}
                 >
                   {storedTeamAssignments[user?.username || ""] === "royals" ? (
                     <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" />

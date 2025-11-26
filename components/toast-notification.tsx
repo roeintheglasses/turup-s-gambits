@@ -16,13 +16,13 @@ export function ToastNotification() {
   const getIcon = () => {
     switch (toastType) {
       case "success":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "error":
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" />;
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       case "info":
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-4 w-4 text-blue-500" />;
       default:
         return null;
     }
@@ -47,21 +47,21 @@ export function ToastNotification() {
     <AnimatePresence>
       {toastMessage && (
         <motion.div
-          initial={{ opacity: 0, y: -50 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-20 inset-x-0 flex justify-center z-[100] pointer-events-none"
         >
           <div
-            className={`${getBgColor()} border-[3px] rounded-xl px-6 py-4 shadow-[0_8px_16px_rgba(0,0,0,0.4)] backdrop-blur-md flex items-center gap-4 min-w-[300px] max-w-[500px]`}
+            className={`${getBgColor()} border rounded-lg px-3 py-2 shadow-lg backdrop-blur-md flex items-center gap-2 max-w-[320px]`}
           >
             {getIcon()}
-            <p className="text-base font-crimson font-medium text-foreground flex-1">
+            <p className="text-sm font-medium text-foreground flex-1">
               {toastMessage}
             </p>
             <button
               onClick={clearToast}
-              className="text-muted-foreground hover:text-foreground transition-colors duration-200 pointer-events-auto min-w-[48px] min-h-[48px] flex items-center justify-center text-2xl font-bold"
+              className="text-muted-foreground hover:text-foreground transition-colors duration-200 pointer-events-auto w-5 h-5 flex items-center justify-center text-lg leading-none"
               aria-label="Close"
             >
               ×

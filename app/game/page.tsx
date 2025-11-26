@@ -28,7 +28,7 @@ import {
   Crown,
   Swords,
   Hash,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 
 export default function GamePage() {
@@ -36,7 +36,9 @@ export default function GamePage() {
   const [gameMode, setGameMode] = useState<"classic" | "frenzy">("classic");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
-  const [pendingReconnect, setPendingReconnect] = useState<{ roomId: string } | null>(null);
+  const [pendingReconnect, setPendingReconnect] = useState<{
+    roomId: string;
+  } | null>(null);
   const router = useRouter();
   const { user } = useAuthStore();
   const { leaveRoom } = useGameStore();
@@ -55,10 +57,14 @@ export default function GamePage() {
   useEffect(() => {
     leaveRoom();
     localStorage.removeItem("game-storage");
-    Object.keys(localStorage).forEach(key => {
+    Object.keys(localStorage).forEach((key) => {
       // Don't remove colyseus reconnection data
-      if (key.startsWith('colyseus_')) return;
-      if (key.startsWith('game-') || key.startsWith('room-') || key.startsWith('player-')) {
+      if (key.startsWith("colyseus_")) return;
+      if (
+        key.startsWith("game-") ||
+        key.startsWith("room-") ||
+        key.startsWith("player-")
+      ) {
         localStorage.removeItem(key);
       }
     });
@@ -154,7 +160,7 @@ export default function GamePage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-start justify-center px-4 pt-24 pb-8">
+      <main className="flex-1 flex items-start justify-center px-4 pt-16 pb-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -163,15 +169,6 @@ export default function GamePage() {
         >
           {/* Header */}
           <div className="text-center mb-6">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="inline-flex items-center gap-2 bg-card/60 backdrop-blur-sm px-4 py-2 rounded-full border border-primary/20 mb-4"
-            >
-              <Swords className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Game Hall</span>
-            </motion.div>
             <h1 className="text-3xl sm:text-4xl font-medieval text-primary mb-2">
               Ready for Battle?
             </h1>
@@ -192,7 +189,9 @@ export default function GamePage() {
                   <div className="flex items-center gap-3">
                     <RefreshCw className="w-5 h-5 text-amber-500 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium text-amber-500">Game in Progress</p>
+                      <p className="font-medium text-amber-500">
+                        Game in Progress
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         You have an active game. Would you like to rejoin?
                       </p>
@@ -283,7 +282,10 @@ export default function GamePage() {
                 <TabsContent value="join" className="p-6 space-y-6 mt-0">
                   {/* Room Code Input */}
                   <div className="space-y-3">
-                    <label htmlFor="room-id" className="text-sm font-medium flex items-center gap-2">
+                    <label
+                      htmlFor="room-id"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Hash className="w-4 h-4 text-primary" />
                       Room Code
                     </label>
@@ -293,7 +295,9 @@ export default function GamePage() {
                         className="medieval-input h-12 text-center text-lg font-mono tracking-widest uppercase"
                         placeholder="XXXXXX"
                         value={roomId}
-                        onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                        onChange={(e) =>
+                          setRoomId(e.target.value.toUpperCase())
+                        }
                         maxLength={6}
                       />
                     </div>

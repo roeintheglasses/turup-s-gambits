@@ -10,7 +10,7 @@ import { Users, Swords, Crown, Sparkles } from "lucide-react";
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen flex flex-col overflow-hidden">
       <VisualEffects enableGrain enableCRT />
       <FlyingCards />
 
@@ -65,7 +65,8 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            Enter the realm of strategy and cunning in this medieval fantasy card game
+            Enter the realm of strategy and cunning in this medieval fantasy
+            card game
           </motion.p>
 
           {/* CTA Button */}
@@ -116,7 +117,9 @@ export default function HomePage() {
               >
                 <div className="fantasy-card-home w-full h-full rounded-lg bg-gradient-to-br from-amber-900/90 via-amber-950 to-black shadow-lg border border-primary/30">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={`text-2xl sm:text-3xl md:text-4xl ${card.color}`}>
+                    <span
+                      className={`text-2xl sm:text-3xl md:text-4xl ${card.color}`}
+                    >
                       {card.suit}
                     </span>
                   </div>
@@ -171,9 +174,6 @@ export default function HomePage() {
           </div>
         </motion.div>
       </main>
-
-      {/* Bottom accent */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
     </div>
   );
 }

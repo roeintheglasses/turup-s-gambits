@@ -78,15 +78,17 @@ export const PlayerHand = memo(function PlayerHand({
     if (!canPlay) return new Set<number | string>();
     if (!leadingSuit) {
       // All cards are playable
-      return new Set(cards.map(c => c.id));
+      return new Set(cards.map((c) => c.id));
     }
     // Check if player has leading suit
-    const hasLeadingSuit = cards.some(c => c.suit === leadingSuit);
+    const hasLeadingSuit = cards.some((c) => c.suit === leadingSuit);
     if (!hasLeadingSuit) {
-      return new Set(cards.map(c => c.id));
+      return new Set(cards.map((c) => c.id));
     }
     // Only leading suit cards are playable
-    return new Set(cards.filter(c => c.suit === leadingSuit).map(c => c.id));
+    return new Set(
+      cards.filter((c) => c.suit === leadingSuit).map((c) => c.id)
+    );
   }, [canPlay, leadingSuit, cards]);
 
   // Memoize card transforms based on card count and mobile
@@ -111,37 +113,25 @@ export const PlayerHand = memo(function PlayerHand({
     });
   }, [cards.length, isMobile, cards]);
 
-  const handleCardClick = useCallback((cardId: number | string) => {
-    if (canPlay && playableCardIds.has(cardId) && playingCardId !== cardId) {
-      onCardClick(cardId);
-    }
-  }, [canPlay, playableCardIds, playingCardId, onCardClick]);
+  const handleCardClick = useCallback(
+    (cardId: number | string) => {
+      if (canPlay && playableCardIds.has(cardId) && playingCardId !== cardId) {
+        onCardClick(cardId);
+      }
+    },
+    [canPlay, playableCardIds, playingCardId, onCardClick]
+  );
 
   // Memoize gap style
-  const gapStyle = useMemo(() => ({
-    gap: cards.length > 8 ? "-12px" : cards.length > 5 ? "-2px" : "2px",
-  }), [cards.length]);
+  const gapStyle = useMemo(
+    () => ({
+      gap: cards.length > 8 ? "-12px" : cards.length > 5 ? "-2px" : "2px",
+    }),
+    [cards.length]
+  );
 
   return (
     <div className="relative w-full flex justify-center items-end pb-2">
-      {/* Turn indicator message */}
-      <AnimatePresence>
-        {isPlaying && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`absolute -top-8 sm:-top-10 left-1/2 -translate-x-1/2 px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg border text-[10px] sm:text-sm font-medieval whitespace-nowrap ${
-              isMyTurn
-                ? "bg-green-600/90 border-green-400 text-white animate-pulse"
-                : "bg-card/80 border-border text-muted-foreground"
-            }`}
-          >
-            {isMyTurn ? "Your turn!" : "Waiting..."}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Cards container */}
       <div className="flex justify-center items-end" style={gapStyle}>
         <AnimatePresence mode="popLayout">
@@ -180,8 +170,8 @@ export const PlayerHand = memo(function PlayerHand({
                   transition: {
                     duration: 0.4,
                     ease: [0.4, 0, 0.2, 1],
-                    opacity: { duration: 0.3, delay: 0.1 }
-                  }
+                    opacity: { duration: 0.3, delay: 0.1 },
+                  },
                 }}
                 transition={{
                   type: "spring",
@@ -190,12 +180,16 @@ export const PlayerHand = memo(function PlayerHand({
                   mass: 0.8,
                   delay: isDealing ? index * 0.06 : 0,
                 }}
-                whileHover={canPlay && isPlayable ? {
-                  y: -16,
-                  scale: 1.05,
-                  zIndex: 50,
-                  transition: { duration: 0.15 },
-                } : undefined}
+                whileHover={
+                  canPlay && isPlayable
+                    ? {
+                        y: -16,
+                        scale: 1.05,
+                        zIndex: 50,
+                        transition: { duration: 0.15 },
+                      }
+                    : undefined
+                }
                 onClick={() => handleCardClick(card.id)}
                 className={`relative transition-[filter] duration-200 will-change-transform ${
                   canPlay && isPlayable && !isBeingPlayed
@@ -205,8 +199,8 @@ export const PlayerHand = memo(function PlayerHand({
                   !isPlaying || !isMyTurn
                     ? "brightness-[0.7]"
                     : !isPlayable && canPlay
-                      ? "brightness-50 saturate-50"
-                      : ""
+                    ? "brightness-50 saturate-50"
+                    : ""
                 }`}
                 style={{ zIndex: index }}
               >
