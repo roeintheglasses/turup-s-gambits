@@ -169,21 +169,26 @@ export const PlayerHand = memo(function PlayerHand({
                   scale: isBeingPlayed ? 0.9 : 1,
                   rotate: transform.rotate,
                   rotateZ: 0,
-                  filter: !isPlaying || !isMyTurn ? "brightness(0.7)" :
-                          !isPlayable && canPlay ? "brightness(0.5) saturate(0.5)" : "brightness(1)",
                 }}
                 exit={{
                   opacity: 0,
-                  y: -120,
-                  scale: 0.4,
-                  rotate: -15 + Math.random() * 30,
-                  transition: { duration: 0.3, ease: "easeIn" }
+                  y: -200,
+                  x: 0,
+                  scale: 0.6,
+                  rotateX: 20,
+                  rotateZ: 5,
+                  transition: {
+                    duration: 0.4,
+                    ease: [0.4, 0, 0.2, 1],
+                    opacity: { duration: 0.3, delay: 0.1 }
+                  }
                 }}
                 transition={{
                   type: "spring",
-                  stiffness: 280,
-                  damping: 22,
-                  delay: isDealing ? index * 0.08 : 0,
+                  stiffness: 400,
+                  damping: 30,
+                  mass: 0.8,
+                  delay: isDealing ? index * 0.06 : 0,
                 }}
                 whileHover={canPlay && isPlayable ? {
                   y: -16,
@@ -192,10 +197,16 @@ export const PlayerHand = memo(function PlayerHand({
                   transition: { duration: 0.15 },
                 } : undefined}
                 onClick={() => handleCardClick(card.id)}
-                className={`relative ${
+                className={`relative transition-[filter] duration-200 will-change-transform ${
                   canPlay && isPlayable && !isBeingPlayed
                     ? "cursor-pointer"
                     : "cursor-not-allowed"
+                } ${
+                  !isPlaying || !isMyTurn
+                    ? "brightness-[0.7]"
+                    : !isPlayable && canPlay
+                      ? "brightness-50 saturate-50"
+                      : ""
                 }`}
                 style={{ zIndex: index }}
               >

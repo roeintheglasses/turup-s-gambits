@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/card";
-import { InGameEmotes } from "@/components/in-game-emotes";
 import { type Card as CardType, type Player } from "@/app/types/game";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,19 +21,16 @@ import { CenterTrickArea } from "@/components/game-board/center-trick-area";
 import { OpponentArea } from "@/components/game-board/opponent-area";
 import { PlayerHand } from "@/components/game-board/player-hand";
 import { TableSurface } from "@/components/game-board/table-surface";
+import { TurnTimer } from "@/components/game-board/turn-timer";
+import { ConnectionIndicator } from "@/components/game-board/connection-indicator";
+import type { ConnectionQuality } from "@/hooks/use-connection-quality";
+import { useTurnNotification } from "@/hooks/use-turn-notification";
 
 interface CenterCard {
   id: number;
   suit: string;
   value: string;
   playedBy: string;
-}
-
-interface Emote {
-  id: number;
-  emoji: string;
-  player: string;
-  timestamp: number;
 }
 
 interface PlayerInterface {
@@ -68,7 +64,10 @@ interface GameBoardProps {
   sendMessage: (message: any) => Promise<boolean>;
   playerHand?: any[];
   currentTurn?: string;
+  turnStartedAt?: number;
   currentPlayerId?: string;
+  connectionQuality?: ConnectionQuality;
+  latency?: number | null;
 }
 
 type HandCard = {
@@ -92,7 +91,10 @@ export function GameBoard({
   sendMessage,
   playerHand: colyseusPlayerHand,
   currentTurn,
+  turnStartedAt,
   currentPlayerId,
+  connectionQuality,
+  latency,
 }: GameBoardProps) {
   const trumpSuit = useGameStore((state) => state.trumpSuit);
   const scores = useGameStore((state) => state.scores);
@@ -115,8 +117,14 @@ export function GameBoard({
   const isMyTurn =
     currentTurn && currentPlayerId && currentTurn === currentPlayerId;
 
+  // Turn notification for unfocused tab
+  useTurnNotification({
+    isMyTurn: !!isMyTurn,
+    isPlaying: gameStatus === "playing",
+    playerName: user?.username,
+  });
+
   const [centerCards, setCenterCards] = useState<CenterCard[]>([]);
-  const [emotes, setEmotes] = useState<Emote[]>([]);
   const [lastTrickResult, setLastTrickResult] = useState<TrickResult | null>(
     null,
   );
@@ -406,31 +414,21 @@ export function GameBoard({
     setCenterCards(convertedCards);
   }, [currentTrick, players, gameState]);
 
-  // Calculate leading suit and winning card
-  const getLeadingSuit = useCallback((): string | null => {
+  // Memoize leading suit - only recalculate when centerCards changes
+  const leadingSuit = useMemo((): string | null => {
     if (centerCards.length === 0) return null;
     return centerCards[0].suit;
   }, [centerCards]);
 
-  const calculateWinningCardIndex = useCallback((): number | null => {
+  // Memoize winning card index - only recalculate when centerCards or trumpSuit changes
+  const winningCardIndex = useMemo((): number | null => {
     if (centerCards.length === 0) return null;
-    const leadingSuit = centerCards[0].suit;
+    const leadSuit = centerCards[0].suit;
     let winningIndex = 0;
     let winningCard = centerCards[0];
     const cardValues: Record<string, number> = {
-      "2": 2,
-      "3": 3,
-      "4": 4,
-      "5": 5,
-      "6": 6,
-      "7": 7,
-      "8": 8,
-      "9": 9,
-      "10": 10,
-      J: 11,
-      Q: 12,
-      K: 13,
-      A: 14,
+      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+      J: 11, Q: 12, K: 13, A: 14,
     };
     for (let i = 1; i < centerCards.length; i++) {
       const card = centerCards[i];
@@ -442,9 +440,9 @@ export function GameBoard({
           winningIndex = i;
           winningCard = card;
         }
-      } else if (card.suit === leadingSuit && winningCard.suit !== trumpSuit) {
+      } else if (card.suit === leadSuit && winningCard.suit !== trumpSuit) {
         if (
-          winningCard.suit !== leadingSuit ||
+          winningCard.suit !== leadSuit ||
           cardValues[card.value] > cardValues[winningCard.value]
         ) {
           winningIndex = i;
@@ -454,6 +452,10 @@ export function GameBoard({
     }
     return winningIndex;
   }, [centerCards, trumpSuit]);
+
+  // Keep callback version for handleTrickCompletion compatibility
+  const getLeadingSuit = useCallback((): string | null => leadingSuit, [leadingSuit]);
+  const calculateWinningCardIndex = useCallback((): number | null => winningCardIndex, [winningCardIndex]);
 
   const handleTrickCompletion = useCallback(() => {
     if (centerCards.length !== 4) return;
@@ -604,30 +606,6 @@ export function GameBoard({
     }
   }, [isMyTurn]);
 
-  const handleEmote = useCallback(
-    (emoji: string) => {
-      if (!user) return;
-      const newEmote: Emote = {
-        id: Date.now(),
-        emoji,
-        player: user.username,
-        timestamp: Date.now(),
-      };
-      setEmotes((prev) => [...prev, newEmote]);
-      if (sendMessage) {
-        sendMessage({
-          type: "game:emote",
-          payload: { roomId, playerId: user.id, emoji },
-        });
-      }
-      setTimeout(
-        () => setEmotes((prev) => prev.filter((e) => e.id !== newEmote.id)),
-        3000,
-      );
-    },
-    [user, roomId, sendMessage],
-  );
-
   const [showReplaySummary, setShowReplaySummary] = useState(false);
   const [gameStartTime] = useState(Date.now());
   const { getReplayData } = useReplay();
@@ -665,11 +643,11 @@ export function GameBoard({
     [user, roomId, sendMessage],
   );
 
-  // Get player positions with names for center trick area
+  // Get player positions with names and connection status for center trick area
   // Rotate based on current player's position so they always appear at bottom
   const playerPositions = useMemo(() => {
     // Build sorted players array by position
-    const sortedPlayers: Array<{ id: string; name: string; position: number }> = [];
+    const sortedPlayers: Array<{ id: string; name: string; position: number; isConnected: boolean; isBot: boolean }> = [];
 
     if (gameState?.players && Array.isArray(gameState.players)) {
       // gameState.players is an array of Player objects sorted by position
@@ -679,6 +657,8 @@ export function GameBoard({
             id: p.id || '',
             name: p.name || p.id || `Player ${sortedPlayers.length + 1}`,
             position: typeof p.position === 'number' ? p.position : sortedPlayers.length,
+            isConnected: p.isConnected !== false, // Default to true if not specified
+            isBot: p.isBot === true,
           });
         }
       });
@@ -701,7 +681,11 @@ export function GameBoard({
     const getRotatedPlayer = (offset: number) => {
       const targetPosition = (currentPlayerPosition + offset) % 4;
       const player = sortedPlayers.find(p => p.position === targetPosition);
-      return player?.name || `Player ${targetPosition + 1}`;
+      return {
+        name: player?.name || `Player ${targetPosition + 1}`,
+        isConnected: player?.isConnected ?? true,
+        isBot: player?.isBot ?? false,
+      };
     };
 
     const positions = {
@@ -804,6 +788,29 @@ export function GameBoard({
         />
       )}
 
+      {/* Connection Quality Indicator */}
+      {gameStatus === "playing" && connectionQuality && (
+        <div className="fixed top-4 left-4 z-40 mt-20">
+          <ConnectionIndicator
+            quality={connectionQuality}
+            latency={latency ?? null}
+          />
+        </div>
+      )}
+
+      {/* Turn Timer */}
+      {gameStatus === "playing" && turnStartedAt && (
+        <div className="fixed top-4 right-4 z-40">
+          <TurnTimer
+            turnStartedAt={turnStartedAt}
+            isMyTurn={!!isMyTurn}
+            currentPlayerName={
+              gameState?.players?.find((p: any) => p.id === currentTurn)?.name || "Opponent"
+            }
+          />
+        </div>
+      )}
+
       {/* Frenzy Mode Powers */}
       {gameMode === "frenzy" && trumpSuit && gameStatus === "playing" && (
         <div className="fixed top-20 right-4 z-40">
@@ -827,13 +834,13 @@ export function GameBoard({
             <div className="flex justify-center pt-4 sm:pt-6">
               {players.length > 2 && (
                 <OpponentArea
-                  name={playerPositions.top}
+                  name={playerPositions.top.name}
                   position="top"
-                  team={storedTeamAssignments[playerPositions.top] || "rebels"}
+                  team={storedTeamAssignments[playerPositions.top.name] || "rebels"}
                   isCurrentTurn={
                     currentTurn !== currentPlayerId && centerCards.length === 2
                   }
-                  isConnected={true}
+                  isConnected={playerPositions.top.isBot || playerPositions.top.isConnected}
                   cardCount={
                     gameStatus === "playing"
                       ? Math.max(
@@ -852,16 +859,16 @@ export function GameBoard({
               <div className="flex-shrink-0">
                 {players.length > 1 && (
                   <OpponentArea
-                    name={playerPositions.left}
+                    name={playerPositions.left.name}
                     position="left"
                     team={
-                      storedTeamAssignments[playerPositions.left] || "royals"
+                      storedTeamAssignments[playerPositions.left.name] || "royals"
                     }
                     isCurrentTurn={
                       currentTurn !== currentPlayerId &&
                       centerCards.length === 1
                     }
-                    isConnected={true}
+                    isConnected={playerPositions.left.isBot || playerPositions.left.isConnected}
                     cardCount={
                       gameStatus === "playing"
                         ? Math.max(
@@ -880,9 +887,14 @@ export function GameBoard({
                 <CenterTrickArea
                   cards={centerCards}
                   trumpSuit={trumpSuit}
-                  leadingSuit={getLeadingSuit()}
-                  winningCardIndex={calculateWinningCardIndex()}
-                  playerPositions={playerPositions}
+                  leadingSuit={leadingSuit}
+                  winningCardIndex={winningCardIndex}
+                  playerPositions={{
+                    top: playerPositions.top.name,
+                    bottom: playerPositions.bottom.name,
+                    left: playerPositions.left.name,
+                    right: playerPositions.right.name,
+                  }}
                   teamAssignments={storedTeamAssignments}
                 />
 
@@ -923,36 +935,22 @@ export function GameBoard({
                   )}
                 </AnimatePresence>
 
-                {/* Emotes */}
-                <AnimatePresence>
-                  {emotes.map((emote) => (
-                    <motion.div
-                      key={emote.id}
-                      initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -20, scale: 0.5 }}
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm p-3 rounded-full shadow-lg z-40"
-                    >
-                      <span className="text-4xl">{emote.emoji}</span>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
               </div>
 
               {/* Right opponent */}
               <div className="flex-shrink-0">
                 {players.length > 3 && (
                   <OpponentArea
-                    name={playerPositions.right}
+                    name={playerPositions.right.name}
                     position="right"
                     team={
-                      storedTeamAssignments[playerPositions.right] || "rebels"
+                      storedTeamAssignments[playerPositions.right.name] || "rebels"
                     }
                     isCurrentTurn={
                       currentTurn !== currentPlayerId &&
                       centerCards.length === 3
                     }
-                    isConnected={true}
+                    isConnected={playerPositions.right.isBot || playerPositions.right.isConnected}
                     cardCount={
                       gameStatus === "playing"
                         ? Math.max(
@@ -1000,13 +998,8 @@ export function GameBoard({
                 selectedCard={selectedCard}
                 playingCardId={playingCardId}
                 onCardClick={handleCardClick}
-                leadingSuit={getLeadingSuit()}
+                leadingSuit={leadingSuit}
               />
-
-              {/* Emote controls */}
-              <div className="flex justify-center mt-1 sm:mt-2">
-                <InGameEmotes onEmote={handleEmote} />
-              </div>
             </div>
           </div>
         </TableSurface>

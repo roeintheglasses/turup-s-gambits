@@ -4,6 +4,10 @@ import type { GameState } from "../../server/schema/GameState";
 
 export type GameRoom = Room<GameState>;
 
+// Keys for localStorage reconnection data
+const RECONNECT_ROOM_ID_KEY = "colyseus_room_id";
+const RECONNECT_USER_ID_KEY = "colyseus_user_id";
+
 class ColyseusClientService {
   private client: Colyseus.Client | null = null;
   private currentRoom: GameRoom | null = null;
@@ -34,7 +38,22 @@ class ColyseusClientService {
     }
 
     try {
-      // Always use joinOrCreate which handles both cases
+      // If a specific roomId is provided, try to join that room first
+      if (options?.roomId) {
+        try {
+          this.currentRoom = await this.client!.joinById<GameState>(options.roomId, {
+            userId,
+            name: userName,
+          });
+          console.log("✅ Joined existing room:", this.currentRoom.roomId);
+          return this.currentRoom;
+        } catch (joinError: any) {
+          // If room doesn't exist or is full, fall through to create
+          console.log("⚠️ Could not join room, will create new:", joinError?.message);
+        }
+      }
+
+      // Create a new room or join any available
       this.currentRoom = await this.client!.joinOrCreate<GameState>("game_room", {
         userId,
         name: userName,
@@ -43,10 +62,59 @@ class ColyseusClientService {
       });
       console.log("✅ Joined/Created room:", this.currentRoom.roomId);
 
+      // Store reconnection info
+      this.storeReconnectionData(this.currentRoom.roomId, userId);
+
       return this.currentRoom;
     } catch (error) {
       console.error("❌ Failed to join/create room:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Store reconnection data in localStorage
+   */
+  private storeReconnectionData(roomId: string, userId: string) {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem(RECONNECT_ROOM_ID_KEY, roomId);
+        localStorage.setItem(RECONNECT_USER_ID_KEY, userId);
+      }
+    } catch (e) {
+      console.warn("Could not store reconnection data:", e);
+    }
+  }
+
+  /**
+   * Get stored reconnection data
+   */
+  getStoredReconnectionData(): { roomId: string; userId: string } | null {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const roomId = localStorage.getItem(RECONNECT_ROOM_ID_KEY);
+        const userId = localStorage.getItem(RECONNECT_USER_ID_KEY);
+        if (roomId && userId) {
+          return { roomId, userId };
+        }
+      }
+    } catch (e) {
+      console.warn("Could not get reconnection data:", e);
+    }
+    return null;
+  }
+
+  /**
+   * Clear stored reconnection data (call when game ends or player leaves intentionally)
+   */
+  clearReconnectionData() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.removeItem(RECONNECT_ROOM_ID_KEY);
+        localStorage.removeItem(RECONNECT_USER_ID_KEY);
+      }
+    } catch (e) {
+      console.warn("Could not clear reconnection data:", e);
     }
   }
 
@@ -64,6 +132,10 @@ class ColyseusClientService {
         name: userName,
       });
       console.log("✅ Joined room:", roomId);
+
+      // Store reconnection info
+      this.storeReconnectionData(roomId, userId);
+
       return this.currentRoom;
     } catch (error) {
       console.error("❌ Failed to join room:", error);
@@ -73,13 +145,17 @@ class ColyseusClientService {
 
   /**
    * Leave current room
+   * @param clearReconnect - If true, clears reconnection data (default: true for intentional leaves)
    */
-  async leaveRoom() {
+  async leaveRoom(clearReconnect: boolean = true) {
     if (this.currentRoom) {
       try {
         await this.currentRoom.leave();
         console.log("👋 Left room");
         this.currentRoom = null;
+        if (clearReconnect) {
+          this.clearReconnectionData();
+        }
       } catch (error) {
         console.error("❌ Error leaving room:", error);
       }
@@ -142,6 +218,40 @@ class ColyseusClientService {
    */
   addBots() {
     this.send("add_bots");
+  }
+
+  /**
+   * Request a rematch after game ends
+   */
+  requestRematch() {
+    this.send("request_rematch");
+  }
+
+  /**
+   * Send ping to measure latency
+   * Returns a promise that resolves with the latency in ms
+   */
+  sendPing(): Promise<number> {
+    if (!this.currentRoom) {
+      return Promise.reject(new Error("No active room"));
+    }
+
+    return new Promise((resolve, reject) => {
+      const timestamp = Date.now();
+      const timeout = setTimeout(() => {
+        reject(new Error("Ping timeout"));
+      }, 5000);
+
+      const handlePong = (message: { timestamp: number }) => {
+        clearTimeout(timeout);
+        const latency = Date.now() - message.timestamp;
+        resolve(latency);
+      };
+
+      // Listen for pong response once
+      this.currentRoom!.onMessage("pong", handlePong);
+      this.send("ping", { timestamp });
+    });
   }
 
   /**

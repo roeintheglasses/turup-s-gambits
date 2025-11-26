@@ -1,9 +1,15 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Trophy, Crown, Swords, RotateCcw, Home } from "lucide-react";
+import { Trophy, Crown, Swords, RotateCcw, Home, Users, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VisualEffects } from "@/components/visual-effects";
 import { GameBackground } from "../game-background";
+
+interface RematchVotes {
+  count: number;
+  total: number;
+  hasVoted: boolean;
+}
 
 interface EndedStateProps {
   winner: string; // "royals" or "rebels"
@@ -12,6 +18,8 @@ interface EndedStateProps {
   rebelsTricks: number;
   players: any[];
   currentPlayer: any;
+  rematchVotes?: RematchVotes;
+  onRequestRematch?: () => void;
   onPlayAgain: () => void;
   onBackToLobby: () => void;
 }
@@ -23,6 +31,8 @@ export const EndedState: React.FC<EndedStateProps> = ({
   rebelsTricks,
   players,
   currentPlayer,
+  rematchVotes,
+  onRequestRematch,
   onPlayAgain,
   onBackToLobby,
 }) => {
@@ -180,6 +190,31 @@ export const EndedState: React.FC<EndedStateProps> = ({
           </div>
         </motion.div>
 
+        {/* Rematch Voting Status */}
+        {rematchVotes && rematchVotes.count > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-primary/10 border border-primary/30 rounded-lg p-3 mb-4 text-center"
+          >
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <Users size={16} className="text-primary" />
+              <span className="font-medieval">
+                {rematchVotes.count}/{rematchVotes.total} players want a rematch
+              </span>
+            </div>
+            {/* Progress bar */}
+            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(rematchVotes.count / rematchVotes.total) * 100}%` }}
+                transition={{ duration: 0.3 }}
+                className="h-full bg-primary rounded-full"
+              />
+            </div>
+          </motion.div>
+        )}
+
         {/* Action Buttons */}
         <motion.div
           initial={{ y: 50, opacity: 0 }}
@@ -187,14 +222,41 @@ export const EndedState: React.FC<EndedStateProps> = ({
           transition={{ delay: 0.7 }}
           className="flex gap-4"
         >
-          <Button
-            onClick={onPlayAgain}
-            className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            size="lg"
-          >
-            <RotateCcw size={20} />
-            Play Again
-          </Button>
+          {/* Rematch Button (if rematch system available) */}
+          {onRequestRematch && rematchVotes ? (
+            <Button
+              onClick={onRequestRematch}
+              disabled={rematchVotes.hasVoted}
+              className={`flex-1 gap-2 ${
+                rematchVotes.hasVoted
+                  ? "bg-green-600 hover:bg-green-600 text-white"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
+              size="lg"
+            >
+              {rematchVotes.hasVoted ? (
+                <>
+                  <Check size={20} />
+                  Voted for Rematch
+                </>
+              ) : (
+                <>
+                  <RotateCcw size={20} />
+                  Request Rematch
+                </>
+              )}
+            </Button>
+          ) : (
+            /* Fallback Play Again button */
+            <Button
+              onClick={onPlayAgain}
+              className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              size="lg"
+            >
+              <RotateCcw size={20} />
+              Play Again
+            </Button>
+          )}
 
           <Button
             onClick={onBackToLobby}

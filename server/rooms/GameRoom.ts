@@ -26,6 +26,8 @@ export class GameRoom extends Room<GameState> {
   private deck: Card[] = [];
   private botSessionIds: Set<string> = new Set();
   private usedBotNames: Set<string> = new Set();
+  private playerUserIds: Map<string, string> = new Map(); // sessionId -> userId
+  private scheduledBotActions: Set<string> = new Set(); // Prevent duplicate bot action scheduling
 
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
@@ -40,19 +42,115 @@ export class GameRoom extends Room<GameState> {
     this.onMessage("vote_trump", (client, data) => this.handleTrumpVote(client, data));
     this.onMessage("play_card", (client, data) => this.handlePlayCard(client, data));
     this.onMessage("ready", (client) => this.handlePlayerReady(client));
+    this.onMessage("request_rematch", (client) => this.handleRematchRequest(client));
 
-    // Turn timer
+    // Ping-pong for latency measurement
+    this.onMessage("ping", (client, data) => {
+      client.send("pong", { timestamp: data.timestamp });
+    });
+
+    // Turn timer - checks for timeouts and disconnected players
     this.clock.setInterval(() => {
-      if (this.state.phase === GamePhase.PLAYING && this.state.currentTurn) {
-        const elapsed = Date.now() - this.state.turnStartedAt;
-        if (elapsed > GAME_CONFIG.TURN_TIMEOUT_MS) {
-          this.handleTurnTimeout(this.state.currentTurn);
-        }
-      }
+      this.checkTurnState();
+    }, GAME_CONFIG.TURN_CHECK_INTERVAL_MS);
+
+    // Trump selection timeout timer
+    this.clock.setInterval(() => {
+      this.checkTrumpVotingTimeout();
     }, GAME_CONFIG.TURN_CHECK_INTERVAL_MS);
   }
 
+  /**
+   * Check turn state and handle timeouts or disconnected players
+   */
+  private checkTurnState() {
+    if (this.state.phase !== GamePhase.PLAYING || !this.state.currentTurn) return;
+
+    const currentPlayer = this.state.players.get(this.state.currentTurn);
+    if (!currentPlayer) return;
+
+    const elapsed = Date.now() - this.state.turnStartedAt;
+
+    // Disconnected players get auto-played immediately (after 2 second grace period)
+    if (!currentPlayer.isConnected && !this.botSessionIds.has(this.state.currentTurn)) {
+      if (elapsed > 2000) {
+        this.handleTurnTimeout(this.state.currentTurn);
+      }
+      return;
+    }
+
+    // Normal timeout for connected players
+    if (elapsed > GAME_CONFIG.TURN_TIMEOUT_MS) {
+      this.handleTurnTimeout(this.state.currentTurn);
+    }
+  }
+
+  /**
+   * Check if trump voting has timed out and auto-vote for non-voters
+   */
+  private checkTrumpVotingTimeout() {
+    if (this.state.phase !== GamePhase.TRUMP_SELECTION) return;
+
+    const elapsed = Date.now() - this.state.startedAt;
+    if (elapsed < GAME_CONFIG.TURN_TIMEOUT_MS) return;
+
+    // Auto-vote for players who haven't voted
+    this.state.players.forEach((player, sessionId) => {
+      if (!player.hasVoted && !this.botSessionIds.has(sessionId)) {
+        // Auto-vote for their most common suit
+        const suitCounts: Record<string, number> = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+        player.hand.forEach((card) => {
+          suitCounts[card.suit]++;
+        });
+        const autoSuit = Object.entries(suitCounts).reduce((a, b) =>
+          a[1] > b[1] ? a : b
+        )[0];
+
+        this.broadcast("trump_vote_timeout", { playerId: sessionId, playerName: player.name });
+        this.handleTrumpVote({ sessionId } as Client, { suit: autoSuit });
+      }
+    });
+  }
+
   onJoin(client: Client, options: JoinOptions) {
+    // Check if this userId is already in the room (prevent duplicates)
+    const existingPlayer = this.findPlayerByUserId(options.userId);
+    if (existingPlayer) {
+      // If reconnecting to an existing player slot
+      if (!existingPlayer.isConnected) {
+        const oldSessionId = existingPlayer.id; // Store old ID before updating
+
+        existingPlayer.isConnected = true;
+        existingPlayer.id = client.sessionId; // Update session ID
+        this.playerUserIds.delete(oldSessionId);
+        this.playerUserIds.set(client.sessionId, options.userId);
+
+        // Update the map key - delete old, add new
+        this.state.players.delete(oldSessionId);
+        this.state.players.set(client.sessionId, existingPlayer);
+
+        // If this player was the host, update hostId
+        if (this.state.hostId === oldSessionId) {
+          this.state.hostId = client.sessionId;
+        }
+
+        // If it was this player's turn, update currentTurn
+        if (this.state.currentTurn === oldSessionId) {
+          this.state.currentTurn = client.sessionId;
+        }
+
+        this.broadcast("player_reconnected", {
+          playerId: client.sessionId,
+          name: existingPlayer.name,
+          position: existingPlayer.position,
+        });
+        console.log(`🔄 Player ${existingPlayer.name} reconnected`);
+        return;
+      } else {
+        throw new Error("You are already in this room");
+      }
+    }
+
     const position = this.state.players.size;
 
     if (position >= this.maxClients) {
@@ -77,6 +175,7 @@ export class GameRoom extends Room<GameState> {
     }
 
     this.state.players.set(client.sessionId, player);
+    this.playerUserIds.set(client.sessionId, options.userId);
 
     this.broadcast("player_joined", {
       playerId: client.sessionId,
@@ -86,31 +185,108 @@ export class GameRoom extends Room<GameState> {
     });
   }
 
-  onLeave(client: Client, consented: boolean) {
+  /**
+   * Find a player by their userId (not sessionId)
+   */
+  private findPlayerByUserId(userId: string): Player | undefined {
+    for (const [, player] of this.state.players) {
+      if (player.userId === userId) {
+        return player;
+      }
+    }
+    return undefined;
+  }
+
+  async onLeave(client: Client, consented: boolean) {
     const player = this.state.players.get(client.sessionId);
 
     if (player) {
       player.isConnected = false;
 
-      // If game hasn't started, remove player
-      if (this.state.phase === "waiting") {
+      // If game hasn't started, remove player immediately
+      if (this.state.phase === GamePhase.WAITING) {
         this.state.players.delete(client.sessionId);
+        this.playerUserIds.delete(client.sessionId);
+
+        // Reassign positions for remaining players to avoid gaps
+        this.reassignPositions();
 
         // Reassign host if needed
         if (client.sessionId === this.state.hostId && this.state.players.size > 0) {
           const newHost = Array.from(this.state.players.values())[0];
           newHost.isHost = true;
           this.state.hostId = newHost.id;
+          this.broadcast("host_changed", { newHostId: newHost.id, newHostName: newHost.name });
+        }
+
+        this.broadcast("player_left", { playerId: client.sessionId, playerName: player.name });
+      } else {
+        // Game is in progress - allow reconnection window
+        this.broadcast("player_disconnected", {
+          playerId: client.sessionId,
+          playerName: player.name,
+        });
+
+        // If it's their turn, the checkTurnState timer will handle auto-play
+        // They have a chance to reconnect before being auto-played
+
+        // If player consented to leave (closed tab intentionally),
+        // check if all human players have left
+        if (consented) {
+          const connectedHumans = Array.from(this.state.players.values()).filter(
+            p => p.isConnected && !this.botSessionIds.has(p.id)
+          );
+
+          if (connectedHumans.length === 0 && this.state.phase !== GamePhase.ENDED) {
+            // All humans left, end the game
+            console.log(`🚪 All players left, ending game in room ${this.roomId}`);
+            this.endGameDueToDisconnection();
+          }
         }
       }
 
-      this.broadcast("player_left", { playerId: client.sessionId });
-
-      // If no players left, dispose room
-      if (this.state.players.size === 0) {
+      // If no players left at all (including bots), dispose room
+      const humanPlayers = Array.from(this.state.players.values()).filter(
+        p => !this.botSessionIds.has(p.id)
+      );
+      if (humanPlayers.length === 0) {
         this.disconnect();
       }
     }
+  }
+
+  /**
+   * Reassign player positions to avoid gaps (only in waiting room)
+   */
+  private reassignPositions() {
+    const players = Array.from(this.state.players.values()).sort(
+      (a, b) => a.position - b.position
+    );
+    players.forEach((player, index) => {
+      if (player.position !== index) {
+        player.position = index;
+        player.team = index % 2;
+      }
+    });
+  }
+
+  /**
+   * End game when all players have disconnected
+   */
+  private endGameDueToDisconnection() {
+    this.state.phase = GamePhase.ENDED;
+    this.state.winner = ""; // No winner
+
+    this.broadcast("game_ended", {
+      winner: null,
+      reason: "all_players_left",
+      royalsTricks: this.state.royalsTricks,
+      rebelsTricks: this.state.rebelsTricks,
+    });
+
+    this.clock.setTimeout(() => {
+      this.disconnect();
+    }, 5000); // Shorter timeout since everyone left
   }
 
   onDispose() {
@@ -132,7 +308,7 @@ export class GameRoom extends Room<GameState> {
       return;
     }
 
-    if (this.state.phase !== "waiting") {
+    if (this.state.phase !== GamePhase.WAITING) {
       client.error(0, "Game already started");
       return;
     }
@@ -148,7 +324,7 @@ export class GameRoom extends Room<GameState> {
       return;
     }
 
-    if (this.state.phase !== "waiting") {
+    if (this.state.phase !== GamePhase.WAITING) {
       client.error(0, "Can only add bots before game starts");
       return;
     }
@@ -204,7 +380,7 @@ export class GameRoom extends Room<GameState> {
   }
 
   private startInitialDeal() {
-    this.state.phase = "initial_deal";
+    this.state.phase = GamePhase.INITIAL_DEAL;
     this.state.startedAt = Date.now();
 
     // Create and shuffle deck
@@ -529,11 +705,20 @@ export class GameRoom extends Room<GameState> {
   // ==================== BOT AI LOGIC ====================
 
   private triggerBotActions() {
-    if (this.state.currentTurn && this.botSessionIds.has(this.state.currentTurn)) {
+    const currentTurn = this.state.currentTurn;
+
+    if (currentTurn && this.botSessionIds.has(currentTurn)) {
+      // Prevent duplicate scheduling
+      const actionKey = `play_${currentTurn}_${this.state.tricksPlayed}_${this.state.currentTrick.cards.length}`;
+      if (this.scheduledBotActions.has(actionKey)) return;
+      this.scheduledBotActions.add(actionKey);
+
       const [minDelay, maxDelay] = GAME_CONFIG.BOT_ACTION_DELAY_MS;
       this.clock.setTimeout(() => {
-        if (this.state.phase === GamePhase.PLAYING) {
-          this.botPlayCard(this.state.currentTurn);
+        this.scheduledBotActions.delete(actionKey);
+        // Verify it's still this bot's turn
+        if (this.state.phase === GamePhase.PLAYING && this.state.currentTurn === currentTurn) {
+          this.botPlayCard(currentTurn);
         }
       }, minDelay + Math.random() * (maxDelay - minDelay));
     }
@@ -543,7 +728,13 @@ export class GameRoom extends Room<GameState> {
       this.botSessionIds.forEach((botId) => {
         const bot = this.state.players.get(botId);
         if (bot && !bot.hasVoted) {
+          // Prevent duplicate scheduling
+          const voteKey = `vote_${botId}`;
+          if (this.scheduledBotActions.has(voteKey)) return;
+          this.scheduledBotActions.add(voteKey);
+
           this.clock.setTimeout(() => {
+            this.scheduledBotActions.delete(voteKey);
             this.botVoteTrump(botId);
           }, minDelay + Math.random() * (maxDelay - minDelay));
         }
@@ -632,6 +823,93 @@ export class GameRoom extends Room<GameState> {
     if (cardToPlay) {
       this.handlePlayCard({ sessionId: botId } as Client, { cardId: cardToPlay.id });
     }
+  }
+
+  /**
+   * Handle rematch request from a player
+   */
+  private handleRematchRequest(client: Client) {
+    // Only allow rematch requests when game has ended
+    if (this.state.phase !== GamePhase.ENDED) {
+      client.send("error", { message: "Game is not over yet" });
+      return;
+    }
+
+    const player = this.state.players.get(client.sessionId);
+    if (!player) return;
+
+    // Record the vote
+    this.state.rematchVotes.set(client.sessionId, true);
+    console.log(`🔄 ${player.name} wants a rematch`);
+
+    // Broadcast rematch vote update
+    this.broadcast("rematch_vote", {
+      playerId: client.sessionId,
+      playerName: player.name,
+      votesCount: this.state.rematchVotes.size,
+      totalPlayers: this.state.players.size,
+    });
+
+    // Auto-vote for bots
+    this.botSessionIds.forEach((botSessionId) => {
+      if (!this.state.rematchVotes.has(botSessionId)) {
+        this.state.rematchVotes.set(botSessionId, true);
+      }
+    });
+
+    // Check if all players want rematch
+    const humanPlayers = Array.from(this.state.players.keys()).filter(
+      (id) => !this.botSessionIds.has(id)
+    );
+    const allHumansVoted = humanPlayers.every((id) => this.state.rematchVotes.has(id));
+
+    if (allHumansVoted && this.state.rematchVotes.size === this.state.players.size) {
+      this.startRematch();
+    }
+  }
+
+  /**
+   * Start a new game with the same players
+   */
+  private startRematch() {
+    console.log("🔄 Starting rematch!");
+
+    // Broadcast rematch starting
+    this.broadcast("rematch_starting", {});
+
+    // Reset game state while preserving players
+    this.state.phase = GamePhase.WAITING;
+    this.state.trumpSuit = "";
+    this.state.trumpVotes.clear();
+    this.state.rematchVotes.clear();
+    this.state.currentTurn = "";
+    this.state.currentTrick = new Trick(0);
+    this.state.tricksPlayed = 0;
+    this.state.royalsScore = 0;
+    this.state.rebelsScore = 0;
+    this.state.royalsTricks = 0;
+    this.state.rebelsTricks = 0;
+    this.state.winner = "";
+    this.state.isKot = false;
+    this.state.startedAt = 0;
+    this.state.turnStartedAt = 0;
+
+    // Reset player states
+    this.state.players.forEach((player) => {
+      player.hand.clear();
+      player.hasVoted = false;
+      player.trumpVote = "";
+      player.isReady = false;
+    });
+
+    // Clear deck
+    this.deck = [];
+    this.scheduledBotActions.clear();
+
+    // Auto-start the new game since all players are already here
+    setTimeout(() => {
+      this.startInitialDeal();
+    }, 1500);
   }
 
   private getHighestCard(cards: Card[], suit: string | null = null, trumpSuit: string): Card {

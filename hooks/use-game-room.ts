@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useColyseus, usePlayers, usePlayerHand, useCurrentPlayer } from "@/hooks/useColyseus";
+import { useConnectionQuality } from "@/hooks/use-connection-quality";
 
 /**
  * Main hook for game room functionality using Colyseus
@@ -24,6 +25,8 @@ export function useGameRoom(roomId: string) {
     room,
     gameState,
     isConnected,
+    isReconnecting,
+    connectionStatus,
     error,
     joinRoom,
     leaveRoom,
@@ -32,6 +35,7 @@ export function useGameRoom(roomId: string) {
     voteTrump,
     playCard,
     markReady,
+    requestRematch,
     stateVersion,
   } = useColyseus({
     userId: user?.id || "",
@@ -43,6 +47,12 @@ export function useGameRoom(roomId: string) {
   // Local UI state
   const [isAddingBots, setIsAddingBots] = useState(false);
   const [isStartingGame, setIsStartingGame] = useState(false);
+
+  // Track connection quality
+  const { latency, quality: connectionQuality } = useConnectionQuality({
+    isConnected,
+    pingInterval: 5000,
+  });
 
   // Get players array from Colyseus state
   const players = usePlayers(gameState, stateVersion);
@@ -154,11 +164,11 @@ export function useGameRoom(roomId: string) {
     return currentPlayer.trumpVote || null;
   }, [currentPlayer]);
 
-  // Scores in old format for compatibility
+  // Scores (tricks won) in old format for compatibility
   const scores = useMemo(() => ({
-    royals: gameState?.royalsScore || 0,
-    rebels: gameState?.rebelsScore || 0,
-  }), [gameState]);
+    royals: gameState?.royalsTricks || 0,
+    rebels: gameState?.rebelsTricks || 0,
+  }), [gameState, stateVersion]);
 
   // Winner data for end-game
   const winner = gameState?.winner || "";
@@ -199,12 +209,31 @@ export function useGameRoom(roomId: string) {
     return null;
   }, [error, isConnected, gameStatus, players, gameState, currentPlayer]);
 
+  // Rematch voting state
+  const rematchVotes = useMemo(() => {
+    if (!gameState?.rematchVotes) return { count: 0, total: players.length, hasVoted: false };
+
+    const count = gameState.rematchVotes.size;
+    const hasVoted = room?.sessionId ? gameState.rematchVotes.has(room.sessionId) : false;
+
+    return { count, total: players.length, hasVoted };
+  }, [gameState?.rematchVotes, players.length, room?.sessionId, stateVersion]);
+
+  // Handle rematch request
+  const handleRequestRematch = useCallback(() => {
+    requestRematch();
+  }, [requestRematch]);
+
   return {
     // Core state
     user,
     room,
     gameState,
     isConnected,
+    isReconnecting,
+    connectionStatus,
+    connectionQuality,
+    latency,
     error,
 
     // Game state (mapped for compatibility)
@@ -229,12 +258,17 @@ export function useGameRoom(roomId: string) {
 
     // Turn tracking
     currentTurn: gameState?.currentTurn || "",
+    turnStartedAt: gameState?.turnStartedAt || 0,
 
     // End-game data
     winner,
     isKot,
     royalsTricks,
     rebelsTricks,
+
+    // Rematch
+    rematchVotes,
+    handleRequestRematch,
 
     // Actions
     joinRoom,

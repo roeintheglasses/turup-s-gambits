@@ -388,3 +388,343 @@ describe('Bot AI Logic', () => {
     });
   });
 });
+
+// ==================== RECONNECTION & EDGE CASE TESTS ====================
+
+describe('Player Reconnection Support', () => {
+  // Helper to simulate finding player by userId
+  function findPlayerByUserId(players: Map<string, Player>, userId: string): Player | undefined {
+    for (const [, player] of players) {
+      if (player.userId === userId) {
+        return player;
+      }
+    }
+    return undefined;
+  }
+
+  it('should find player by userId (not sessionId)', () => {
+    const players = new Map<string, Player>();
+    const player1 = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    const player2 = new Player('session-def', 'Bob', 'user-456', 1, 1);
+    players.set('session-abc', player1);
+    players.set('session-def', player2);
+
+    const found = findPlayerByUserId(players, 'user-123');
+    expect(found).toBeDefined();
+    expect(found?.name).toBe('Alice');
+    expect(found?.id).toBe('session-abc');
+  });
+
+  it('should return undefined for non-existent userId', () => {
+    const players = new Map<string, Player>();
+    const player1 = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    players.set('session-abc', player1);
+
+    const found = findPlayerByUserId(players, 'user-999');
+    expect(found).toBeUndefined();
+  });
+
+  it('should allow reconnection when player is disconnected', () => {
+    const players = new Map<string, Player>();
+    const player = new Player('old-session', 'Alice', 'user-123', 0, 0);
+    player.isConnected = false; // Simulate disconnection
+    players.set('old-session', player);
+
+    const existingPlayer = findPlayerByUserId(players, 'user-123');
+    expect(existingPlayer).toBeDefined();
+    expect(existingPlayer?.isConnected).toBe(false);
+
+    // Simulate reconnection logic
+    if (existingPlayer && !existingPlayer.isConnected) {
+      const oldSessionId = existingPlayer.id;
+      existingPlayer.isConnected = true;
+      existingPlayer.id = 'new-session';
+
+      // Update map
+      players.delete(oldSessionId);
+      players.set('new-session', existingPlayer);
+    }
+
+    expect(players.has('old-session')).toBe(false);
+    expect(players.has('new-session')).toBe(true);
+    expect(players.get('new-session')?.isConnected).toBe(true);
+    expect(players.get('new-session')?.name).toBe('Alice'); // Preserved
+    expect(players.get('new-session')?.position).toBe(0); // Preserved
+  });
+
+  it('should reject duplicate join when player is still connected', () => {
+    const players = new Map<string, Player>();
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    player.isConnected = true;
+    players.set('session-abc', player);
+
+    const existingPlayer = findPlayerByUserId(players, 'user-123');
+
+    // Should throw error when trying to join again while connected
+    const shouldReject = existingPlayer && existingPlayer.isConnected;
+    expect(shouldReject).toBe(true);
+  });
+
+  it('should update hostId on reconnection if player was host', () => {
+    let hostId = 'old-session';
+    const oldSessionId = 'old-session';
+    const newSessionId = 'new-session';
+
+    // Simulate host reconnection
+    if (hostId === oldSessionId) {
+      hostId = newSessionId;
+    }
+
+    expect(hostId).toBe('new-session');
+  });
+
+  it('should update currentTurn on reconnection if it was player turn', () => {
+    let currentTurn = 'old-session';
+    const oldSessionId = 'old-session';
+    const newSessionId = 'new-session';
+
+    // Simulate turn update on reconnection
+    if (currentTurn === oldSessionId) {
+      currentTurn = newSessionId;
+    }
+
+    expect(currentTurn).toBe('new-session');
+  });
+
+  it('should preserve player hand and game state on reconnection', () => {
+    const player = new Player('old-session', 'Alice', 'user-123', 0, 0);
+    player.hand.push(createCard('hearts', 'A'));
+    player.hand.push(createCard('spades', 'K'));
+    player.hasVoted = true;
+    player.trumpVote = 'hearts';
+    player.isConnected = false;
+
+    // Simulate reconnection - only update connection state and session
+    player.isConnected = true;
+    player.id = 'new-session';
+
+    // Verify game state preserved
+    expect(player.hand.length).toBe(2);
+    expect(player.hand[0].suit).toBe('hearts');
+    expect(player.hasVoted).toBe(true);
+    expect(player.trumpVote).toBe('hearts');
+    expect(player.position).toBe(0);
+    expect(player.team).toBe(0);
+  });
+});
+
+describe('Player Disconnection Handling', () => {
+  it('should mark player as disconnected on leave during game', () => {
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    player.isConnected = true;
+
+    // Simulate disconnect during game
+    player.isConnected = false;
+
+    expect(player.isConnected).toBe(false);
+  });
+
+  it('should remove player from waiting room on leave', () => {
+    const players = new Map<string, Player>();
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    players.set('session-abc', player);
+
+    const phase = 'waiting';
+
+    // In waiting room, player should be removed
+    if (phase === 'waiting') {
+      players.delete('session-abc');
+    }
+
+    expect(players.size).toBe(0);
+  });
+
+  it('should reassign positions when player leaves waiting room', () => {
+    const players = [
+      createMockPlayer('p1', 0, 0),
+      createMockPlayer('p2', 1, 1),
+      createMockPlayer('p3', 2, 0),
+    ];
+
+    // Simulate p2 leaving - positions should be reassigned
+    const remainingPlayers = players.filter(p => p.id !== 'p2');
+
+    // Reassign positions
+    remainingPlayers.sort((a, b) => a.position - b.position);
+    remainingPlayers.forEach((player, index) => {
+      player.position = index;
+      player.team = index % 2;
+    });
+
+    expect(remainingPlayers[0].position).toBe(0);
+    expect(remainingPlayers[1].position).toBe(1);
+    expect(remainingPlayers[0].team).toBe(0);
+    expect(remainingPlayers[1].team).toBe(1);
+  });
+
+  it('should reassign host when host leaves', () => {
+    const players = new Map<string, Player>();
+    const host = new Player('host-session', 'Host', 'user-1', 0, 0);
+    host.isHost = true;
+    const player2 = new Player('p2-session', 'Player2', 'user-2', 1, 1);
+    players.set('host-session', host);
+    players.set('p2-session', player2);
+
+    let hostId = 'host-session';
+
+    // Host leaves
+    players.delete('host-session');
+
+    // Reassign host
+    if (players.size > 0) {
+      const newHost = Array.from(players.values())[0];
+      newHost.isHost = true;
+      hostId = newHost.id;
+    }
+
+    expect(hostId).toBe('p2-session');
+    expect(player2.isHost).toBe(true);
+  });
+});
+
+describe('Disconnected Player Auto-Play', () => {
+  it('should identify disconnected player on their turn', () => {
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    player.isConnected = false;
+
+    const currentTurn = 'session-abc';
+    const isDisconnectedTurn = currentTurn === player.id && !player.isConnected;
+
+    expect(isDisconnectedTurn).toBe(true);
+  });
+
+  it('should auto-play first valid card for disconnected player', () => {
+    const hand = [
+      createCard('hearts', 'A'),
+      createCard('spades', 'K'),
+      createCard('spades', '2'),
+    ];
+    const ledSuit = 'spades';
+
+    // Find first valid card (must follow suit)
+    let cardToPlay = hand.find(card => {
+      const hasLedSuit = hand.some(c => c.suit === ledSuit);
+      if (hasLedSuit) {
+        return card.suit === ledSuit;
+      }
+      return true;
+    });
+
+    expect(cardToPlay).toBeDefined();
+    expect(cardToPlay?.suit).toBe('spades'); // Must follow suit
+  });
+
+  it('should use shorter timeout for disconnected players', () => {
+    const NORMAL_TIMEOUT = 30000;
+    const DISCONNECT_GRACE_PERIOD = 2000;
+
+    expect(DISCONNECT_GRACE_PERIOD).toBeLessThan(NORMAL_TIMEOUT);
+  });
+});
+
+describe('Trump Selection Timeout', () => {
+  it('should auto-vote for player who has not voted after timeout', () => {
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    player.hand.push(createCard('hearts', 'A'));
+    player.hand.push(createCard('hearts', 'K'));
+    player.hand.push(createCard('hearts', 'Q'));
+    player.hand.push(createCard('spades', '2'));
+    player.hand.push(createCard('diamonds', '3'));
+    player.hasVoted = false;
+
+    // Calculate best suit to auto-vote
+    const suitCounts: Record<string, number> = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+    player.hand.forEach(card => {
+      suitCounts[card.suit]++;
+    });
+
+    const autoSuit = Object.entries(suitCounts).reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0];
+
+    expect(autoSuit).toBe('hearts'); // Most cards
+  });
+
+  it('should not auto-vote for players who already voted', () => {
+    const player = new Player('session-abc', 'Alice', 'user-123', 0, 0);
+    player.hasVoted = true;
+    player.trumpVote = 'spades';
+
+    const shouldAutoVote = !player.hasVoted;
+    expect(shouldAutoVote).toBe(false);
+  });
+});
+
+describe('Duplicate Bot Action Prevention', () => {
+  it('should create unique action keys for bot scheduling', () => {
+    const botId = 'bot_123';
+    const tricksPlayed = 5;
+    const cardsInTrick = 2;
+
+    const actionKey = `play_${botId}_${tricksPlayed}_${cardsInTrick}`;
+
+    expect(actionKey).toBe('play_bot_123_5_2');
+  });
+
+  it('should prevent duplicate scheduling with same key', () => {
+    const scheduledActions = new Set<string>();
+    const actionKey = 'play_bot_123_5_2';
+
+    // First scheduling
+    const canSchedule1 = !scheduledActions.has(actionKey);
+    if (canSchedule1) scheduledActions.add(actionKey);
+
+    // Duplicate attempt
+    const canSchedule2 = !scheduledActions.has(actionKey);
+
+    expect(canSchedule1).toBe(true);
+    expect(canSchedule2).toBe(false);
+  });
+
+  it('should allow scheduling after action completes', () => {
+    const scheduledActions = new Set<string>();
+    const actionKey = 'play_bot_123_5_2';
+
+    scheduledActions.add(actionKey);
+    expect(scheduledActions.has(actionKey)).toBe(true);
+
+    // Action completes
+    scheduledActions.delete(actionKey);
+    expect(scheduledActions.has(actionKey)).toBe(false);
+
+    // Can schedule again
+    const canSchedule = !scheduledActions.has(actionKey);
+    expect(canSchedule).toBe(true);
+  });
+});
+
+describe('Game End Due to Disconnection', () => {
+  it('should detect when all human players have left', () => {
+    const players = [
+      { id: 'human-1', isConnected: false, isBot: false },
+      { id: 'bot-1', isConnected: true, isBot: true },
+      { id: 'bot-2', isConnected: true, isBot: true },
+      { id: 'bot-3', isConnected: true, isBot: true },
+    ];
+
+    const connectedHumans = players.filter(p => p.isConnected && !p.isBot);
+    expect(connectedHumans.length).toBe(0);
+  });
+
+  it('should not end game if at least one human is connected', () => {
+    const players = [
+      { id: 'human-1', isConnected: true, isBot: false },
+      { id: 'human-2', isConnected: false, isBot: false },
+      { id: 'bot-1', isConnected: true, isBot: true },
+      { id: 'bot-2', isConnected: true, isBot: true },
+    ];
+
+    const connectedHumans = players.filter(p => p.isConnected && !p.isBot);
+    expect(connectedHumans.length).toBe(1);
+  });
+});

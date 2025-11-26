@@ -19,6 +19,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useGameStore } from "@/stores";
 import { useAuth } from "@clerk/nextjs";
 import { motion } from "framer-motion";
+import { colyseusClient } from "@/lib/colyseus/ColyseusClient";
 import {
   Plus,
   Users,
@@ -26,7 +27,8 @@ import {
   Loader2,
   Crown,
   Swords,
-  Hash
+  Hash,
+  RefreshCw
 } from "lucide-react";
 
 export default function GamePage() {
@@ -34,22 +36,47 @@ export default function GamePage() {
   const [gameMode, setGameMode] = useState<"classic" | "frenzy">("classic");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
+  const [pendingReconnect, setPendingReconnect] = useState<{ roomId: string } | null>(null);
   const router = useRouter();
   const { user } = useAuthStore();
   const { leaveRoom } = useGameStore();
 
   const { isSignedIn } = useAuth();
 
-  // Clean up game state when entering the lobby
+  // Check for pending reconnection on mount
+  useEffect(() => {
+    const reconnectData = colyseusClient.getStoredReconnectionData();
+    if (reconnectData && user?.id === reconnectData.userId) {
+      setPendingReconnect({ roomId: reconnectData.roomId });
+    }
+  }, [user?.id]);
+
+  // Clean up old game state (but preserve reconnection data)
   useEffect(() => {
     leaveRoom();
     localStorage.removeItem("game-storage");
     Object.keys(localStorage).forEach(key => {
+      // Don't remove colyseus reconnection data
+      if (key.startsWith('colyseus_')) return;
       if (key.startsWith('game-') || key.startsWith('room-') || key.startsWith('player-')) {
         localStorage.removeItem(key);
       }
     });
   }, [leaveRoom]);
+
+  // Handle rejoin to previous game
+  function handleRejoinGame() {
+    if (pendingReconnect) {
+      setIsJoiningGame(true);
+      router.push(`/game/${pendingReconnect.roomId}`);
+    }
+  }
+
+  // Dismiss reconnection prompt
+  function dismissReconnect() {
+    colyseusClient.clearReconnectionData();
+    setPendingReconnect(null);
+  }
 
   async function handleCreateGame() {
     if (!isSignedIn) {
@@ -152,6 +179,50 @@ export default function GamePage() {
               Create a new game or join an existing one
             </p>
           </div>
+
+          {/* Reconnection Prompt */}
+          {pendingReconnect && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4"
+            >
+              <Card className="border-2 border-amber-500/50 bg-amber-500/10 backdrop-blur-md">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <RefreshCw className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-amber-500">Game in Progress</p>
+                      <p className="text-sm text-muted-foreground">
+                        You have an active game. Would you like to rejoin?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                      onClick={handleRejoinGame}
+                      disabled={isJoiningGame}
+                    >
+                      {isJoiningGame ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Rejoin Game"
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={dismissReconnect}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Main Card */}
           <Card className="border-2 border-primary/30 shadow-2xl bg-card/95 backdrop-blur-md">

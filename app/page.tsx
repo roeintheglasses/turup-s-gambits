@@ -31,9 +31,9 @@ export default function HomePage() {
       {/* Main Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-8">
         <div className="z-10 text-center max-w-4xl mx-auto">
-          {/* Logo and Title */}
+          {/* Logo */}
           <motion.div
-            className="flex flex-col items-center gap-2 mb-6"
+            className="flex flex-col items-center mb-6"
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -47,24 +47,15 @@ export default function HomePage() {
                 <Image
                   src="/assets/logo.png"
                   alt="Turup's Gambit Logo"
-                  width={180}
-                  height={180}
-                  className="drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
+                  width={300}
+                  height={300}
+                  className="drop-shadow-[0_6px_12px_rgba(0,0,0,0.7)] w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] md:w-[320px] md:h-[320px]"
                   priority
                 />
               </motion.div>
               {/* Glow effect behind logo */}
               <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full -z-10" />
             </div>
-
-            <motion.h1
-              className="text-4xl sm:text-5xl md:text-7xl font-medieval text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              Turup's Gambit
-            </motion.h1>
           </motion.div>
 
           {/* Tagline */}
@@ -123,7 +114,7 @@ export default function HomePage() {
                   delay: card.delay,
                 }}
               >
-                <div className="fantasy-card-home w-full h-full rounded-lg bg-gradient-to-br from-white to-gray-100 dark:from-slate-200 dark:to-slate-300 shadow-lg border border-primary/20">
+                <div className="fantasy-card-home w-full h-full rounded-lg bg-gradient-to-br from-amber-900/90 via-amber-950 to-black shadow-lg border border-primary/30">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className={`text-2xl sm:text-3xl md:text-4xl ${card.color}`}>
                       {card.suit}

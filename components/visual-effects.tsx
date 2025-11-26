@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 
 interface VisualEffectsProps {
   enableGrain?: boolean
   enableCRT?: boolean
 }
 
-export function VisualEffects({ enableGrain = false, enableCRT = false }: VisualEffectsProps) {
+export const VisualEffects = memo(function VisualEffects({ enableGrain = false, enableCRT = false }: VisualEffectsProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -22,5 +22,5 @@ export function VisualEffects({ enableGrain = false, enableCRT = false }: Visual
       {enableCRT && <div className="crt-effect" />}
     </>
   )
-}
+})
 

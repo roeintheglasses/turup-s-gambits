@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Share, Copy, Check, Users, Crown, Swords, Bot, User, Loader2 } from "lucide-react";
+import { Share, Copy, Check, Users, Crown, Swords, Bot, User, Loader2, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { GameRoom } from "@/app/types/game";
@@ -220,7 +220,13 @@ export function WaitingRoom({
                     </div>
                   </div>
                   {!isEmpty && (
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    playerDetails?.isBot ? (
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    ) : (playerDetails?.isConnected ?? playerDetails?.is_connected) !== false ? (
+                      <Wifi className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-500 animate-pulse" />
+                    )
                   )}
                 </motion.div>
               );
@@ -293,7 +299,13 @@ export function WaitingRoom({
                     </div>
                   </div>
                   {!isEmpty && (
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    playerDetails?.isBot ? (
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    ) : (playerDetails?.isConnected ?? playerDetails?.is_connected) !== false ? (
+                      <Wifi className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-500 animate-pulse" />
+                    )
                   )}
                 </motion.div>
               );

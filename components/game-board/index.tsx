@@ -18,3 +18,5 @@ export { CenterTrickArea } from "./center-trick-area";
 export { PlayerHand } from "./player-hand";
 export { TableSurface } from "./table-surface";
 export { OpponentArea } from "./opponent-area";
+export { TurnTimer } from "./turn-timer";
+export { ConnectionIndicator, ConnectionBars } from "./connection-indicator";

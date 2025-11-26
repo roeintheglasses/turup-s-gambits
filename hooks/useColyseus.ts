@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { colyseusClient, type GameRoom } from "@/lib/colyseus/ColyseusClient";
 import type { GameState, Player, Card } from "../server/schema/GameState";
 import { useUIStore } from "@/stores/uiStore";
@@ -14,7 +14,9 @@ interface UseColyseusReturn {
   room: GameRoom | null;
   gameState: GameState | null;
   isConnected: boolean;
+  isReconnecting: boolean;
   error: string | null;
+  connectionStatus: "disconnected" | "connecting" | "connected" | "reconnecting";
   joinRoom: (roomId?: string) => Promise<GameRoom>;
   leaveRoom: () => Promise<void>;
   startGame: () => void;
@@ -22,6 +24,7 @@ interface UseColyseusReturn {
   voteTrump: (suit: string) => void;
   playCard: (cardId: string) => void;
   markReady: () => void;
+  requestRematch: () => void;
   stateVersion: number;
 }
 
@@ -29,10 +32,22 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stateVersion, setStateVersion] = useState(0);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 3;
 
   const { userId, userName, roomId, autoConnect = false } = options;
+
+  // Derive connection status
+  const connectionStatus = isReconnecting
+    ? "reconnecting"
+    : isConnected
+    ? "connected"
+    : error
+    ? "disconnected"
+    : "connecting";
 
   const joinRoom = useCallback(
     async (specificRoomId?: string) => {
@@ -56,7 +71,47 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
 
         // Listen to messages from server
         newRoom.onMessage("*", (type, message) => {
-          // Messages are handled by server
+          const { showToast } = useUIStore.getState();
+
+          switch (type) {
+            case "player_reconnected":
+              showToast(`${message.name} reconnected`, "info");
+              break;
+
+            case "player_disconnected":
+              showToast(`${message.playerName} disconnected`, "warning");
+              break;
+
+            case "host_changed":
+              showToast(`${message.newHostName} is now the host`, "info");
+              break;
+
+            case "trump_vote_timeout":
+              showToast(`${message.playerName} auto-voted (timeout)`, "warning");
+              break;
+
+            case "turn_timeout":
+              showToast(`${message.playerName} ran out of time`, "warning");
+              break;
+
+            case "game_ended":
+              if (message.reason === "all_players_left") {
+                showToast("Game ended - all players left", "info");
+              }
+              break;
+
+            case "rematch_vote":
+              showToast(`${message.playerName} wants a rematch (${message.votesCount}/${message.totalPlayers})`, "info");
+              break;
+
+            case "rematch_starting":
+              showToast("Rematch starting!", "success");
+              break;
+
+            default:
+              // Other messages handled by state sync
+              break;
+          }
         });
 
         // Handle errors
@@ -83,9 +138,41 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
 
         // Handle disconnection
         newRoom.onLeave((code) => {
+          console.log("🔌 Disconnected from room, code:", code);
           setIsConnected(false);
           setRoom(null);
+
+          // Try to reconnect if it wasn't intentional (code 1000 is normal close)
+          if (code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
+            setIsReconnecting(true);
+            reconnectAttempts.current++;
+
+            const { showToast } = useUIStore.getState();
+            showToast(`Connection lost. Reconnecting... (${reconnectAttempts.current}/${maxReconnectAttempts})`, "warning");
+
+            // Attempt to reconnect after a delay
+            setTimeout(async () => {
+              try {
+                const reconnectData = colyseusClient.getStoredReconnectionData();
+                if (reconnectData && reconnectData.userId === userId) {
+                  await joinRoom(reconnectData.roomId);
+                  reconnectAttempts.current = 0;
+                  showToast("Reconnected successfully!", "success");
+                }
+              } catch (err) {
+                console.error("Reconnection failed:", err);
+                if (reconnectAttempts.current >= maxReconnectAttempts) {
+                  setIsReconnecting(false);
+                  setError("Failed to reconnect. Please refresh the page.");
+                }
+              }
+            }, 2000 * reconnectAttempts.current); // Exponential backoff
+          }
         });
+
+        // Reset reconnect attempts on successful connection
+        reconnectAttempts.current = 0;
+        setIsReconnecting(false);
 
         return newRoom;
       } catch (err: any) {
@@ -125,6 +212,10 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
     colyseusClient.markReady();
   }, []);
 
+  const requestRematch = useCallback(() => {
+    colyseusClient.requestRematch();
+  }, []);
+
   // Auto-connect on mount if enabled
   useEffect(() => {
     let mounted = true;
@@ -158,7 +249,9 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
     room,
     gameState,
     isConnected,
+    isReconnecting,
     error,
+    connectionStatus,
     joinRoom,
     leaveRoom,
     startGame,
@@ -166,6 +259,7 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
     voteTrump,
     playCard,
     markReady,
+    requestRematch,
     stateVersion, // Export this so components can use it as dependency
   };
 }

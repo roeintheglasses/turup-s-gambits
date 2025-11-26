@@ -84,6 +84,9 @@ export class GameState extends Schema {
   @type("string") winner: string = ""; // "royals" or "rebels"
   @type("boolean") isKot: boolean = false; // all 13 tricks won
 
+  // Rematch voting
+  @type({ map: "boolean" }) rematchVotes: MapSchema<boolean> = new MapSchema<boolean>(); // playerId -> wants rematch
+
   // Timestamps
   @type("number") createdAt: number = Date.now();
   @type("number") startedAt: number = 0;

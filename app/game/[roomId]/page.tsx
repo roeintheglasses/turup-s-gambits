@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 import { WaitingRoomSkeleton } from "@/components/waiting-room-skeleton";
 import { VisualEffects } from "@/components/visual-effects";
+import { LeaveGameDialog } from "@/components/leave-game-dialog";
 
 // Game room components
 import {
@@ -19,6 +20,7 @@ import {
 
 // Custom hooks
 import { useGameRoom } from "@/hooks/use-game-room";
+import { useLeaveGameGuard } from "@/hooks/use-leave-game-guard";
 
 interface GameRoomPageProps {
   params: Promise<{
@@ -41,6 +43,10 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     gameStatus,
     router,
     isConnected,
+    isReconnecting,
+    connectionStatus,
+    connectionQuality,
+    latency,
     error,
     // Waiting room props
     isCurrentUserHost,
@@ -60,13 +66,30 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     showTrumpPopup,
     // Turn management
     currentTurn,
+    turnStartedAt,
     statusMessage,
     // End-game data
     winner,
     isKot,
     royalsTricks,
     rebelsTricks,
+    // Rematch
+    rematchVotes,
+    handleRequestRematch,
   } = gameRoom;
+
+  // Leave game guard - active when game is in progress (not waiting or ended)
+  const isGameInProgress = gameStatus !== "waiting" && gameStatus !== "ended" && isConnected;
+  const {
+    showConfirmDialog,
+    confirmLeave,
+    cancelLeave,
+  } = useLeaveGameGuard({
+    isActive: isGameInProgress,
+    onConfirmLeave: () => {
+      // Clean up will happen automatically
+    },
+  });
 
   // Show login modal if user is not authenticated
   if (!user) {
@@ -103,6 +126,25 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
     );
   }
 
+  // Show reconnecting state
+  if (isReconnecting) {
+    return (
+      <div className="h-full flex items-center justify-center p-2 md:p-4">
+        <VisualEffects enableGrain />
+        <GameBackground />
+        <div className="w-full px-2 md:px-4 max-w-md mx-auto">
+          <div className="bg-amber-500/10 border border-amber-500/50 rounded-lg p-6 text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-amber-500">Reconnecting...</h2>
+            <p className="mt-2 text-muted-foreground">
+              Please wait while we reconnect you to the game
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state
   if (isLoading || !isConnected) {
     return (
@@ -115,6 +157,18 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       </div>
     );
   }
+
+  // Helper to render with leave game dialog
+  const renderWithDialog = (content: React.ReactNode) => (
+    <>
+      {content}
+      <LeaveGameDialog
+        isOpen={showConfirmDialog}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+      />
+    </>
+  );
 
   // Render different states based on game status
   switch (gameStatus) {
@@ -132,7 +186,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       );
 
     case "initial_deal":
-      return (
+      return renderWithDialog(
         <InitialDealState
           showShuffleAnimation={false}
           handleShuffleComplete={() => {}}
@@ -140,7 +194,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       );
 
     case "trump_selection":
-      return (
+      return renderWithDialog(
         <BiddingState
           mode={(mode as string) || "classic"}
           playerHand={playerHand}
@@ -155,7 +209,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       );
 
     case "final_deal":
-      return (
+      return renderWithDialog(
         <FinalDealState
           showShuffleAnimation={false}
           handleFinalShuffleDrawComplete={() => {}}
@@ -163,7 +217,7 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
       );
 
     case "playing":
-      return (
+      return renderWithDialog(
         <div className="h-full flex flex-col">
           <VisualEffects enableGrain />
           <GameBackground />
@@ -185,9 +239,12 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
               scores={gameRoom.scores}
               trumpSuit={gameRoom.trumpSuit}
               currentTurn={currentTurn}
+              turnStartedAt={turnStartedAt}
               currentPlayerId={currentPlayerId}
               isCurrentUserHost={isCurrentUserHost}
               playerHand={playerHand}
+              connectionQuality={connectionQuality}
+              latency={latency}
             />
           </div>
         </div>
@@ -202,6 +259,8 @@ function GameRoomContentInner({ roomId }: { roomId: string }) {
           rebelsTricks={rebelsTricks}
           players={players}
           currentPlayer={currentPlayer}
+          rematchVotes={rematchVotes}
+          onRequestRematch={handleRequestRematch}
           onPlayAgain={() => router.push("/game")}
           onBackToLobby={() => router.push("/game")}
         />

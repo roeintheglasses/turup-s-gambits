@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { memo, useMemo } from "react";
 import { Crown, Swords, Wifi, WifiOff } from "lucide-react";
 
 interface OpponentAreaProps {
@@ -14,13 +14,9 @@ interface OpponentAreaProps {
 
 /**
  * Opponent Area - Shows opponent player with card backs
- * Features:
- * - Stacked card backs showing card count
- * - Clear team indicator
- * - Turn indicator with glow effect
- * - Connection status
+ * Optimized: Uses CSS animations instead of framer-motion for better performance
  */
-export function OpponentArea({
+export const OpponentArea = memo(function OpponentArea({
   name,
   position,
   team,
@@ -29,68 +25,56 @@ export function OpponentArea({
   cardCount,
 }: OpponentAreaProps) {
   const TeamIcon = team === "royals" ? Crown : Swords;
-  const teamColor = team === "royals"
-    ? "border-amber-500 text-amber-500"
-    : "border-blue-500 text-blue-500";
-  const teamBg = team === "royals"
-    ? "bg-amber-500/10"
-    : "bg-blue-500/10";
-  const teamGlow = team === "royals"
-    ? "shadow-[0_0_30px_rgba(245,158,11,0.4)]"
-    : "shadow-[0_0_30px_rgba(59,130,246,0.4)]";
 
-  // Position-specific styles for the card backs display
-  const getCardBacksLayout = () => {
-    if (position === "top") {
-      return "flex-row gap-0.5";
-    }
+  // Memoize style calculations
+  const styles = useMemo(() => ({
+    teamColor: team === "royals"
+      ? "border-amber-500 text-amber-500"
+      : "border-blue-500 text-blue-500",
+    teamBg: team === "royals"
+      ? "bg-amber-500/10"
+      : "bg-blue-500/10",
+    teamGlow: team === "royals"
+      ? "shadow-[0_0_30px_rgba(245,158,11,0.4)]"
+      : "shadow-[0_0_30px_rgba(59,130,246,0.4)]",
+    pulseColor: team === "royals" ? "bg-amber-500" : "bg-blue-500",
+  }), [team]);
+
+  // Position-specific layout
+  const cardBacksLayout = useMemo(() => {
     if (position === "left" || position === "right") {
       return "flex-col gap-0.5";
     }
     return "flex-row gap-0.5";
-  };
+  }, [position]);
 
   // Render minimal card backs (max 5 shown, rest as counter)
   const visibleCards = Math.min(cardCount, 5);
   const hiddenCards = Math.max(0, cardCount - 5);
 
+  // Memoize card back style generator
+  const getCardStyle = useMemo(() => (i: number) => ({
+    marginLeft: position !== "left" && position !== "right" && i > 0 ? "-14px" : "0",
+    marginTop: (position === "left" || position === "right") && i > 0 ? "-20px" : "0",
+    zIndex: i,
+    animationDelay: `${i * 50}ms`,
+  }), [position]);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center gap-2"
-    >
-      {/* Card backs */}
-      <div className={`flex ${getCardBacksLayout()} items-center justify-center`}>
+    <div className="flex flex-col items-center gap-2 animate-in fade-in duration-300">
+      {/* Card backs - using CSS animations */}
+      <div className={`flex ${cardBacksLayout} items-center justify-center`}>
         {Array.from({ length: visibleCards }).map((_, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="w-6 h-8 sm:w-8 sm:h-11 md:w-10 md:h-14 rounded-md bg-gradient-to-br from-[#8B4513] via-[#A0522D] to-[#654321] border sm:border-2 border-[#5D3A1A] shadow-md"
-            style={{
-              marginLeft: position !== "left" && position !== "right" && i > 0 ? "-14px" : "0",
-              marginTop: (position === "left" || position === "right") && i > 0 ? "-20px" : "0",
-              zIndex: i,
-            }}
+            className="w-6 h-8 sm:w-8 sm:h-11 md:w-10 md:h-14 rounded-md bg-gradient-to-br from-[#8B4513] via-[#A0522D] to-[#654321] border sm:border-2 border-[#5D3A1A] shadow-md animate-in slide-in-from-top-2 fade-in duration-200 will-change-transform"
+            style={getCardStyle(i)}
           >
-            {/* Card back design */}
+            {/* Card back design - simplified */}
             <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden">
-              <div
-                className="w-[85%] h-[85%] rounded-sm border border-amber-700/50"
-                style={{
-                  background: `repeating-linear-gradient(
-                    45deg,
-                    #6B4423,
-                    #6B4423 2px,
-                    #7A5030 2px,
-                    #7A5030 4px
-                  )`
-                }}
-              />
+              <div className="w-[85%] h-[85%] rounded-sm border border-amber-700/50 bg-[repeating-linear-gradient(45deg,#6B4423,#6B4423_2px,#7A5030_2px,#7A5030_4px)]" />
             </div>
-          </motion.div>
+          </div>
         ))}
 
         {/* Hidden cards counter */}
@@ -103,25 +87,14 @@ export function OpponentArea({
 
       {/* Player info badge */}
       <div
-        className={`relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border-2 transition-all duration-300 ${teamColor} ${teamBg} ${
-          isCurrentTurn ? teamGlow : ""
+        className={`relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border-2 transition-shadow duration-300 ${styles.teamColor} ${styles.teamBg} ${
+          isCurrentTurn ? styles.teamGlow : ""
         }`}
       >
-        {/* Turn indicator pulse */}
+        {/* Turn indicator pulse - CSS animation instead of framer-motion */}
         {isCurrentTurn && (
-          <motion.div
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [1, 0, 1],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className={`absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-              team === "royals" ? "bg-amber-500" : "bg-blue-500"
-            }`}
+          <div
+            className={`absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 rounded-full ${styles.pulseColor} animate-ping`}
           />
         )}
 
@@ -142,6 +115,6 @@ export function OpponentArea({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, memo } from "react";
 
 interface TableSurfaceProps {
   children: ReactNode;
@@ -8,12 +8,9 @@ interface TableSurfaceProps {
 
 /**
  * Table Surface - The game table background
- * Features:
- * - Realistic felt texture with subtle patterns
- * - Proper depth and shadows
- * - Responsive sizing
+ * Memoized for performance - only re-renders when children change
  */
-export function TableSurface({ children }: TableSurfaceProps) {
+export const TableSurface = memo(function TableSurface({ children }: TableSurfaceProps) {
   return (
     <div className="relative w-full h-full min-h-[500px] md:min-h-[600px]">
       {/* Outer border / table edge */}
@@ -56,4 +53,4 @@ export function TableSurface({ children }: TableSurfaceProps) {
       </div>
     </div>
   );
-}
+});

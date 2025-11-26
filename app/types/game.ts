@@ -40,6 +40,7 @@ export interface Player {
   current_hand?: Card[];
   cards_played?: Card[];
   is_connected?: boolean;
+  isConnected?: boolean; // Colyseus schema uses camelCase
   trump_vote?: Suit;
   trump_vote_cast_at?: string;
   total_tricks_won?: number;

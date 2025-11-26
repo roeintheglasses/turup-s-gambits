@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo, useMemo } from "react"
 import { motion } from "framer-motion"
 
 // Card suits and values for the flying cards
@@ -15,7 +15,7 @@ interface FlyingCardProps {
   path: "left-to-right" | "right-to-left" | "top-to-bottom" | "diagonal"
 }
 
-export function FlyingCards() {
+export const FlyingCards = memo(function FlyingCards() {
   const [cards, setCards] = useState<FlyingCardProps[]>([])
   const [mounted, setMounted] = useState(false)
 
@@ -62,9 +62,9 @@ export function FlyingCards() {
       ))}
     </div>
   )
-}
+})
 
-function CardAnimation({ card, index }: { card: FlyingCardProps; index: number }) {
+const CardAnimation = memo(function CardAnimation({ card, index }: { card: FlyingCardProps; index: number }) {
   // Define different animation paths
   const getAnimationProps = () => {
     switch (card.path) {
@@ -100,7 +100,7 @@ function CardAnimation({ card, index }: { card: FlyingCardProps; index: number }
 
   return (
     <motion.div
-      className="absolute w-12 h-20 sm:w-16 sm:h-28 md:w-20 md:h-32"
+      className="absolute w-12 h-20 sm:w-16 sm:h-28 md:w-20 md:h-32 will-change-transform"
       initial={animationProps.initial}
       animate={animationProps.animate}
       transition={{
@@ -114,10 +114,10 @@ function CardAnimation({ card, index }: { card: FlyingCardProps; index: number }
       <FlyingCard suit={card.suit} value={card.value} />
     </motion.div>
   )
-}
+})
 
-// Update the flying card component to use the new gradient
-function FlyingCard({ suit, value }: { suit: string; value: string }) {
+// Flying card component - memoized for performance
+const FlyingCard = memo(function FlyingCard({ suit, value }: { suit: string; value: string }) {
   const getSuitSymbol = (suit: string) => {
     switch (suit.toLowerCase()) {
       case "hearts":
@@ -164,5 +164,5 @@ function FlyingCard({ suit, value }: { suit: string; value: string }) {
       </div>
     </div>
   )
-}
+})
 

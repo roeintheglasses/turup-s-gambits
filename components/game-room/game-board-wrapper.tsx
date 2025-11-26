@@ -1,6 +1,7 @@
 import React, { useMemo, memo } from "react";
 import { GameBoard } from "@/components/game-board";
 import { GameBottomBar } from "./game-bottom-bar";
+import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 
 interface GameBoardWrapperProps {
   roomId: string;
@@ -13,11 +14,15 @@ interface GameBoardWrapperProps {
   scores?: { royals: number; rebels: number };
   trumpSuit?: string | null;
   currentTurn?: string;
+  turnStartedAt?: number;
   isCurrentUserHost?: boolean;
   // Player hand from Colyseus
   playerHand?: any[];
   // Current player ID (session ID from Colyseus room)
   currentPlayerId?: string;
+  // Connection quality
+  connectionQuality?: ConnectionQuality;
+  latency?: number | null;
 }
 
 // Memoized component for the main game board
@@ -31,7 +36,10 @@ const GameBoardContent = memo(
     handlePlayCard,
     playerHand,
     currentTurn,
+    turnStartedAt,
     currentPlayerId,
+    connectionQuality,
+    latency,
   }: {
     roomId: string;
     mode: string;
@@ -41,7 +49,10 @@ const GameBoardContent = memo(
     handlePlayCard: (card: any) => void;
     playerHand?: any[];
     currentTurn?: string;
+    turnStartedAt?: number;
     currentPlayerId?: string;
+    connectionQuality?: ConnectionQuality;
+    latency?: number | null;
   }) => {
     // Memoized player names to prevent unnecessary re-renders
     const playerNames = useMemo(
@@ -78,7 +89,10 @@ const GameBoardContent = memo(
         sendMessage={async () => false}
         playerHand={playerHand}
         currentTurn={currentTurn}
+        turnStartedAt={turnStartedAt}
         currentPlayerId={currentPlayerId}
+        connectionQuality={connectionQuality}
+        latency={latency}
       />
     );
   },
@@ -130,9 +144,12 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
     scores,
     trumpSuit,
     currentTurn,
+    turnStartedAt,
     isCurrentUserHost,
     playerHand,
     currentPlayerId,
+    connectionQuality,
+    latency,
   }) => {
     return (
       <div className="h-full flex flex-col">
@@ -147,7 +164,10 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
             handlePlayCard={handlePlayCard}
             playerHand={playerHand}
             currentTurn={currentTurn}
+            turnStartedAt={turnStartedAt}
             currentPlayerId={currentPlayerId}
+            connectionQuality={connectionQuality}
+            latency={latency}
           />
         </div>
 

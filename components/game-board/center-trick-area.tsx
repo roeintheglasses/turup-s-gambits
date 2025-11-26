@@ -118,54 +118,49 @@ export const CenterTrickArea = memo(function CenterTrickArea({
   }, [normalizedPositions, isMobile]);
 
   // Calculate exit animation direction based on winning player position
-  const getExitAnimation = useCallback((winnerName: string | undefined) => {
+  // Two-phase animation: first gather to center, then fly to winner
+  const getExitAnimation = useCallback((winnerName: string | undefined, cardIndex: number) => {
     if (!winnerName) {
       return { opacity: 0, scale: 0.5, transition: { duration: 0.3 } };
     }
 
     const normalizedWinner = winnerName.trim().toLowerCase();
-    const exitDistance = isMobile ? 80 : 120;
-    const exitScale = 0.3;
+    const exitDistance = isMobile ? 100 : 150;
+    const exitScale = 0.2;
+    const baseDelay = 0.05 * cardIndex; // Stagger the exit
+
+    // Determine exit direction based on winner position
+    let exitX = 0;
+    let exitY = 0;
+    let exitRotate = 0;
 
     if (normalizedWinner === normalizedPositions.bottom) {
-      return {
-        y: exitDistance,
-        x: 0,
-        scale: exitScale,
-        opacity: 0,
-        rotate: 10,
-        transition: { duration: 0.4, ease: "easeIn" },
-      };
+      exitY = exitDistance;
+      exitRotate = 15 + cardIndex * 5;
     } else if (normalizedWinner === normalizedPositions.top) {
-      return {
-        y: -exitDistance,
-        x: 0,
-        scale: exitScale,
-        opacity: 0,
-        rotate: -10,
-        transition: { duration: 0.4, ease: "easeIn" },
-      };
+      exitY = -exitDistance;
+      exitRotate = -15 - cardIndex * 5;
     } else if (normalizedWinner === normalizedPositions.left) {
-      return {
-        x: -exitDistance,
-        y: 0,
-        scale: exitScale,
-        opacity: 0,
-        rotate: -15,
-        transition: { duration: 0.4, ease: "easeIn" },
-      };
+      exitX = -exitDistance;
+      exitRotate = -20 - cardIndex * 5;
     } else if (normalizedWinner === normalizedPositions.right) {
-      return {
-        x: exitDistance,
-        y: 0,
-        scale: exitScale,
-        opacity: 0,
-        rotate: 15,
-        transition: { duration: 0.4, ease: "easeIn" },
-      };
+      exitX = exitDistance;
+      exitRotate = 20 + cardIndex * 5;
     }
 
-    return { opacity: 0, scale: 0.5, transition: { duration: 0.3 } };
+    return {
+      x: exitX,
+      y: exitY,
+      scale: exitScale,
+      opacity: 0,
+      rotate: exitRotate,
+      transition: {
+        duration: 0.5,
+        delay: baseDelay,
+        ease: [0.4, 0, 0.2, 1],
+        opacity: { duration: 0.3, delay: baseDelay + 0.2 }
+      },
+    };
   }, [normalizedPositions, isMobile]);
 
   // Get the winner name for exit animations
@@ -234,29 +229,36 @@ export const CenterTrickArea = memo(function CenterTrickArea({
           const isWinning = winningCardIndex === index;
           const team = teamAssignments[card.playedBy];
 
+          // Calculate entry rotation based on direction
+          const entryRotation = config.position === "left" ? -15 :
+                               config.position === "right" ? 15 :
+                               config.position === "top" ? -8 : 8;
+
           return (
             <motion.div
               key={`trick-card-${card.id}-${index}-${card.playedBy}`}
               initial={{
-                x: config.initialX || 0,
-                y: config.initialY || 0,
+                x: (config.initialX || 0) * 1.5,
+                y: (config.initialY || 0) * 1.5,
                 opacity: 0,
-                scale: 0.8
+                scale: 0.5,
+                rotate: entryRotation,
               }}
               animate={{
                 x: 0,
                 y: 0,
                 opacity: 1,
-                scale: isWinning ? 1.1 : 1,
+                scale: isWinning ? 1.08 : 1,
+                rotate: 0,
               }}
-              exit={getExitAnimation(winnerName)}
+              exit={getExitAnimation(winnerName, index)}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 25,
-                delay: index * 0.1,
+                stiffness: 500,
+                damping: 35,
+                mass: 0.6,
               }}
-              className="absolute -translate-x-1/2"
+              className="absolute -translate-x-1/2 will-change-transform"
               style={{
                 top: config.top,
                 left: config.left,
