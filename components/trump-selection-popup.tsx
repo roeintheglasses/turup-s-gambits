@@ -9,81 +9,19 @@ import { Suit } from "@/app/types/game";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores";
 import { playSoundEffect } from "@/hooks/use-sound-effects";
+import {
+  SUIT_CONFIG,
+  FRENZY_POWERS,
+  getSuitSymbol,
+  getSuitColor,
+  Suit as SuitEnum
+} from "@/lib/constants";
 
-// Constants
-const SUITS = [
-  { id: "hearts", name: "Hearts", symbol: "♥", color: "text-red-500" },
-  { id: "diamonds", name: "Diamonds", symbol: "♦", color: "text-red-500" },
-  {
-    id: "clubs",
-    name: "Clubs",
-    symbol: "♣",
-    color: "text-slate-900 dark:text-slate-100",
-  },
-  {
-    id: "spades",
-    name: "Spades",
-    symbol: "♠",
-    color: "text-slate-900 dark:text-slate-100",
-  },
-] as const;
-
-// Helper functions
-const getSuitSymbol = (suit: string): string => {
-  switch (suit) {
-    case "hearts":
-      return "♥";
-    case "diamonds":
-      return "♦";
-    case "clubs":
-      return "♣";
-    case "spades":
-      return "♠";
-    default:
-      return suit;
-  }
-};
-
-const getSuitColor = (suit: string): string => {
-  switch (suit) {
-    case "hearts":
-    case "diamonds":
-      return "text-red-500";
-    case "clubs":
-    case "spades":
-      return "text-slate-900 dark:text-slate-100";
-    default:
-      return "";
-  }
-};
-
-// Frenzy mode power descriptions
-const FRENZY_POWERS = {
-  hearts: {
-    name: "Extra Points",
-    description: "Gain bonus points for winning tricks with heart cards",
-    type: "Passive",
-    icon: "💝"
-  },
-  spades: {
-    name: "Free Lead",
-    description: "Lead with any card after winning a trick",
-    type: "Passive",
-    icon: "🗡️"
-  },
-  diamonds: {
-    name: "Peek Card",
-    description: "See one opponent's card (2 uses per game)",
-    type: "Active",
-    icon: "👁️"
-  },
-  clubs: {
-    name: "Out of Turn",
-    description: "Play one card out of turn (1 use per game)",
-    type: "Active",
-    icon: "⚡"
-  }
-} as const;
+// Build SUITS array from config for backward compatibility
+const SUITS = Object.entries(SUIT_CONFIG).map(([id, config]) => ({
+  id,
+  ...config,
+}));
 
 // Types
 interface TrumpSelectionPopupProps {
@@ -100,9 +38,6 @@ interface TrumpSelectionPopupProps {
   isCurrentUserHost: boolean;
   gameMode?: "classic" | "frenzy";
 }
-
-// Add debug flag at the top of the file
-const DEBUG = true;
 
 export function TrumpSelectionPopup({
   onVote,
@@ -128,23 +63,6 @@ export function TrumpSelectionPopup({
   });
   const [isHandLoading, setIsHandLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-
-  // Debug log state changes
-  useEffect(() => {
-    if (DEBUG) {
-      console.log("[Trump Selection Popup] State:", {
-        isOpen,
-        votingComplete,
-        userVote,
-        trumpVotes,
-        isClosing,
-        totalVotes: Object.values(trumpVotes).reduce(
-          (sum, count) => sum + count,
-          0
-        ),
-      });
-    }
-  }, [isOpen, votingComplete, userVote, trumpVotes, isClosing]);
 
   // Reset selected suit when popup opens or when user vote changes
   useEffect(() => {
@@ -211,13 +129,8 @@ export function TrumpSelectionPopup({
   // Handle voting for a trump suit
   const handleVote = () => {
     if (!selectedSuit || userVote) {
-      console.warn(
-        "[Trump Selection] Cannot vote: No suit selected or already voted"
-      );
       return;
     }
-
-    if (DEBUG) console.log(`[Trump Selection] Voting for ${selectedSuit}`);
 
     // Play button click sound
     playSoundEffect("buttonClick", 0.4);
@@ -240,14 +153,8 @@ export function TrumpSelectionPopup({
 
       // If voting is complete, transition to final_deal phase
       if (votingComplete) {
-        // Set game state to final_deal
         setGameStatus("final_deal");
-
-        // Trigger the shuffle animation for final deal
         setShowShuffleAnimation(true);
-
-        // Log for debugging
-        console.log("[Trump Selection] Transitioning to final_deal phase");
       }
     }, 300);
   };
@@ -264,10 +171,6 @@ export function TrumpSelectionPopup({
       const expectedVotes = 4; // Assuming 4-player game
 
       if (totalVotes >= expectedVotes) {
-        if (DEBUG)
-          console.log(
-            "[Trump Selection Popup] FAILSAFE: All votes are in but votingComplete is false. Force closing popup."
-          );
         // Force close after a short delay
         const timer = setTimeout(() => {
           setIsClosing(true);

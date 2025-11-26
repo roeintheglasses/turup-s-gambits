@@ -7,6 +7,14 @@ import {
   validateCardPlay,
   determineTrickWinner,
 } from "../utils/cardUtils";
+import {
+  GAME_CONFIG,
+  MEDIEVAL_BOT_NAMES,
+  VALUE_RANKINGS,
+  CARD_SUITS,
+  Team,
+  GamePhase,
+} from "../../lib/constants";
 
 interface JoinOptions {
   userId: string;
@@ -14,18 +22,9 @@ interface JoinOptions {
 }
 
 export class GameRoom extends Room<GameState> {
-  maxClients = 4;
+  maxClients = GAME_CONFIG.MAX_PLAYERS;
   private deck: Card[] = [];
   private botSessionIds: Set<string> = new Set();
-
-  // Medieval bot names pool
-  private readonly medievalBotNames = [
-    "Sir Aldric", "Lady Isolde", "Lord Cedric", "Dame Guinevere",
-    "Sir Percival", "Lady Rosalind", "Lord Tristan", "Dame Eleanor",
-    "Sir Gawain", "Lady Beatrice", "Lord Roland", "Dame Morgana",
-    "Sir Lancelot", "Lady Evangeline", "Lord Arthur", "Dame Vivienne",
-    "Sir Galahad", "Lady Rowena", "Lord Edmund", "Dame Cordelia"
-  ];
   private usedBotNames: Set<string> = new Set();
 
   onCreate(options: any) {
@@ -42,16 +41,15 @@ export class GameRoom extends Room<GameState> {
     this.onMessage("play_card", (client, data) => this.handlePlayCard(client, data));
     this.onMessage("ready", (client) => this.handlePlayerReady(client));
 
-    // Turn timer (30 seconds)
+    // Turn timer
     this.clock.setInterval(() => {
-      if (this.state.phase === "playing" && this.state.currentTurn) {
+      if (this.state.phase === GamePhase.PLAYING && this.state.currentTurn) {
         const elapsed = Date.now() - this.state.turnStartedAt;
-        if (elapsed > 30000) {
-          // Auto-play first valid card if turn timeout
+        if (elapsed > GAME_CONFIG.TURN_TIMEOUT_MS) {
           this.handleTurnTimeout(this.state.currentTurn);
         }
       }
-    }, 5000); // Check every 5 seconds
+    }, GAME_CONFIG.TURN_CHECK_INTERVAL_MS);
   }
 
   onJoin(client: Client, options: JoinOptions) {
@@ -79,8 +77,6 @@ export class GameRoom extends Room<GameState> {
     }
 
     this.state.players.set(client.sessionId, player);
-
-    console.log(`👤 ${player.name} joined as ${team === 0 ? 'Royals' : 'Rebels'}`);
 
     this.broadcast("player_joined", {
       playerId: client.sessionId,
@@ -163,7 +159,6 @@ export class GameRoom extends Room<GameState> {
       return;
     }
 
-    console.log(`🤖 Adding ${botsNeeded} bots to room ${this.roomId}`);
 
     for (let i = 0; i < botsNeeded; i++) {
       const position = this.state.players.size;
@@ -188,30 +183,21 @@ export class GameRoom extends Room<GameState> {
         team,
       });
 
-      console.log(`🤖 ${botPlayer.name} joined as ${team === 0 ? 'Royals' : 'Rebels'}`);
     }
   }
 
-  /**
-   * Get a random unused medieval bot name
-   */
   private getRandomBotName(): string {
-    // Get available names (not yet used)
-    const availableNames = this.medievalBotNames.filter(
+    const availableNames = MEDIEVAL_BOT_NAMES.filter(
       name => !this.usedBotNames.has(name)
     );
 
-    // If all names are used, reset and start over
     if (availableNames.length === 0) {
       this.usedBotNames.clear();
-      return this.medievalBotNames[0];
+      return MEDIEVAL_BOT_NAMES[0];
     }
 
-    // Pick a random name from available ones
     const randomIndex = Math.floor(Math.random() * availableNames.length);
     const selectedName = availableNames[randomIndex];
-
-    // Mark as used
     this.usedBotNames.add(selectedName);
 
     return selectedName;
@@ -232,43 +218,37 @@ export class GameRoom extends Room<GameState> {
 
     playerArray.forEach((player, index) => {
       player.hand.push(...hands[index]);
-      console.log(`🃏 Dealt ${hands[index].length} cards to ${player.name}, hand size: ${player.hand.length}`);
     });
 
     this.broadcast("initial_deal_complete", {
       phase: "initial_deal",
     });
 
-    // Move to trump selection after 2 seconds
+    // Move to trump selection
     this.clock.setTimeout(() => {
-      this.state.phase = "trump_selection";
-      this.broadcast("phase_changed", { phase: "trump_selection" });
-      this.triggerBotActions(); // Bots vote for trump
-    }, 2000);
+      this.state.phase = GamePhase.TRUMP_SELECTION;
+      this.broadcast("phase_changed", { phase: GamePhase.TRUMP_SELECTION });
+      this.triggerBotActions();
+    }, GAME_CONFIG.PHASE_TRANSITION_DELAY_MS);
   }
 
   private handleTrumpVote(client: Client, data: { suit: string }) {
     const player = this.state.players.get(client.sessionId);
 
-    if (!player) {
-      console.log(`❌ Vote failed: Player ${client.sessionId} not found`);
-      return;
-    }
-    if (this.state.phase !== "trump_selection") {
-      console.log(`❌ Vote failed: Not in trump_selection phase (current: ${this.state.phase})`);
+    if (!player) return;
+
+    if (this.state.phase !== GamePhase.TRUMP_SELECTION) {
       client.error(0, "Not in trump selection phase");
       return;
     }
 
     if (player.hasVoted) {
-      console.log(`❌ Vote failed: ${player.name} already voted`);
       client.error(0, "Already voted");
       return;
     }
 
-    const validSuits = ["hearts", "diamonds", "clubs", "spades"];
+    const validSuits = CARD_SUITS.map(s => s.toString());
     if (!validSuits.includes(data.suit)) {
-      console.log(`❌ Vote failed: Invalid suit ${data.suit}`);
       client.error(0, "Invalid suit");
       return;
     }
@@ -277,17 +257,12 @@ export class GameRoom extends Room<GameState> {
     player.hasVoted = true;
     this.state.trumpVotes.set(client.sessionId, data.suit);
 
-    console.log(`✅ ${player.name} voted for ${data.suit}. Total votes: ${this.state.trumpVotes.size}/4`);
-    console.log(`   Current vote map:`, Array.from(this.state.trumpVotes.entries()));
-
     this.broadcast("trump_vote_received", {
       playerId: client.sessionId,
-      votesRemaining: 4 - this.state.trumpVotes.size,
+      votesRemaining: GAME_CONFIG.MAX_PLAYERS - this.state.trumpVotes.size,
     });
 
-    // Check if all players have voted
-    if (this.state.trumpVotes.size === 4) {
-      console.log(`🎉 All players voted! Determining trump suit...`);
+    if (this.state.trumpVotes.size === GAME_CONFIG.MAX_PLAYERS) {
       this.determineTrumpSuit();
     }
   }
@@ -320,14 +295,13 @@ export class GameRoom extends Room<GameState> {
       votes,
     });
 
-    // Move directly to final deal (skip bidding phase)
     this.clock.setTimeout(() => {
       this.startFinalDeal();
-    }, 2000);
+    }, GAME_CONFIG.PHASE_TRANSITION_DELAY_MS);
   }
 
   private startFinalDeal() {
-    this.state.phase = "final_deal";
+    this.state.phase = GamePhase.FINAL_DEAL;
 
     // Deal remaining 8 cards to each player
     const hands = dealCards(this.deck, 4, 8);
@@ -343,14 +317,13 @@ export class GameRoom extends Room<GameState> {
       phase: "final_deal",
     });
 
-    // Start playing phase
     this.clock.setTimeout(() => {
       this.startPlayingPhase();
-    }, 2000);
+    }, GAME_CONFIG.PHASE_TRANSITION_DELAY_MS);
   }
 
   private startPlayingPhase() {
-    this.state.phase = "playing";
+    this.state.phase = GamePhase.PLAYING;
     // Player 0 (dealer) leads first trick
     const firstPlayer = Array.from(this.state.players.values()).sort(
       (a, b) => a.position - b.position
@@ -371,7 +344,7 @@ export class GameRoom extends Room<GameState> {
     const player = this.state.players.get(client.sessionId);
 
     if (!player) return;
-    if (this.state.phase !== "playing") {
+    if (this.state.phase !== GamePhase.PLAYING) {
       client.error(0, "Not in playing phase");
       return;
     }
@@ -459,10 +432,11 @@ export class GameRoom extends Room<GameState> {
     });
 
     // Check for game end
-    if (this.state.royalsTricks >= 7 || this.state.rebelsTricks >= 7 || this.state.tricksPlayed >= 13) {
-      this.clock.setTimeout(() => this.endGame(), 3000);
+    if (this.state.royalsTricks >= GAME_CONFIG.TRICKS_TO_WIN ||
+        this.state.rebelsTricks >= GAME_CONFIG.TRICKS_TO_WIN ||
+        this.state.tricksPlayed >= GAME_CONFIG.TOTAL_TRICKS) {
+      this.clock.setTimeout(() => this.endGame(), GAME_CONFIG.TRICK_COMPLETE_DELAY_MS);
     } else {
-      // Start new trick, winner leads
       this.clock.setTimeout(() => {
         this.state.currentTrick = new Trick(this.state.tricksPlayed);
         this.state.currentTurn = winnerId;
@@ -473,21 +447,20 @@ export class GameRoom extends Room<GameState> {
           leadPlayer: winnerId,
         });
 
-        this.triggerBotActions(); // Winner might be bot
-      }, 3000);
+        this.triggerBotActions();
+      }, GAME_CONFIG.TRICK_COMPLETE_DELAY_MS);
     }
   }
 
   private endGame() {
-    this.state.phase = "ended";
+    this.state.phase = GamePhase.ENDED;
 
-    // Determine winner
     if (this.state.royalsTricks > this.state.rebelsTricks) {
       this.state.winner = "royals";
-      this.state.isKot = this.state.royalsTricks === 13;
+      this.state.isKot = this.state.royalsTricks === GAME_CONFIG.TOTAL_TRICKS;
     } else {
       this.state.winner = "rebels";
-      this.state.isKot = this.state.rebelsTricks === 13;
+      this.state.isKot = this.state.rebelsTricks === GAME_CONFIG.TOTAL_TRICKS;
     }
 
     this.broadcast("game_ended", {
@@ -497,10 +470,9 @@ export class GameRoom extends Room<GameState> {
       rebelsTricks: this.state.rebelsTricks,
     });
 
-    // Room will be disposed after some time
     this.clock.setTimeout(() => {
       this.disconnect();
-    }, 30000);
+    }, GAME_CONFIG.ROOM_DISPOSAL_DELAY_MS);
   }
 
   private nextTurn() {
@@ -526,50 +498,54 @@ export class GameRoom extends Room<GameState> {
   }
 
   private handleTurnTimeout(playerId: string) {
+    // Race condition fix: verify player is still current turn
+    if (this.state.currentTurn !== playerId) return;
+    if (this.state.phase !== GamePhase.PLAYING) return;
+
     const player = this.state.players.get(playerId);
     if (!player || player.hand.length === 0) return;
 
+    // Reset turnStartedAt to prevent re-triggering
+    this.state.turnStartedAt = Date.now();
+
     // Find first valid card
     let cardToPlay: Card | undefined;
-
-    if (this.state.phase === "playing") {
-      for (const card of player.hand) {
-        if (validateCardPlay(card, player.hand.map(c => c), this.state.currentTrick.ledSuit)) {
-          cardToPlay = card;
-          break;
-        }
+    for (const card of player.hand) {
+      if (validateCardPlay(card, player.hand.map(c => c), this.state.currentTrick.ledSuit)) {
+        cardToPlay = card;
+        break;
       }
+    }
 
-      if (cardToPlay) {
-        this.handlePlayCard(
-          { sessionId: playerId } as Client,
-          { cardId: cardToPlay.id }
-        );
-      }
+    if (cardToPlay) {
+      this.broadcast("turn_timeout", { playerId, playerName: player.name });
+      this.handlePlayCard(
+        { sessionId: playerId } as Client,
+        { cardId: cardToPlay.id }
+      );
     }
   }
 
   // ==================== BOT AI LOGIC ====================
 
   private triggerBotActions() {
-    // Check if current turn belongs to a bot
     if (this.state.currentTurn && this.botSessionIds.has(this.state.currentTurn)) {
-      // Add delay for more realistic gameplay
+      const [minDelay, maxDelay] = GAME_CONFIG.BOT_ACTION_DELAY_MS;
       this.clock.setTimeout(() => {
-        if (this.state.phase === "playing") {
+        if (this.state.phase === GamePhase.PLAYING) {
           this.botPlayCard(this.state.currentTurn);
         }
-      }, 1000 + Math.random() * 1500); // 1-2.5 second delay
+      }, minDelay + Math.random() * (maxDelay - minDelay));
     }
 
-    // Trump voting - all bots vote
-    if (this.state.phase === "trump_selection") {
+    if (this.state.phase === GamePhase.TRUMP_SELECTION) {
+      const [minDelay, maxDelay] = GAME_CONFIG.BOT_VOTE_DELAY_MS;
       this.botSessionIds.forEach((botId) => {
         const bot = this.state.players.get(botId);
         if (bot && !bot.hasVoted) {
           this.clock.setTimeout(() => {
             this.botVoteTrump(botId);
-          }, 100 + Math.random() * 400); // 0.1-0.5 second delay (bots vote quickly)
+          }, minDelay + Math.random() * (maxDelay - minDelay));
         }
       });
     }
@@ -577,34 +553,20 @@ export class GameRoom extends Room<GameState> {
 
   private botVoteTrump(botId: string) {
     const bot = this.state.players.get(botId);
-    if (!bot || bot.hasVoted) {
-      console.log(`⚠️ Bot ${botId} skipped: ${!bot ? 'not found' : 'already voted'}`);
-      return;
-    }
+    if (!bot || bot.hasVoted) return;
 
-    // Count cards by suit in hand
-    const suitCounts: { [suit: string]: number } = {
-      hearts: 0,
-      diamonds: 0,
-      clubs: 0,
-      spades: 0,
-    };
+    const suitCounts: Record<string, number> = {};
+    CARD_SUITS.forEach(suit => { suitCounts[suit] = 0; });
 
     bot.hand.forEach((card) => {
       suitCounts[card.suit]++;
     });
 
-    // Vote for suit with most cards
-    const suits = ["hearts", "diamonds", "clubs", "spades"];
-    const preferredSuit = suits.reduce((a, b) =>
+    const preferredSuit = CARD_SUITS.reduce((a, b) =>
       suitCounts[a] > suitCounts[b] ? a : b
     );
 
-    console.log(`🤖 ${bot.name} voting for ${preferredSuit} (hand: ${JSON.stringify(suitCounts)})`);
     this.handleTrumpVote({ sessionId: botId } as Client, { suit: preferredSuit });
-
-    // Log state after vote
-    console.log(`   ✓ Vote registered. Total votes: ${this.state.trumpVotes.size}/4, Bot hasVoted: ${bot.hasVoted}`);
   }
 
   private botPlayCard(botId: string) {
@@ -669,22 +631,16 @@ export class GameRoom extends Room<GameState> {
 
     if (cardToPlay) {
       this.handlePlayCard({ sessionId: botId } as Client, { cardId: cardToPlay.id });
-      console.log(`🤖 ${bot.name} played ${cardToPlay.value} of ${cardToPlay.suit}`);
     }
   }
 
   private getHighestCard(cards: Card[], suit: string | null = null, trumpSuit: string): Card {
-    const cardValues: { [value: string]: number } = {
-      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8,
-      "9": 9, "10": 10, "J": 11, "Q": 12, "K": 13, "A": 14,
-    };
-
     const relevantCards = suit ? cards.filter((c) => c.suit === suit) : cards;
     if (relevantCards.length === 0) return cards[0];
 
     return relevantCards.reduce((highest, card) => {
-      const highestValue = cardValues[highest.value] || 0;
-      const cardValue = cardValues[card.value] || 0;
+      const highestValue = VALUE_RANKINGS[highest.value] || 0;
+      const cardValue = VALUE_RANKINGS[card.value] || 0;
 
       // Trump beats all
       if (card.suit === trumpSuit && highest.suit !== trumpSuit) return card;
@@ -695,31 +651,21 @@ export class GameRoom extends Room<GameState> {
   }
 
   private getLowestCard(cards: Card[]): Card {
-    const cardValues: { [value: string]: number } = {
-      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8,
-      "9": 9, "10": 10, "J": 11, "Q": 12, "K": 13, "A": 14,
-    };
-
     return cards.reduce((lowest, card) => {
-      const lowestValue = cardValues[lowest.value] || 15;
-      const cardValue = cardValues[card.value] || 15;
+      const lowestValue = VALUE_RANKINGS[lowest.value] || 15;
+      const cardValue = VALUE_RANKINGS[card.value] || 15;
       return cardValue < lowestValue ? card : lowest;
     });
   }
 
   private canBeat(card: Card, otherCard: Card, trumpSuit: string): boolean {
-    const cardValues: { [value: string]: number } = {
-      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8,
-      "9": 9, "10": 10, "J": 11, "Q": 12, "K": 13, "A": 14,
-    };
-
     // Trump beats non-trump
     if (card.suit === trumpSuit && otherCard.suit !== trumpSuit) return true;
     if (otherCard.suit === trumpSuit && card.suit !== trumpSuit) return false;
 
     // Same suit, compare values
     if (card.suit === otherCard.suit) {
-      return (cardValues[card.value] || 0) > (cardValues[otherCard.value] || 0);
+      return (VALUE_RANKINGS[card.value] || 0) > (VALUE_RANKINGS[otherCard.value] || 0);
     }
 
     // Different suits, neither trump - can't beat

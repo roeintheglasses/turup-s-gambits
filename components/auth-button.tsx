@@ -36,11 +36,6 @@ export function AuthButton() {
     }
   }, [isSignedIn, user, isLoaded, setUser, clearUser, setLoading]);
 
-  // Debug logging
-  console.log("[AuthButton] User:", user);
-  console.log("[AuthButton] isSignedIn:", isSignedIn);
-  console.log("[AuthButton] isLoaded:", isLoaded);
-
   if (!isLoaded) {
     return (
       <motion.div
