@@ -10,11 +10,15 @@ import {
 import {
   GAME_CONFIG,
   MEDIEVAL_BOT_NAMES,
-  VALUE_RANKINGS,
   CARD_SUITS,
-  Team,
   GamePhase,
 } from "../../lib/constants";
+import {
+  CardTracker,
+  chooseBotCard,
+  BotDifficulty,
+  TrickContext,
+} from "../utils/botStrategy";
 
 interface JoinOptions {
   userId: string;
@@ -31,6 +35,8 @@ export class GameRoom extends Room<GameState> {
   private disposalTimer: any = null;
   private trumpSelectionStartedAt: number = 0;
   private firstLeadPosition: number = 0;
+  private cardTracker: CardTracker = new CardTracker();
+  private botDifficulty: BotDifficulty = "hard";
 
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
@@ -593,6 +599,15 @@ export class GameRoom extends Room<GameState> {
     // Remove card from hand
     player.hand.splice(cardIndex, 1);
 
+    // Track void detection for in-progress trick
+    const isLead = this.state.currentTrick.cards.length === 0;
+    this.cardTracker.recordCardInProgress(
+      card,
+      client.sessionId,
+      this.state.currentTrick.ledSuit,
+      isLead
+    );
+
     // Add card to trick
     this.state.currentTrick.cards.push(card);
     this.state.currentTrick.playedBy.push(client.sessionId);
@@ -617,6 +632,13 @@ export class GameRoom extends Room<GameState> {
   }
 
   private resolveTrick() {
+    // Record completed trick in card tracker
+    this.cardTracker.recordTrick(
+      this.state.currentTrick.cards.map(c => c),
+      this.state.currentTrick.playedBy.map(id => id),
+      this.state.currentTrick.ledSuit
+    );
+
     const winnerId = determineTrickWinner(
       this.state.currentTrick.cards.map(c => c),
       this.state.currentTrick.playedBy.map(id => id),
@@ -805,59 +827,32 @@ export class GameRoom extends Room<GameState> {
 
     const ledSuit = this.state.currentTrick.ledSuit;
     const trumpSuit = this.state.trumpSuit;
-    let cardToPlay: Card | undefined;
 
-    // Strategy:
-    // 1. If we have led suit, play highest or lowest strategically
-    // 2. If we don't have led suit, play trump if we have it
-    // 3. Otherwise, discard lowest card
-
-    const validCards = bot.hand.filter((card) =>
-      validateCardPlay(card, bot.hand.map(c => c), ledSuit)
+    const hand = bot.hand.map(c => c);
+    const validCards = hand.filter((card) =>
+      validateCardPlay(card, hand, ledSuit)
     );
 
-    if (validCards.length === 0) {
-      cardToPlay = bot.hand[0]; // Should not happen with correct validation
-      return;
-    }
+    if (validCards.length === 0) return;
 
-    if (ledSuit) {
-      // Not leading the trick
-      const followSuitCards = validCards.filter((c) => c.suit === ledSuit);
+    // Build player teams map for partner awareness
+    const playerTeams = new Map<string, number>();
+    this.state.players.forEach((p, id) => {
+      playerTeams.set(id, p.team);
+    });
 
-      if (followSuitCards.length > 0) {
-        // We have cards of led suit
-        const currentTrickCards = this.state.currentTrick.cards.map(c => c);
-        const highestInTrick = this.getHighestCard(currentTrickCards, ledSuit, trumpSuit);
+    const context: TrickContext = {
+      trickCards: this.state.currentTrick.cards.map(c => c),
+      trickPlayerIds: this.state.currentTrick.playedBy.map(id => id),
+      ledSuit,
+      trumpSuit,
+      botId,
+      botTeam: bot.team,
+      playerTeams,
+      tricksPlayed: this.state.tricksPlayed,
+    };
 
-        // Try to win if we can
-        const winningCards = followSuitCards.filter((c) =>
-          this.canBeat(c, highestInTrick, trumpSuit)
-        );
-
-        if (winningCards.length > 0) {
-          // Play lowest winning card
-          cardToPlay = this.getLowestCard(winningCards);
-        } else {
-          // Can't win, play lowest card
-          cardToPlay = this.getLowestCard(followSuitCards);
-        }
-      } else {
-        // Don't have led suit, can play trump or discard
-        const trumpCards = validCards.filter((c) => c.suit === trumpSuit);
-
-        if (trumpCards.length > 0) {
-          // Play lowest trump
-          cardToPlay = this.getLowestCard(trumpCards);
-        } else {
-          // Discard lowest card
-          cardToPlay = this.getLowestCard(validCards);
-        }
-      }
-    } else {
-      // Leading the trick - play highest card of our best suit
-      cardToPlay = this.getHighestCard(validCards, null, trumpSuit);
-    }
+    const cardToPlay = chooseBotCard(hand, validCards, context, this.cardTracker, this.botDifficulty);
 
     if (cardToPlay) {
       this.handlePlayCard({ sessionId: botId } as Client, { cardId: cardToPlay.id });
@@ -948,9 +943,10 @@ export class GameRoom extends Room<GameState> {
       player.isReady = false;
     });
 
-    // Clear deck
+    // Clear deck and tracking
     this.deck = [];
     this.scheduledBotActions.clear();
+    this.cardTracker.reset();
 
     // Auto-start the new game since all players are already here
     this.clock.setTimeout(() => {
@@ -958,41 +954,4 @@ export class GameRoom extends Room<GameState> {
     }, 1500);
   }
 
-  private getHighestCard(cards: Card[], suit: string | null = null, trumpSuit: string): Card {
-    const relevantCards = suit ? cards.filter((c) => c.suit === suit) : cards;
-    if (relevantCards.length === 0) return cards[0];
-
-    return relevantCards.reduce((highest, card) => {
-      const highestValue = VALUE_RANKINGS[highest.value] || 0;
-      const cardValue = VALUE_RANKINGS[card.value] || 0;
-
-      // Trump beats all
-      if (card.suit === trumpSuit && highest.suit !== trumpSuit) return card;
-      if (highest.suit === trumpSuit && card.suit !== trumpSuit) return highest;
-
-      return cardValue > highestValue ? card : highest;
-    });
-  }
-
-  private getLowestCard(cards: Card[]): Card {
-    return cards.reduce((lowest, card) => {
-      const lowestValue = VALUE_RANKINGS[lowest.value] || 15;
-      const cardValue = VALUE_RANKINGS[card.value] || 15;
-      return cardValue < lowestValue ? card : lowest;
-    });
-  }
-
-  private canBeat(card: Card, otherCard: Card, trumpSuit: string): boolean {
-    // Trump beats non-trump
-    if (card.suit === trumpSuit && otherCard.suit !== trumpSuit) return true;
-    if (otherCard.suit === trumpSuit && card.suit !== trumpSuit) return false;
-
-    // Same suit, compare values
-    if (card.suit === otherCard.suit) {
-      return (VALUE_RANKINGS[card.value] || 0) > (VALUE_RANKINGS[otherCard.value] || 0);
-    }
-
-    // Different suits, neither trump - can't beat
-    return false;
-  }
 }
