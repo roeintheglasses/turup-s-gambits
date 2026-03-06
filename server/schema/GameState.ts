@@ -68,6 +68,7 @@ export class GameState extends Schema {
 
   // Current trick
   @type(Trick) currentTrick: Trick = new Trick(0);
+  @type(Trick) lastTrick: Trick | null = null;
   @type("number") tricksPlayed: number = 0;
 
   // Scores
