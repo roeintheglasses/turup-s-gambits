@@ -229,17 +229,24 @@ export function TrumpSelectionPopup({
     return parts.join(", ") || "No cards";
   }, [handAnalysis]);
 
-  if (!effectiveIsOpen) return null;
-
   return (
     <AnimatePresence mode="wait">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {effectiveIsOpen && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-[hsl(var(--dark-panel))] backdrop-blur-md w-full max-w-xl p-4 rounded-xl border-4 border-[hsl(var(--warm-brown))] shadow-[0_20px_60px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col relative"
+          key="trump-popup-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+            className="bg-[hsl(var(--dark-panel))] backdrop-blur-md w-full max-w-xl p-4 rounded-xl border-4 border-[hsl(var(--warm-brown))] shadow-[0_20px_60px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col relative"
+          >
           {/* Inline Loading Overlay for Voting */}
           {userVote && !votingComplete && (
             <motion.div
@@ -547,8 +554,9 @@ export function TrumpSelectionPopup({
               </Button>
             )}
           </div>
+          </motion.div>
         </motion.div>
-      </div>
+      )}
     </AnimatePresence>
   );
 }
