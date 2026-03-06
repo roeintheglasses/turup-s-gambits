@@ -75,6 +75,18 @@ export function useGameRoom(roomId: string) {
   // Calculate loading state
   const isLoading = !isConnected && !error;
 
+  // Reset isAddingBots when players list changes (bots were added or a player joined)
+  useEffect(() => {
+    setIsAddingBots(false);
+  }, [players.length]);
+
+  // Reset isStartingGame when game phase transitions away from "waiting"
+  useEffect(() => {
+    if (gameStatus !== "waiting") {
+      setIsStartingGame(false);
+    }
+  }, [gameStatus]);
+
   // Auto-open trump popup when phase changes to trump_selection
   useEffect(() => {
     if (gameStatus === "trump_selection") {
