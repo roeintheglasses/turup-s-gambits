@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,8 +34,40 @@ import {
   User,
   Mail,
   Shield,
-  Zap,
+  Loader2,
 } from "lucide-react";
+
+interface GameStats {
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  tricksWon: number;
+  kotsAchieved: number;
+}
+
+interface GameHistoryEntry {
+  id: string;
+  date: string | null;
+  result: "win" | "loss";
+  team: string;
+  mode: string;
+  tricks: number;
+  isKot: boolean;
+  trumpSuit: string;
+  durationSeconds: number;
+  status: string;
+}
+
+function getRank(gamesPlayed: number, wins: number): string {
+  if (gamesPlayed === 0) return "Squire";
+  if (wins >= 100) return "Grand Marshal";
+  if (wins >= 50) return "Knight Commander";
+  if (wins >= 25) return "Knight";
+  if (wins >= 10) return "Sergeant";
+  if (gamesPlayed >= 5) return "Man-at-Arms";
+  return "Squire";
+}
 
 export default function ProfilePage() {
   const { user: clerkUser } = useUser();
@@ -55,37 +87,47 @@ export default function ProfilePage() {
     email: authUser?.email || "",
   });
 
-  // Mock game stats
-  const gameStats = {
-    gamesPlayed: 124,
-    wins: 78,
-    losses: 46,
-    winRate: 62.9,
-    highestScore: 156,
-    currentStreak: 3,
-    rank: "Knight Commander",
-    tricksWon: 847,
-    kotsAchieved: 5,
-  };
+  const [gameStats, setGameStats] = useState<GameStats>({
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    winRate: 0,
+    tricksWon: 0,
+    kotsAchieved: 0,
+  });
+  const [gameHistory, setGameHistory] = useState<GameHistoryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock game history
-  const gameHistory = [
-    { id: 1, date: "2024-03-15", result: "win", tricks: 8, mode: "classic", team: "royals" },
-    { id: 2, date: "2024-03-14", result: "loss", tricks: 5, mode: "classic", team: "rebels" },
-    { id: 3, date: "2024-03-12", result: "win", tricks: 13, mode: "classic", team: "royals", isKot: true },
-    { id: 4, date: "2024-03-10", result: "win", tricks: 9, mode: "classic", team: "rebels" },
-    { id: 5, date: "2024-03-08", result: "loss", tricks: 6, mode: "classic", team: "royals" },
-  ];
+  const fetchStats = useCallback(async () => {
+    if (!authUser?.id) return;
+    try {
+      const res = await fetch(`/api/game-history?userId=${authUser.id}&limit=10`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setGameStats(data.stats);
+      setGameHistory(data.history);
+    } catch (err) {
+      console.error("Failed to load game stats:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authUser?.id]);
 
-  // Mock achievements
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Achievements derived from real stats
   const achievements = [
-    { id: 1, name: "First Victory", description: "Win your first game", icon: Trophy, unlocked: true },
-    { id: 2, name: "Master Strategist", description: "Win 50 games", icon: Target, unlocked: true },
-    { id: 3, name: "Perfect Game", description: "Win all 13 tricks (Kot)", icon: Crown, unlocked: true },
-    { id: 4, name: "Hot Streak", description: "Win 5 games in a row", icon: Flame, unlocked: false },
-    { id: 5, name: "Trump Master", description: "Win 100 tricks with trump", icon: Swords, unlocked: false },
-    { id: 6, name: "Veteran", description: "Play 500 games", icon: Medal, unlocked: false },
+    { id: 1, name: "First Victory", description: "Win your first game", icon: Trophy, unlocked: gameStats.wins >= 1 },
+    { id: 2, name: "Veteran Fighter", description: "Win 10 games", icon: Target, unlocked: gameStats.wins >= 10 },
+    { id: 3, name: "Master Strategist", description: "Win 50 games", icon: Target, unlocked: gameStats.wins >= 50 },
+    { id: 4, name: "Perfect Game", description: "Win all 13 tricks (Kot)", icon: Crown, unlocked: gameStats.kotsAchieved >= 1 },
+    { id: 5, name: "Kot Collector", description: "Achieve 5 Kots", icon: Flame, unlocked: gameStats.kotsAchieved >= 5 },
+    { id: 6, name: "Centurion", description: "Play 100 games", icon: Medal, unlocked: gameStats.gamesPlayed >= 100 },
   ];
+
+  const rank = getRank(gameStats.gamesPlayed, gameStats.wins);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -169,7 +211,7 @@ export default function ProfilePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-secondary text-secondary-foreground text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap">
-                  {gameStats.rank}
+                  {rank}
                 </div>
               </div>
 
@@ -194,26 +236,33 @@ export default function ProfilePage() {
                 </p>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { label: "Games", value: gameStats.gamesPlayed, icon: Swords },
-                    { label: "Wins", value: gameStats.wins, icon: Trophy },
-                    { label: "Win Rate", value: `${gameStats.winRate}%`, icon: TrendingUp },
-                    { label: "Streak", value: gameStats.currentStreak, icon: Flame },
-                  ].map((stat, index) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + index * 0.05 }}
-                      className="bg-muted/30 rounded-lg p-3 text-center"
-                    >
-                      <stat.icon className="w-4 h-4 mx-auto mb-1 text-primary" />
-                      <p className="text-xl font-bold">{stat.value}</p>
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    </motion.div>
-                  ))}
-                </div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center md:justify-start gap-2 py-4 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Loading stats...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "Games", value: gameStats.gamesPlayed, icon: Swords },
+                      { label: "Wins", value: gameStats.wins, icon: Trophy },
+                      { label: "Win Rate", value: `${gameStats.winRate}%`, icon: TrendingUp },
+                      { label: "Kots", value: gameStats.kotsAchieved, icon: Crown },
+                    ].map((stat, index) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 + index * 0.05 }}
+                        className="bg-muted/30 rounded-lg p-3 text-center"
+                      >
+                        <stat.icon className="w-4 h-4 mx-auto mb-1 text-primary" />
+                        <p className="text-xl font-bold">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -291,37 +340,43 @@ export default function ProfilePage() {
 
               {/* Statistics Tab */}
               <TabsContent value="stats">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { label: "Total Games", value: gameStats.gamesPlayed, icon: Swords, color: "text-primary" },
-                    { label: "Victories", value: gameStats.wins, icon: Trophy, color: "text-green-500" },
-                    { label: "Defeats", value: gameStats.losses, icon: Target, color: "text-red-500" },
-                    { label: "Win Rate", value: `${gameStats.winRate}%`, icon: TrendingUp, color: "text-blue-500" },
-                    { label: "Tricks Won", value: gameStats.tricksWon, icon: Star, color: "text-yellow-500" },
-                    { label: "Kots Achieved", value: gameStats.kotsAchieved, icon: Crown, color: "text-amber-500" },
-                  ].map((stat, index) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Card className="border-2 border-primary/20 bg-card/90 hover:border-primary/40 transition-colors">
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                              <p className="text-3xl font-bold">{stat.value}</p>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { label: "Total Games", value: gameStats.gamesPlayed, icon: Swords, color: "text-primary" },
+                      { label: "Victories", value: gameStats.wins, icon: Trophy, color: "text-green-500" },
+                      { label: "Defeats", value: gameStats.losses, icon: Target, color: "text-red-500" },
+                      { label: "Win Rate", value: `${gameStats.winRate}%`, icon: TrendingUp, color: "text-blue-500" },
+                      { label: "Tricks Won", value: gameStats.tricksWon, icon: Star, color: "text-yellow-500" },
+                      { label: "Kots Achieved", value: gameStats.kotsAchieved, icon: Crown, color: "text-amber-500" },
+                    ].map((stat, index) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Card className="border-2 border-primary/20 bg-card/90 hover:border-primary/40 transition-colors">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+                                <p className="text-3xl font-bold">{stat.value}</p>
+                              </div>
+                              <div className={`p-3 rounded-lg bg-muted/50 ${stat.color}`}>
+                                <stat.icon className="w-6 h-6" />
+                              </div>
                             </div>
-                            <div className={`p-3 rounded-lg bg-muted/50 ${stat.color}`}>
-                              <stat.icon className="w-6 h-6" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* History Tab */}
@@ -332,63 +387,78 @@ export default function ProfilePage() {
                       <Calendar className="w-5 h-5 text-primary" />
                       Recent Games
                     </CardTitle>
-                    <CardDescription>Your last 5 games</CardDescription>
+                    <CardDescription>
+                      {gameHistory.length > 0
+                        ? `Your last ${gameHistory.length} game${gameHistory.length === 1 ? "" : "s"}`
+                        : "No games played yet"}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {gameHistory.map((game, index) => (
-                        <motion.div
-                          key={game.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className={`flex items-center gap-4 p-4 rounded-lg border ${
-                            game.result === "win"
-                              ? "bg-green-500/5 border-green-500/20"
-                              : "bg-red-500/5 border-red-500/20"
-                          }`}
-                        >
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                            game.result === "win" ? "bg-green-500/20" : "bg-red-500/20"
-                          }`}>
-                            {game.result === "win" ? (
-                              <Trophy className="w-6 h-6 text-green-500" />
-                            ) : (
-                              <X className="w-6 h-6 text-red-500" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`font-medium ${
-                                game.result === "win" ? "text-green-500" : "text-red-500"
-                              }`}>
-                                {game.result === "win" ? "Victory" : "Defeat"}
-                              </span>
-                              {game.isKot && (
-                                <span className="text-xs bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">
-                                  KOT!
-                                </span>
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    ) : gameHistory.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Swords className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p>Play your first game to see history here!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {gameHistory.map((game, index) => (
+                          <motion.div
+                            key={game.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className={`flex items-center gap-4 p-4 rounded-lg border ${
+                              game.result === "win"
+                                ? "bg-green-500/5 border-green-500/20"
+                                : "bg-red-500/5 border-red-500/20"
+                            }`}
+                          >
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                              game.result === "win" ? "bg-green-500/20" : "bg-red-500/20"
+                            }`}>
+                              {game.result === "win" ? (
+                                <Trophy className="w-6 h-6 text-green-500" />
+                              ) : (
+                                <X className="w-6 h-6 text-red-500" />
                               )}
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                {game.team === "royals" ? (
-                                  <Crown className="w-3 h-3 text-amber-500" />
-                                ) : (
-                                  <Swords className="w-3 h-3 text-blue-500" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`font-medium ${
+                                  game.result === "win" ? "text-green-500" : "text-red-500"
+                                }`}>
+                                  {game.result === "win" ? "Victory" : "Defeat"}
+                                </span>
+                                {game.isKot && (
+                                  <span className="text-xs bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">
+                                    KOT!
+                                  </span>
                                 )}
-                                {game.team === "royals" ? "Royals" : "Rebels"}
-                              </span>
-                              <span>{game.tricks} tricks</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  {game.team === "royals" ? (
+                                    <Crown className="w-3 h-3 text-amber-500" />
+                                  ) : (
+                                    <Swords className="w-3 h-3 text-blue-500" />
+                                  )}
+                                  {game.team === "royals" ? "Royals" : "Rebels"}
+                                </span>
+                                <span>{game.tricks} tricks</span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">{game.date}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{game.mode}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">{game.date || "Unknown"}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{game.mode}</p>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
