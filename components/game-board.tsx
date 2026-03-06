@@ -869,7 +869,7 @@ export function GameBoard({
                     gameStatus === "playing"
                       ? Math.max(
                           0,
-                          13 - Math.floor((scores.royals + scores.rebels) / 4)
+                          13 - (scores.royals + scores.rebels)
                         )
                       : 5
                   }
@@ -901,7 +901,7 @@ export function GameBoard({
                       gameStatus === "playing"
                         ? Math.max(
                             0,
-                            13 - Math.floor((scores.royals + scores.rebels) / 4)
+                            13 - (scores.royals + scores.rebels)
                           )
                         : 5
                     }
@@ -985,7 +985,7 @@ export function GameBoard({
                       gameStatus === "playing"
                         ? Math.max(
                             0,
-                            13 - Math.floor((scores.royals + scores.rebels) / 4)
+                            13 - (scores.royals + scores.rebels)
                           )
                         : 5
                     }
