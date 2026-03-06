@@ -25,7 +25,7 @@ import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
 
 interface CenterCard {
-  id: number;
+  id: number | string;
   suit: string;
   value: string;
   playedBy: string;
@@ -216,12 +216,8 @@ export function GameBoard({
       if (cardPlayLoading) return;
 
       isPlayingCardRef.current = true;
-      setSelectedCard(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
-      );
-      setPlayingCardId(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
-      );
+      setSelectedCard(cardId);
+      setPlayingCardId(cardId);
       setCardPlayLoading(true);
 
       const card = playerHand.find((c: any) => c.id === cardId);
@@ -241,10 +237,7 @@ export function GameBoard({
 
       const playerName = user?.username || "You";
       const uiCard: CenterCard = {
-        id:
-          typeof cardId === "string"
-            ? parseInt(cardId.split("-")[1]) || 0
-            : cardId,
+        id: cardId,
         suit: card.suit,
         value: card.value,
         playedBy: playerName,
