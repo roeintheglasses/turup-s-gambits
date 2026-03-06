@@ -630,6 +630,11 @@ export class GameRoom extends Room<GameState> {
     this.state.currentTrick.winnerId = winnerId;
     this.state.currentTrick.winningTeam = winner.team;
 
+    // Track played cards for card counting helper
+    this.state.currentTrick.cards.forEach((card) => {
+      this.state.playedCards.push(card.id);
+    });
+
     // Update trick counts
     if (winner.team === 0) {
       this.state.royalsTricks++;
@@ -939,6 +944,7 @@ export class GameRoom extends Room<GameState> {
     this.state.isKot = false;
     this.state.startedAt = 0;
     this.state.turnStartedAt = 0;
+    this.state.playedCards.clear();
 
     // Reset player states
     this.state.players.forEach((player) => {

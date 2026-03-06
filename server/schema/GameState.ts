@@ -82,6 +82,9 @@ export class GameState extends Schema {
   @type("string") winner: string = ""; // "royals" or "rebels"
   @type("boolean") isKot: boolean = false; // all 13 tricks won
 
+  // Played cards tracking (card IDs of all cards played so far)
+  @type(["string"]) playedCards: ArraySchema<string> = new ArraySchema<string>();
+
   // Rematch voting
   @type({ map: "boolean" }) rematchVotes: MapSchema<boolean> = new MapSchema<boolean>(); // playerId -> wants rematch
 
