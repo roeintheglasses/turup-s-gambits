@@ -21,6 +21,8 @@ import { CenterTrickArea } from "@/components/game-board/center-trick-area";
 import { OpponentArea } from "@/components/game-board/opponent-area";
 import { PlayerHand } from "@/components/game-board/player-hand";
 import { TableSurface } from "@/components/game-board/table-surface";
+import { PlayedCardsTracker } from "@/components/game-board/played-cards-tracker";
+import { useSettingsStore } from "@/stores/settingsStore";
 import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
 
@@ -100,6 +102,8 @@ export function GameBoard({
 }: GameBoardProps) {
   const trumpSuit = trumpSuitProp ?? null;
   const scores = scoresProp ?? { royals: 0, rebels: 0 };
+  const showCardTracker = useSettingsStore((s) => s.showCardTracker);
+  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const storedTeamAssignments = useGameStore((state) => state.teamAssignments);
   const setTeamAssignments = useGameStore((state) => state.setTeamAssignments);
 
@@ -115,6 +119,15 @@ export function GameBoard({
   } = useUIStore();
 
   const { user } = useAuthStore();
+
+  // Extract played card IDs from Colyseus game state
+  const playedCardIds = useMemo((): string[] => {
+    if (!gameState?.playedCards) return [];
+    // playedCards is an ArraySchema<string> from Colyseus; convert to plain array
+    return Array.isArray(gameState.playedCards)
+      ? gameState.playedCards
+      : Array.from(gameState.playedCards);
+  }, [gameState?.playedCards, gameState]);
 
   const isMyTurn =
     currentTurn && currentPlayerId && currentTurn === currentPlayerId;
@@ -894,6 +907,16 @@ export function GameBoard({
           trumpSuit={trumpSuit}
           royalsScore={scores.royals}
           rebelsScore={scores.rebels}
+        />
+      )}
+
+      {/* Played Cards Tracker */}
+      {showCardTracker && gameStatus === "playing" && (
+        <PlayedCardsTracker
+          playedCardIds={playedCardIds}
+          trumpSuit={trumpSuit}
+          isOpen={isTrackerOpen}
+          onToggle={() => setIsTrackerOpen((v) => !v)}
         />
       )}
 
