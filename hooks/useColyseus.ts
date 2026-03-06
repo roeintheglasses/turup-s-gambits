@@ -155,8 +155,29 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
               try {
                 const reconnectData = colyseusClient.getStoredReconnectionData();
                 if (reconnectData && reconnectData.userId === userId) {
-                  await joinRoom(reconnectData.roomId);
+                  let reconnectedRoom: GameRoom;
+
+                  // Use proper Colyseus reconnect if we have a sessionId
+                  if (reconnectData.sessionId) {
+                    try {
+                      reconnectedRoom = await colyseusClient.reconnect(
+                        reconnectData.roomId,
+                        reconnectData.sessionId
+                      );
+                    } catch (reconnectErr) {
+                      console.warn("Colyseus reconnect failed, falling back to joinRoom:", reconnectErr);
+                      // Fall back to joining as a new connection
+                      reconnectedRoom = await joinRoom(reconnectData.roomId);
+                    }
+                  } else {
+                    // No sessionId stored, fall back to joinRoom
+                    reconnectedRoom = await joinRoom(reconnectData.roomId);
+                  }
+
+                  setRoom(reconnectedRoom);
+                  setIsConnected(true);
                   reconnectAttempts.current = 0;
+                  setIsReconnecting(false);
                   showToast("Reconnected successfully!", "success");
                 }
               } catch (err) {
@@ -238,9 +259,10 @@ export function useColyseus(options: UseColyseusOptions): UseColyseusReturn {
   useEffect(() => {
     return () => {
       // Only cleanup if there's an active room
+      // Pass clearReconnect: false so reconnection data is preserved for page navigations
       const currentRoom = colyseusClient.getCurrentRoom();
       if (currentRoom) {
-        colyseusClient.leaveRoom();
+        colyseusClient.leaveRoom(false);
       }
     };
   }, []); // Empty deps - only runs on mount/unmount

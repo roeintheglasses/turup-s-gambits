@@ -7,6 +7,7 @@ export type GameRoom = Room<GameState>;
 // Keys for localStorage reconnection data
 const RECONNECT_ROOM_ID_KEY = "colyseus_room_id";
 const RECONNECT_USER_ID_KEY = "colyseus_user_id";
+const RECONNECT_SESSION_ID_KEY = "colyseus_session_id";
 
 class ColyseusClientService {
   private client: Colyseus.Client | null = null;
@@ -50,7 +51,7 @@ class ColyseusClientService {
             name: userName,
           });
           console.log("✅ Joined existing room:", this.currentRoom.roomId);
-          this.storeReconnectionData(this.currentRoom.roomId, userId);
+          this.storeReconnectionData(this.currentRoom.roomId, userId, this.currentRoom.sessionId);
           this.registerPongListener();
           return this.currentRoom;
         } catch (joinError: any) {
@@ -69,7 +70,7 @@ class ColyseusClientService {
       console.log("✅ Joined/Created room:", this.currentRoom.roomId);
 
       // Store reconnection info
-      this.storeReconnectionData(this.currentRoom.roomId, userId);
+      this.storeReconnectionData(this.currentRoom.roomId, userId, this.currentRoom.sessionId);
       this.registerPongListener();
 
       return this.currentRoom;
@@ -82,11 +83,14 @@ class ColyseusClientService {
   /**
    * Store reconnection data in localStorage
    */
-  private storeReconnectionData(roomId: string, userId: string) {
+  private storeReconnectionData(roomId: string, userId: string, sessionId?: string) {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
         localStorage.setItem(RECONNECT_ROOM_ID_KEY, roomId);
         localStorage.setItem(RECONNECT_USER_ID_KEY, userId);
+        if (sessionId) {
+          localStorage.setItem(RECONNECT_SESSION_ID_KEY, sessionId);
+        }
       }
     } catch (e) {
       console.warn("Could not store reconnection data:", e);
@@ -96,13 +100,14 @@ class ColyseusClientService {
   /**
    * Get stored reconnection data
    */
-  getStoredReconnectionData(): { roomId: string; userId: string } | null {
+  getStoredReconnectionData(): { roomId: string; userId: string; sessionId: string | null } | null {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
         const roomId = localStorage.getItem(RECONNECT_ROOM_ID_KEY);
         const userId = localStorage.getItem(RECONNECT_USER_ID_KEY);
+        const sessionId = localStorage.getItem(RECONNECT_SESSION_ID_KEY);
         if (roomId && userId) {
-          return { roomId, userId };
+          return { roomId, userId, sessionId };
         }
       }
     } catch (e) {
@@ -119,6 +124,7 @@ class ColyseusClientService {
       if (typeof window !== "undefined" && window.localStorage) {
         localStorage.removeItem(RECONNECT_ROOM_ID_KEY);
         localStorage.removeItem(RECONNECT_USER_ID_KEY);
+        localStorage.removeItem(RECONNECT_SESSION_ID_KEY);
       }
     } catch (e) {
       console.warn("Could not clear reconnection data:", e);
@@ -141,7 +147,7 @@ class ColyseusClientService {
       console.log("✅ Joined room:", roomId);
 
       // Store reconnection info
-      this.storeReconnectionData(roomId, userId);
+      this.storeReconnectionData(roomId, userId, this.currentRoom.sessionId);
       this.registerPongListener();
 
       return this.currentRoom;
