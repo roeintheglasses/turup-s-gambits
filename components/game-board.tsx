@@ -10,7 +10,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useReplay } from "@/hooks/use-replay";
 import { ReplaySummary } from "./replay-summary";
-import { BarChart3, Eye, Crown, Swords } from "lucide-react";
+import { BarChart3, Eye, Crown, Swords, History } from "lucide-react";
 import { playSoundEffect } from "@/hooks/use-sound-effects";
 import { TrumpSelectionPopup } from "@/components/trump-selection-popup";
 import { FrenzyPowers } from "@/components/frenzy-powers";
@@ -23,6 +23,7 @@ import { PlayerHand } from "@/components/game-board/player-hand";
 import { TableSurface } from "@/components/game-board/table-surface";
 import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
+import { LastTrickReview } from "@/components/game-board/last-trick-review";
 
 interface CenterCard {
   id: number | string;
@@ -692,6 +693,7 @@ export function GameBoard({
     }
   }, [isMyTurn]);
 
+  const [showLastTrickReview, setShowLastTrickReview] = useState(false);
   const [showReplaySummary, setShowReplaySummary] = useState(false);
   const [gameStartTime] = useState(Date.now());
   const { getReplayData } = useReplay();
@@ -798,6 +800,38 @@ export function GameBoard({
 
     return positions;
   }, [gameState, currentPlayerId]);
+
+  // Build lastTrick data from gameState for the review overlay
+  const lastTrickData = useMemo(() => {
+    if (!gameState?.lastTrick) return null;
+    const lt = gameState.lastTrick;
+    if (!lt.cards || lt.cards.length === 0) return null;
+    return {
+      cards: Array.isArray(lt.cards)
+        ? lt.cards.map((c: any) => ({ suit: c.suit, value: c.value, id: c.id }))
+        : Array.from(lt.cards).map((c: any) => ({ suit: c.suit, value: c.value, id: c.id })),
+      playedBy: Array.isArray(lt.playedBy)
+        ? [...lt.playedBy]
+        : Array.from(lt.playedBy) as string[],
+      winnerId: lt.winnerId || "",
+      winningTeam: typeof lt.winningTeam === "number" ? lt.winningTeam : -1,
+      ledSuit: lt.ledSuit || "",
+      trickNumber: lt.trickNumber || 0,
+    };
+  }, [gameState?.lastTrick, gameState]);
+
+  // Map session IDs to player names for the review overlay
+  const playerNamesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (gameState?.players && Array.isArray(gameState.players)) {
+      gameState.players.forEach((p: any) => {
+        if (typeof p === "object" && p !== null && p.id) {
+          map[p.id] = p.name || p.id;
+        }
+      });
+    }
+    return map;
+  }, [gameState]);
 
   // Render game ended screen
   if (gameStatus === "ended") {
@@ -976,6 +1010,21 @@ export function GameBoard({
                   teamAssignments={storedTeamAssignments}
                 />
 
+                {/* Last Trick Review Button */}
+                {gameStatus === "playing" && lastTrickData && centerCards.length === 0 && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => setShowLastTrickReview(true)}
+                    className="absolute top-1 left-1 sm:top-2 sm:left-2 z-30 flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-amber-900/60 hover:bg-amber-900/80 border border-amber-500/30 hover:border-amber-500/50 text-amber-400/80 hover:text-amber-400 transition-all shadow-lg"
+                    title="Review last trick"
+                  >
+                    <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="text-[9px] sm:text-[11px] font-medieval">Last Trick</span>
+                  </motion.button>
+                )}
+
                 {/* Trick Winner Message */}
                 <AnimatePresence>
                   {showTrickWinnerMessage && lastTrickResult && (
@@ -1080,6 +1129,16 @@ export function GameBoard({
           </div>
         </TableSurface>
       </div>
+
+      {/* Last Trick Review Overlay */}
+      <LastTrickReview
+        isOpen={showLastTrickReview}
+        onClose={() => setShowLastTrickReview(false)}
+        lastTrick={lastTrickData}
+        playerNames={playerNamesMap}
+        teamAssignments={storedTeamAssignments}
+        trumpSuit={trumpSuit}
+      />
 
       {/* Replay Summary Modal */}
       <ReplaySummary
