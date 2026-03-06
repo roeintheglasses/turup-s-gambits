@@ -166,9 +166,9 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
 
   // Scores in old format for compatibility
   const scores = useMemo(() => ({
-    royals: gameState?.royalsScore || 0,
-    rebels: gameState?.rebelsScore || 0,
-  }), [gameState]);
+    royals: gameState?.royalsTricks || 0,
+    rebels: gameState?.rebelsTricks || 0,
+  }), [gameState, stateVersion]);
 
   // Winner data for end-game
   const winner = gameState?.winner || "";
