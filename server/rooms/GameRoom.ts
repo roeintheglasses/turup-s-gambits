@@ -28,6 +28,8 @@ export class GameRoom extends Room<GameState> {
   private usedBotNames: Set<string> = new Set();
   private playerUserIds: Map<string, string> = new Map(); // sessionId -> userId
   private scheduledBotActions: Set<string> = new Set(); // Prevent duplicate bot action scheduling
+  private disposalTimer: any = null;
+  private trumpSelectionStartedAt: number = 0;
 
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
@@ -91,7 +93,7 @@ export class GameRoom extends Room<GameState> {
   private checkTrumpVotingTimeout() {
     if (this.state.phase !== GamePhase.TRUMP_SELECTION) return;
 
-    const elapsed = Date.now() - this.state.startedAt;
+    const elapsed = Date.now() - this.trumpSelectionStartedAt;
     if (elapsed < GAME_CONFIG.TURN_TIMEOUT_MS) return;
 
     // Auto-vote for players who haven't voted
@@ -245,12 +247,16 @@ export class GameRoom extends Room<GameState> {
         }
       }
 
-      // If no players left at all (including bots), dispose room
-      const humanPlayers = Array.from(this.state.players.values()).filter(
-        p => !this.botSessionIds.has(p.id)
+      // If no connected human players remain, dispose room
+      const connectedHumanPlayers = Array.from(this.state.players.values()).filter(
+        p => p.isConnected && !this.botSessionIds.has(p.id)
       );
-      if (humanPlayers.length === 0) {
-        this.disconnect();
+      if (connectedHumanPlayers.length === 0) {
+        if (this.state.phase !== GamePhase.ENDED && this.state.phase !== GamePhase.WAITING) {
+          this.endGameDueToDisconnection();
+        } else {
+          this.disconnect();
+        }
       }
     }
   }
@@ -299,17 +305,17 @@ export class GameRoom extends Room<GameState> {
     const player = this.state.players.get(client.sessionId);
 
     if (!player?.isHost) {
-      client.error(0, "Only host can start the game");
+      this.sendClientError(client, 0, "Only host can start the game");
       return;
     }
 
     if (this.state.players.size < 4) {
-      client.error(0, "Need 4 players to start");
+      this.sendClientError(client, 0, "Need 4 players to start");
       return;
     }
 
     if (this.state.phase !== GamePhase.WAITING) {
-      client.error(0, "Game already started");
+      this.sendClientError(client, 0, "Game already started");
       return;
     }
 
@@ -320,23 +326,24 @@ export class GameRoom extends Room<GameState> {
     const player = this.state.players.get(client.sessionId);
 
     if (!player?.isHost) {
-      client.error(0, "Only host can add bots");
+      this.sendClientError(client, 0, "Only host can add bots");
       return;
     }
 
     if (this.state.phase !== GamePhase.WAITING) {
-      client.error(0, "Can only add bots before game starts");
+      this.sendClientError(client, 0, "Can only add bots before game starts");
       return;
     }
 
     const botsNeeded = 4 - this.state.players.size;
     if (botsNeeded <= 0) {
-      client.error(0, "Room is already full");
+      this.sendClientError(client, 0, "Room is already full");
       return;
     }
 
 
     for (let i = 0; i < botsNeeded; i++) {
+      if (this.state.players.size >= 4) break;
       const position = this.state.players.size;
       const team = position % 2;
       const botId = `bot_${Date.now()}_${position}`;
@@ -403,9 +410,16 @@ export class GameRoom extends Room<GameState> {
     // Move to trump selection
     this.clock.setTimeout(() => {
       this.state.phase = GamePhase.TRUMP_SELECTION;
+      this.trumpSelectionStartedAt = Date.now();
       this.broadcast("phase_changed", { phase: GamePhase.TRUMP_SELECTION });
       this.triggerBotActions();
     }, GAME_CONFIG.PHASE_TRANSITION_DELAY_MS);
+  }
+
+  private sendClientError(client: Client, code: number, message: string) {
+    if (typeof client.error === "function") {
+      client.error(code, message);
+    }
   }
 
   private handleTrumpVote(client: Client, data: { suit: string }) {
@@ -414,18 +428,18 @@ export class GameRoom extends Room<GameState> {
     if (!player) return;
 
     if (this.state.phase !== GamePhase.TRUMP_SELECTION) {
-      client.error(0, "Not in trump selection phase");
+      this.sendClientError(client, 0, "Not in trump selection phase");
       return;
     }
 
     if (player.hasVoted) {
-      client.error(0, "Already voted");
+      this.sendClientError(client, 0, "Already voted");
       return;
     }
 
     const validSuits = CARD_SUITS.map(s => s.toString());
     if (!validSuits.includes(data.suit)) {
-      client.error(0, "Invalid suit");
+      this.sendClientError(client, 0, "Invalid suit");
       return;
     }
 
@@ -521,19 +535,19 @@ export class GameRoom extends Room<GameState> {
 
     if (!player) return;
     if (this.state.phase !== GamePhase.PLAYING) {
-      client.error(0, "Not in playing phase");
+      this.sendClientError(client, 0, "Not in playing phase");
       return;
     }
 
     if (client.sessionId !== this.state.currentTurn) {
-      client.error(0, "Not your turn");
+      this.sendClientError(client, 0, "Not your turn");
       return;
     }
 
     // Find card in player's hand
     const cardIndex = player.hand.findIndex(c => c.id === data.cardId);
     if (cardIndex === -1) {
-      client.error(0, "Card not in hand");
+      this.sendClientError(client, 0, "Card not in hand");
       return;
     }
 
@@ -547,7 +561,7 @@ export class GameRoom extends Room<GameState> {
     );
 
     if (!isValid) {
-      client.error(0, "Must follow suit if possible");
+      this.sendClientError(client, 0, "Must follow suit if possible");
       return;
     }
 
@@ -646,7 +660,7 @@ export class GameRoom extends Room<GameState> {
       rebelsTricks: this.state.rebelsTricks,
     });
 
-    this.clock.setTimeout(() => {
+    this.disposalTimer = this.clock.setTimeout(() => {
       this.disconnect();
     }, GAME_CONFIG.ROOM_DISPOSAL_DELAY_MS);
   }
@@ -874,6 +888,12 @@ export class GameRoom extends Room<GameState> {
   private startRematch() {
     console.log("🔄 Starting rematch!");
 
+    // Cancel disposal timer from previous game
+    if (this.disposalTimer) {
+      this.disposalTimer.clear();
+      this.disposalTimer = null;
+    }
+
     // Broadcast rematch starting
     this.broadcast("rematch_starting", {});
 
@@ -905,7 +925,7 @@ export class GameRoom extends Room<GameState> {
     this.scheduledBotActions.clear();
 
     // Auto-start the new game since all players are already here
-    setTimeout(() => {
+    this.clock.setTimeout(() => {
       this.startInitialDeal();
     }, 1500);
   }
