@@ -676,6 +676,19 @@ export class GameRoom extends Room<GameState> {
       rebelsTricks: this.state.rebelsTricks,
     });
 
+    // Save the completed trick as lastTrick before creating a new one
+    const completedTrick = new Trick(this.state.currentTrick.trickNumber);
+    completedTrick.winnerId = winnerId;
+    completedTrick.winningTeam = winner.team;
+    completedTrick.ledSuit = this.state.currentTrick.ledSuit;
+    this.state.currentTrick.cards.forEach((card) => {
+      completedTrick.cards.push(new Card(card.suit, card.value, card.id));
+    });
+    this.state.currentTrick.playedBy.forEach((id) => {
+      completedTrick.playedBy.push(id);
+    });
+    this.state.lastTrick = completedTrick;
+
     // Check for game end
     if (this.state.royalsTricks >= GAME_CONFIG.TRICKS_TO_WIN ||
         this.state.rebelsTricks >= GAME_CONFIG.TRICKS_TO_WIN ||
@@ -980,6 +993,7 @@ export class GameRoom extends Room<GameState> {
     this.state.rematchVotes.clear();
     this.state.currentTurn = "";
     this.state.currentTrick = new Trick(0);
+    this.state.lastTrick = null;
     this.state.tricksPlayed = 0;
     this.state.royalsTricks = 0;
     this.state.rebelsTricks = 0;
