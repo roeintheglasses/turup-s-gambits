@@ -15,6 +15,7 @@ import {
   Team,
   GamePhase,
 } from "../../lib/constants";
+import { saveGameResult, GameResult, GameResultPlayer } from "../utils/gameResultsStore";
 
 interface JoinOptions {
   userId: string;
@@ -31,6 +32,7 @@ export class GameRoom extends Room<GameState> {
   private disposalTimer: any = null;
   private trumpSelectionStartedAt: number = 0;
   private firstLeadPosition: number = 0;
+  private playingPhaseStartedAt: number = 0;
 
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
@@ -315,6 +317,11 @@ export class GameRoom extends Room<GameState> {
       rebelsTricks: this.state.rebelsTricks,
     });
 
+    // Persist game results even for disconnection (if playing phase was reached)
+    if (this.playingPhaseStartedAt > 0) {
+      this.persistGameResult("disconnection");
+    }
+
     this.clock.setTimeout(() => {
       this.disconnect();
     }, 5000); // Shorter timeout since everyone left
@@ -539,6 +546,7 @@ export class GameRoom extends Room<GameState> {
 
   private startPlayingPhase() {
     this.state.phase = GamePhase.PLAYING;
+    this.playingPhaseStartedAt = Date.now();
     // Player at firstLeadPosition leads the first trick (rotates on rematch)
     const firstPlayer = Array.from(this.state.players.values()).sort(
       (a, b) => a.position - b.position
@@ -685,6 +693,9 @@ export class GameRoom extends Room<GameState> {
       rebelsTricks: this.state.rebelsTricks,
     });
 
+    // Persist game results
+    this.persistGameResult("completed");
+
     this.disposalTimer = this.clock.setTimeout(() => {
       this.disconnect();
     }, GAME_CONFIG.ROOM_DISPOSAL_DELAY_MS);
@@ -739,6 +750,48 @@ export class GameRoom extends Room<GameState> {
         { cardId: cardToPlay.id }
       );
     }
+  }
+
+  // ==================== GAME PERSISTENCE ====================
+
+  /**
+   * Build and save a GameResult to the database (fire-and-forget).
+   */
+  private persistGameResult(endReason: "completed" | "disconnection") {
+    const now = Date.now();
+    const durationSeconds = this.playingPhaseStartedAt > 0
+      ? Math.round((now - this.playingPhaseStartedAt) / 1000)
+      : 0;
+
+    const players: GameResultPlayer[] = [];
+    this.state.players.forEach((player, sessionId) => {
+      players.push({
+        userId: player.userId,
+        name: player.name,
+        team: player.team === 0 ? "royals" : "rebels",
+        position: player.position,
+        isBot: this.botSessionIds.has(sessionId),
+      });
+    });
+
+    const result: GameResult = {
+      roomId: this.roomId,
+      gameMode: this.state.gameMode,
+      winner: (this.state.winner as "royals" | "rebels" | "") || "",
+      royalsTricks: this.state.royalsTricks,
+      rebelsTricks: this.state.rebelsTricks,
+      isKot: this.state.isKot,
+      trumpSuit: this.state.trumpSuit,
+      players,
+      durationSeconds,
+      endedAt: now,
+      endReason,
+    };
+
+    // Fire-and-forget: don't block game flow on DB writes
+    saveGameResult(result).catch((err) => {
+      console.error("Failed to persist game result:", err);
+    });
   }
 
   // ==================== BOT AI LOGIC ====================
@@ -939,6 +992,7 @@ export class GameRoom extends Room<GameState> {
     this.state.isKot = false;
     this.state.startedAt = 0;
     this.state.turnStartedAt = 0;
+    this.playingPhaseStartedAt = 0;
 
     // Reset player states
     this.state.players.forEach((player) => {

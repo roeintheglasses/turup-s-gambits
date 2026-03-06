@@ -1,3 +1,8 @@
+import { config } from "dotenv";
+// Load .env.local first, then .env as fallback
+config({ path: ".env.local" });
+config({ path: ".env" });
+
 import { Server } from "colyseus";
 import { createServer } from "http";
 import express from "express";
