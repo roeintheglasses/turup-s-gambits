@@ -118,6 +118,7 @@ const MemoizedGameBottomBar = memo(
     scores,
     trumpSuit,
     currentTurn,
+    currentPlayerId,
     isCurrentUserHost,
     turnStartedAt,
     connectionQuality,
@@ -130,6 +131,7 @@ const MemoizedGameBottomBar = memo(
     scores?: { royals: number; rebels: number };
     trumpSuit?: string | null;
     currentTurn?: string;
+    currentPlayerId?: string;
     isCurrentUserHost?: boolean;
     turnStartedAt?: number;
     connectionQuality?: ConnectionQuality;
@@ -143,6 +145,7 @@ const MemoizedGameBottomBar = memo(
       scores={scores}
       trumpSuit={trumpSuit}
       currentTurn={currentTurn}
+      currentPlayerId={currentPlayerId}
       isCurrentUserHost={isCurrentUserHost}
       turnStartedAt={turnStartedAt}
       connectionQuality={connectionQuality}
@@ -212,6 +215,7 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
           scores={scores}
           trumpSuit={trumpSuit}
           currentTurn={currentTurn}
+          currentPlayerId={currentPlayerId}
           isCurrentUserHost={isCurrentUserHost}
           turnStartedAt={turnStartedAt}
           connectionQuality={connectionQuality}

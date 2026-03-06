@@ -34,6 +34,7 @@ interface GameBottomBarProps {
   trumpSuit?: string | null;
   scores?: { royals: number; rebels: number };
   currentTurn?: string;
+  currentPlayerId?: string;
   isCurrentUserHost?: boolean;
   turnStartedAt?: number;
   connectionQuality?: ConnectionQuality;
@@ -395,6 +396,7 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
   trumpSuit: propTrumpSuit,
   scores: propScores,
   currentTurn: propCurrentTurn,
+  currentPlayerId,
   isCurrentUserHost: propIsCurrentUserHost,
   turnStartedAt,
   connectionQuality,
@@ -413,8 +415,8 @@ export const GameBottomBar: React.FC<GameBottomBarProps> = memo(({
   const isCurrentUserHost = propIsCurrentUserHost !== undefined ? propIsCurrentUserHost : false;
 
   const isMyTurn = useMemo(() => {
-    return players.find(p => p.id === currentPlayer)?.id === user?.id;
-  }, [players, currentPlayer, user?.id]);
+    return currentPlayer !== "" && currentPlayer === currentPlayerId;
+  }, [currentPlayer, currentPlayerId]);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSharing, setIsSharing] = useState(false);

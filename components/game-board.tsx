@@ -142,6 +142,11 @@ export function GameBoard({
   const playerHandRef = useRef<any[]>([]);
   const centerCardsRef = useRef<any[]>([]);
   const gameStatusRef = useRef<string>("");
+  // Track the last known server hand so we can restore on rejected plays
+  const lastServerHandRef = useRef<any[]>([]);
+  const pendingPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const getPlayerHand = useCallback(() => {
     if (colyseusPlayerHand !== undefined) {
@@ -250,7 +255,26 @@ export function GameBoard({
         return [...prev, uiCard];
       });
 
+      // Optimistic removal: remove card from hand immediately for snappy UX.
+      // If the server rejects the play, the next server state sync will
+      // restore the card since the server still has it in the player's hand.
       setPlayerHandCards((prevHand) => prevHand.filter((c) => c.id !== cardId));
+
+      // Safety net: if no server state update arrives within 3 seconds,
+      // restore hand from the last known server state to prevent permanent loss.
+      if (pendingPlayTimerRef.current) {
+        clearTimeout(pendingPlayTimerRef.current);
+      }
+      pendingPlayTimerRef.current = setTimeout(() => {
+        pendingPlayTimerRef.current = null;
+        // Restore from last known server hand if the card was rejected
+        if (lastServerHandRef.current.length > 0) {
+          setPlayerHandCards(lastServerHandRef.current);
+        }
+        isPlayingCardRef.current = false;
+        setCardPlayLoading(false);
+        setPlayingCardId(null);
+      }, 3000);
 
       try {
         onPlayCard(apiCard);
@@ -259,8 +283,12 @@ export function GameBoard({
         }, 500);
       } catch (error) {
         console.error("[GameBoard] Error playing card:", error);
+        if (pendingPlayTimerRef.current) {
+          clearTimeout(pendingPlayTimerRef.current);
+          pendingPlayTimerRef.current = null;
+        }
         setCenterCards((prev) => prev.filter((c) => c.playedBy !== playerName));
-        setPlayerHandCards((prevHand) => [...prevHand, card]);
+        setPlayerHandCards(lastServerHandRef.current);
         isPlayingCardRef.current = false;
         setCardPlayLoading(false);
         setPlayingCardId(null);
@@ -296,15 +324,32 @@ export function GameBoard({
     onRecordMove(move);
   };
 
+  // Always trust the server's authoritative hand state.
+  // This ensures rejected card plays are automatically restored since the
+  // server still has the card in the player's hand after rejection.
   useEffect(() => {
     const hand = getPlayerHand();
-    setPlayerHandCards(hand || []);
+    const serverHand = hand || [];
+
+    // Store the latest server hand for fallback recovery
+    lastServerHandRef.current = serverHand;
+
+    // Server sent a state update, so clear any pending play timeout.
+    // The server hand is authoritative -- if it still contains a card we
+    // optimistically removed, this naturally restores it.
+    if (pendingPlayTimerRef.current) {
+      clearTimeout(pendingPlayTimerRef.current);
+      pendingPlayTimerRef.current = null;
+    }
+
+    setPlayerHandCards(serverHand);
+
     if (gameStatus === "playing" && !handInitialized) {
       setHandInitialized(true);
     } else if (gameStatus !== "playing" && handInitialized) {
       setHandInitialized(false);
     }
-  }, [gameState, gameStatus, initialCardsDeal, getPlayerHand]);
+  }, [gameState, gameStatus, initialCardsDeal, getPlayerHand, colyseusPlayerHand]);
 
   useEffect(() => {
     const handleRefreshState = () => {
@@ -721,6 +766,7 @@ export function GameBoard({
       const targetPosition = (currentPlayerPosition + offset) % 4;
       const player = sortedPlayers.find((p) => p.position === targetPosition);
       return {
+        id: player?.id || "",
         name: player?.name || `Player ${targetPosition + 1}`,
         isConnected: player?.isConnected ?? true,
         isBot: player?.isBot ?? false,
@@ -864,7 +910,7 @@ export function GameBoard({
                     storedTeamAssignments[playerPositions.top.name] || "rebels"
                   }
                   isCurrentTurn={
-                    currentTurn !== currentPlayerId && centerCards.length === 2
+                    currentTurn === playerPositions.top.id
                   }
                   isConnected={
                     playerPositions.top.isBot || playerPositions.top.isConnected
@@ -894,8 +940,7 @@ export function GameBoard({
                       "royals"
                     }
                     isCurrentTurn={
-                      currentTurn !== currentPlayerId &&
-                      centerCards.length === 1
+                      currentTurn === playerPositions.left.id
                     }
                     isConnected={
                       playerPositions.left.isBot ||
@@ -978,8 +1023,7 @@ export function GameBoard({
                       "rebels"
                     }
                     isCurrentTurn={
-                      currentTurn !== currentPlayerId &&
-                      centerCards.length === 3
+                      currentTurn === playerPositions.right.id
                     }
                     isConnected={
                       playerPositions.right.isBot ||
