@@ -30,6 +30,7 @@ export class GameRoom extends Room<GameState> {
   private scheduledBotActions: Set<string> = new Set(); // Prevent duplicate bot action scheduling
   private disposalTimer: any = null;
   private trumpSelectionStartedAt: number = 0;
+  private firstLeadPosition: number = 0;
 
   onCreate(options: any) {
     this.setState(new GameState(this.roomId));
@@ -538,10 +539,10 @@ export class GameRoom extends Room<GameState> {
 
   private startPlayingPhase() {
     this.state.phase = GamePhase.PLAYING;
-    // Player 0 (dealer) leads first trick
+    // Player at firstLeadPosition leads the first trick (rotates on rematch)
     const firstPlayer = Array.from(this.state.players.values()).sort(
       (a, b) => a.position - b.position
-    )[0];
+    )[this.firstLeadPosition];
     this.state.currentTurn = firstPlayer.id;
     this.state.turnStartedAt = Date.now();
     this.state.currentTrick = new Trick(0);
@@ -920,6 +921,9 @@ export class GameRoom extends Room<GameState> {
 
     // Broadcast rematch starting
     this.broadcast("rematch_starting", {});
+
+    // Rotate who leads the first trick
+    this.firstLeadPosition = (this.firstLeadPosition + 1) % 4;
 
     // Reset game state while preserving players
     this.state.phase = GamePhase.WAITING;
