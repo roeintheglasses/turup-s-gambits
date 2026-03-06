@@ -141,6 +141,30 @@ export class GameRoom extends Room<GameState> {
           this.state.currentTurn = client.sessionId;
         }
 
+        // Update stale session IDs in the current trick
+        for (let i = 0; i < this.state.currentTrick.playedBy.length; i++) {
+          if (this.state.currentTrick.playedBy[i] === oldSessionId) {
+            this.state.currentTrick.playedBy[i] = client.sessionId;
+          }
+        }
+        if (this.state.currentTrick.winnerId === oldSessionId) {
+          this.state.currentTrick.winnerId = client.sessionId;
+        }
+
+        // Transfer trump vote to new session ID
+        if (this.state.trumpVotes.has(oldSessionId)) {
+          const vote = this.state.trumpVotes.get(oldSessionId)!;
+          this.state.trumpVotes.delete(oldSessionId);
+          this.state.trumpVotes.set(client.sessionId, vote);
+        }
+
+        // Transfer rematch vote to new session ID
+        if (this.state.rematchVotes.has(oldSessionId)) {
+          const vote = this.state.rematchVotes.get(oldSessionId)!;
+          this.state.rematchVotes.delete(oldSessionId);
+          this.state.rematchVotes.set(client.sessionId, vote);
+        }
+
         this.broadcast("player_reconnected", {
           playerId: client.sessionId,
           name: existingPlayer.name,
