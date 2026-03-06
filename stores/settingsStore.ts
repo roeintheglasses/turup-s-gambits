@@ -45,6 +45,7 @@ interface SettingsState {
   cardAnimationSpeed: "slow" | "normal" | "fast";
   showTutorialTips: boolean;
   enableNotifications: boolean;
+  showCardTracker: boolean;
 
   // Actions
   setTheme: (theme: "dark" | "light" | "system") => void;
@@ -64,6 +65,7 @@ interface SettingsState {
   setCardAnimationSpeed: (speed: "slow" | "normal" | "fast") => void;
   setShowTutorialTips: (show: boolean) => void;
   setEnableNotifications: (enable: boolean) => void;
+  setShowCardTracker: (show: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -84,6 +86,7 @@ export const useSettingsStore = create<SettingsState>()(
       cardAnimationSpeed: "normal",
       showTutorialTips: true,
       enableNotifications: true,
+      showCardTracker: true,
 
       // Actions
       setTheme: (theme) => set({ theme }),
@@ -190,6 +193,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       setEnableNotifications: (enableNotifications) =>
         set({ enableNotifications }),
+
+      setShowCardTracker: (showCardTracker) => set({ showCardTracker }),
     }),
     {
       name: "user-settings",
