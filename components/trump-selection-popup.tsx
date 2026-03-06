@@ -7,7 +7,6 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Crown, Check, Clock } from "lucide-react";
 import { Suit } from "@/app/types/game";
 import { useUIStore } from "@/stores/uiStore";
-import { useGameStore } from "@/stores";
 import { playSoundEffect } from "@/hooks/use-sound-effects";
 import {
   SUIT_CONFIG,
@@ -50,7 +49,6 @@ export function TrumpSelectionPopup({
   gameMode = "classic",
 }: TrumpSelectionPopupProps) {
   const { showTrumpPopup, setShowTrumpPopup } = useUIStore();
-  const { setGameStatus, setShowShuffleAnimation } = useGameStore();
 
   const effectiveIsOpen = isOpen || showTrumpPopup;
 
@@ -143,19 +141,13 @@ export function TrumpSelectionPopup({
     showToast(`You voted for ${selectedSuit} as trump`, "success");
   };
 
-  // Update handleClose to set both the local state and the UI store state
+  // Close popup — phase transitions are driven by the Colyseus server
   const handleClose = () => {
     setIsClosing(true);
 
     // Delay actual closing for animation
     setTimeout(() => {
       setShowTrumpPopup(false);
-
-      // If voting is complete, transition to final_deal phase
-      if (votingComplete) {
-        setGameStatus("final_deal");
-        setShowShuffleAnimation(true);
-      }
     }, 300);
   };
 
@@ -205,17 +197,8 @@ export function TrumpSelectionPopup({
     return winningSuit;
   }, [votingComplete, trumpVotes]);
 
-  // Use effective player hand (fallback to mock data if needed)
-  const effectivePlayerHand =
-    playerHand.length > 0
-      ? playerHand
-      : [
-          { id: 1, suit: "hearts", value: "A" },
-          { id: 2, suit: "spades", value: "K" },
-          { id: 3, suit: "diamonds", value: "Q" },
-          { id: 4, suit: "clubs", value: "J" },
-          { id: 5, suit: "hearts", value: "10" },
-        ];
+  // Use actual player hand — no mock fallback; loading spinner handles empty state
+  const effectivePlayerHand = playerHand;
 
   // Create card count summary text
   const cardSummary = useMemo(() => {
