@@ -149,6 +149,24 @@ export function GameBoard({
   );
 
   const getPlayerHand = useCallback(() => {
+    // Sort order: group by suit, then rank within each suit
+    const suitOrder: Record<string, number> = {
+      spades: 0,
+      hearts: 1,
+      diamonds: 2,
+      clubs: 3,
+    };
+    const rankOrder: Record<string, number> = {
+      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+      "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
+    };
+    const sortHand = (cards: any[]) =>
+      [...cards].sort((a, b) => {
+        const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99);
+        if (suitDiff !== 0) return suitDiff;
+        return (rankOrder[a.value] ?? 0) - (rankOrder[b.value] ?? 0);
+      });
+
     if (colyseusPlayerHand !== undefined) {
       if (colyseusPlayerHand.length === 0) {
         return [];
@@ -159,7 +177,7 @@ export function GameBoard({
         value: card.rank || card.value,
         apiId: card.id,
       }));
-      return cards;
+      return sortHand(cards);
     }
 
     if (gameState && user) {
@@ -174,9 +192,10 @@ export function GameBoard({
           apiId: `${card.suit}-${card.rank || card.value}`,
         }));
         if (gameStatus === "playing") {
-          return cards;
+          return sortHand(cards);
         }
-        return initialCardsDeal ? cards.slice(0, 5) : cards;
+        const sliced = initialCardsDeal ? cards.slice(0, 5) : cards;
+        return sortHand(sliced);
       }
     }
 
@@ -188,11 +207,12 @@ export function GameBoard({
       { id: 4, suit: "clubs", value: "J", apiId: "clubs-J" },
       { id: 5, suit: "hearts", value: "10", apiId: "hearts-10" },
     ];
-    return gameStatus === "playing"
+    const fallback = gameStatus === "playing"
       ? mockHand
       : initialCardsDeal
       ? mockHand.slice(0, 5)
       : mockHand;
+    return sortHand(fallback);
   }, [gameState, user, gameStatus, initialCardsDeal, colyseusPlayerHand]);
 
   const isPlayingCardRef = useRef(false);
