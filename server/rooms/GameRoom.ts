@@ -885,8 +885,6 @@ export class GameRoom extends Room<GameState> {
     this.state.currentTurn = "";
     this.state.currentTrick = new Trick(0);
     this.state.tricksPlayed = 0;
-    this.state.royalsScore = 0;
-    this.state.rebelsScore = 0;
     this.state.royalsTricks = 0;
     this.state.rebelsTricks = 0;
     this.state.winner = "";

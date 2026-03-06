@@ -71,8 +71,6 @@ export class GameState extends Schema {
   @type("number") tricksPlayed: number = 0;
 
   // Scores
-  @type("number") royalsScore: number = 0; // Team 0
-  @type("number") rebelsScore: number = 0; // Team 1
   @type("number") royalsTricks: number = 0;
   @type("number") rebelsTricks: number = 0;
 
