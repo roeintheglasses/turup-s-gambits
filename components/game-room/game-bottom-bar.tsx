@@ -307,14 +307,19 @@ const ExpandedPanel = memo(({
   const royals = [players[0], players[2]].filter(Boolean);
   const rebels = [players[1], players[3]].filter(Boolean);
 
+  const teamColorClasses = {
+    royals: { bg20: "bg-amber-500/20", bg50: "bg-amber-500/50" },
+    rebels: { bg20: "bg-blue-500/20", bg50: "bg-blue-500/50" },
+  } as const;
+
   const PlayerItem = ({ player, team }: { player: any; team: "royals" | "rebels" }) => {
     const isCurrentTurn = player?.id === currentTurn;
     const isYou = player?.id === userId;
-    const teamColor = team === "royals" ? "amber" : "blue";
+    const colors = teamColorClasses[team];
 
     return (
-      <div className={`flex items-center gap-2 px-2 py-1 rounded ${isCurrentTurn ? `bg-${teamColor}-500/20` : ""}`}>
-        <div className={`w-2 h-2 rounded-full ${isCurrentTurn ? "bg-green-500" : `bg-${teamColor}-500/50`}`} />
+      <div className={`flex items-center gap-2 px-2 py-1 rounded ${isCurrentTurn ? colors.bg20 : ""}`}>
+        <div className={`w-2 h-2 rounded-full ${isCurrentTurn ? "bg-green-500" : colors.bg50}`} />
         <span className="text-sm">
           {player?.name || "Empty"}
           {isYou && <span className="text-xs text-muted-foreground ml-1">(You)</span>}
