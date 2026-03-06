@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/card";
-import { type Card as CardType, type Player } from "@/app/types/game";
+import { type Card as CardType, type Player, type Suit } from "@/app/types/game";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/stores";
@@ -66,6 +66,8 @@ interface GameBoardProps {
   currentPlayerId?: string;
   connectionQuality?: ConnectionQuality;
   latency?: number | null;
+  trumpSuit?: Suit | null;
+  scores?: { royals: number; rebels: number };
 }
 
 type HandCard = {
@@ -93,9 +95,11 @@ export function GameBoard({
   currentPlayerId,
   connectionQuality,
   latency,
+  trumpSuit: trumpSuitProp,
+  scores: scoresProp,
 }: GameBoardProps) {
-  const trumpSuit = useGameStore((state) => state.trumpSuit);
-  const scores = useGameStore((state) => state.scores);
+  const trumpSuit = trumpSuitProp ?? null;
+  const scores = scoresProp ?? { royals: 0, rebels: 0 };
   const storedTeamAssignments = useGameStore((state) => state.teamAssignments);
   const setTeamAssignments = useGameStore((state) => state.setTeamAssignments);
 

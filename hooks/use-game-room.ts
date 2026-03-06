@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useColyseus, usePlayers, usePlayerHand, useCurrentPlayer } from "@/hooks/useColyseus";
 import { useConnectionQuality } from "@/hooks/use-connection-quality";
+import type { Suit } from "@/app/types/game";
 
 /**
  * Main hook for game room functionality using Colyseus
@@ -260,7 +261,7 @@ export function useGameRoom(roomId: string) {
     isStartingGame,
     scores,
     currentTrick,
-    trumpSuit: gameState?.trumpSuit || null,
+    trumpSuit: (gameState?.trumpSuit as Suit) || null,
 
     // Trump voting
     trumpVotes,

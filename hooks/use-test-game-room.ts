@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useUIStore } from "@/stores/uiStore";
 import { useColyseus, usePlayers, usePlayerHand, useCurrentPlayer } from "@/hooks/useColyseus";
 import type { User } from "@/stores/authStore";
+import type { Suit } from "@/app/types/game";
 
 /**
  * Test version of useGameRoom that bypasses authentication
@@ -229,7 +230,7 @@ export function useTestGameRoom(roomId: string, testUserId: string) {
     isStartingGame,
     scores,
     currentTrick,
-    trumpSuit: gameState?.trumpSuit || null,
+    trumpSuit: (gameState?.trumpSuit as Suit) || null,
 
     // Trump voting
     trumpVotes,

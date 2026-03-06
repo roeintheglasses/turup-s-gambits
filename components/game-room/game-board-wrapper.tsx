@@ -2,6 +2,7 @@ import React, { useMemo, memo } from "react";
 import { GameBoard } from "@/components/game-board";
 import { GameBottomBar } from "./game-bottom-bar";
 import type { ConnectionQuality } from "@/hooks/use-connection-quality";
+import type { Suit } from "@/app/types/game";
 
 interface GameBoardWrapperProps {
   roomId: string;
@@ -12,7 +13,7 @@ interface GameBoardWrapperProps {
   handlePlayCard: (card: any) => void;
   // Bottom bar props
   scores?: { royals: number; rebels: number };
-  trumpSuit?: string | null;
+  trumpSuit?: Suit | null;
   currentTurn?: string;
   turnStartedAt?: number;
   isCurrentUserHost?: boolean;
@@ -42,6 +43,8 @@ const GameBoardContent = memo(
     currentPlayerId,
     connectionQuality,
     latency,
+    trumpSuit,
+    scores,
   }: {
     roomId: string;
     mode: string;
@@ -55,6 +58,8 @@ const GameBoardContent = memo(
     currentPlayerId?: string;
     connectionQuality?: ConnectionQuality;
     latency?: number | null;
+    trumpSuit?: Suit | null;
+    scores?: { royals: number; rebels: number };
   }) => {
     // Memoized player names to prevent unnecessary re-renders
     const playerNames = useMemo(
@@ -95,6 +100,8 @@ const GameBoardContent = memo(
         currentPlayerId={currentPlayerId}
         connectionQuality={connectionQuality}
         latency={latency}
+        trumpSuit={trumpSuit}
+        scores={scores}
       />
     );
   },
@@ -192,6 +199,8 @@ export const GameBoardWrapper: React.FC<GameBoardWrapperProps> = memo(
             currentPlayerId={currentPlayerId}
             connectionQuality={connectionQuality}
             latency={latency}
+            trumpSuit={trumpSuit}
+            scores={scores}
           />
         </div>
 
