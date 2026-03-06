@@ -21,6 +21,7 @@ import { CenterTrickArea } from "@/components/game-board/center-trick-area";
 import { OpponentArea } from "@/components/game-board/opponent-area";
 import { PlayerHand } from "@/components/game-board/player-hand";
 import { TableSurface } from "@/components/game-board/table-surface";
+import { TurnTimer } from "@/components/game-board/turn-timer";
 import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
 import { LastTrickReview } from "@/components/game-board/last-trick-review";
@@ -953,20 +954,29 @@ export function GameBoard({
             {/* Top opponent */}
             <div className="flex justify-center pt-4 sm:pt-6">
               {players.length > 2 && (
-                <OpponentArea
-                  name={playerPositions.top.name}
-                  position="top"
-                  team={
-                    storedTeamAssignments[playerPositions.top.name] || "rebels"
-                  }
-                  isCurrentTurn={
-                    currentTurn === playerPositions.top.id
-                  }
-                  isConnected={
-                    playerPositions.top.isBot || playerPositions.top.isConnected
-                  }
-                  cardCount={playerPositions.top.handSize}
-                />
+                <div className="flex items-center gap-1.5">
+                  <OpponentArea
+                    name={playerPositions.top.name}
+                    position="top"
+                    team={
+                      storedTeamAssignments[playerPositions.top.name] || "rebels"
+                    }
+                    isCurrentTurn={
+                      currentTurn === playerPositions.top.id
+                    }
+                    isConnected={
+                      playerPositions.top.isBot || playerPositions.top.isConnected
+                    }
+                    cardCount={playerPositions.top.handSize}
+                  />
+                  {gameStatus === "playing" && centerCards.length < 4 && (
+                    <TurnTimer
+                      turnStartedAt={turnStartedAt ?? 0}
+                      isActive={currentTurn === playerPositions.top.id}
+                      size="sm"
+                    />
+                  )}
+                </div>
               )}
             </div>
 
@@ -975,22 +985,31 @@ export function GameBoard({
               {/* Left opponent */}
               <div className="flex-shrink-0">
                 {players.length > 1 && (
-                  <OpponentArea
-                    name={playerPositions.left.name}
-                    position="left"
-                    team={
-                      storedTeamAssignments[playerPositions.left.name] ||
-                      "royals"
-                    }
-                    isCurrentTurn={
-                      currentTurn === playerPositions.left.id
-                    }
-                    isConnected={
-                      playerPositions.left.isBot ||
-                      playerPositions.left.isConnected
-                    }
-                    cardCount={playerPositions.left.handSize}
-                  />
+                  <div className="flex flex-col items-center gap-1">
+                    <OpponentArea
+                      name={playerPositions.left.name}
+                      position="left"
+                      team={
+                        storedTeamAssignments[playerPositions.left.name] ||
+                        "royals"
+                      }
+                      isCurrentTurn={
+                        currentTurn === playerPositions.left.id
+                      }
+                      isConnected={
+                        playerPositions.left.isBot ||
+                        playerPositions.left.isConnected
+                      }
+                      cardCount={playerPositions.left.handSize}
+                    />
+                    {gameStatus === "playing" && centerCards.length < 4 && (
+                      <TurnTimer
+                        turnStartedAt={turnStartedAt ?? 0}
+                        isActive={currentTurn === playerPositions.left.id}
+                        size="sm"
+                      />
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -1066,22 +1085,31 @@ export function GameBoard({
               {/* Right opponent */}
               <div className="flex-shrink-0">
                 {players.length > 3 && (
-                  <OpponentArea
-                    name={playerPositions.right.name}
-                    position="right"
-                    team={
-                      storedTeamAssignments[playerPositions.right.name] ||
-                      "rebels"
-                    }
-                    isCurrentTurn={
-                      currentTurn === playerPositions.right.id
-                    }
-                    isConnected={
-                      playerPositions.right.isBot ||
-                      playerPositions.right.isConnected
-                    }
-                    cardCount={playerPositions.right.handSize}
-                  />
+                  <div className="flex flex-col items-center gap-1">
+                    <OpponentArea
+                      name={playerPositions.right.name}
+                      position="right"
+                      team={
+                        storedTeamAssignments[playerPositions.right.name] ||
+                        "rebels"
+                      }
+                      isCurrentTurn={
+                        currentTurn === playerPositions.right.id
+                      }
+                      isConnected={
+                        playerPositions.right.isBot ||
+                        playerPositions.right.isConnected
+                      }
+                      cardCount={playerPositions.right.handSize}
+                    />
+                    {gameStatus === "playing" && centerCards.length < 4 && (
+                      <TurnTimer
+                        turnStartedAt={turnStartedAt ?? 0}
+                        isActive={currentTurn === playerPositions.right.id}
+                        size="sm"
+                      />
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1089,7 +1117,7 @@ export function GameBoard({
             {/* Bottom: Current player */}
             <div className="pb-2 sm:pb-6 px-1 sm:px-4">
               {/* Player info badge */}
-              <div className="flex justify-center mb-1 sm:mb-2">
+              <div className="flex justify-center items-center gap-2 mb-1 sm:mb-2">
                 <div
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg border-2 transition-all ${
                     storedTeamAssignments[user?.username || ""] === "royals"
@@ -1113,6 +1141,13 @@ export function GameBoard({
                     You
                   </span>
                 </div>
+                {gameStatus === "playing" && centerCards.length < 4 && (
+                  <TurnTimer
+                    turnStartedAt={turnStartedAt ?? 0}
+                    isActive={!!isMyTurn}
+                    size="md"
+                  />
+                )}
               </div>
 
               {/* Player hand */}
