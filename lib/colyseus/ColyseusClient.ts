@@ -11,6 +11,10 @@ const RECONNECT_USER_ID_KEY = "colyseus_user_id";
 class ColyseusClientService {
   private client: Colyseus.Client | null = null;
   private currentRoom: GameRoom | null = null;
+  private pendingPingResolve: ((latency: number) => void) | null = null;
+  private pendingPingReject: ((error: Error) => void) | null = null;
+  private pendingPingTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pongListenerRegistered: boolean = false;
 
   /**
    * Initialize the Colyseus client
@@ -46,6 +50,8 @@ class ColyseusClientService {
             name: userName,
           });
           console.log("✅ Joined existing room:", this.currentRoom.roomId);
+          this.storeReconnectionData(this.currentRoom.roomId, userId);
+          this.registerPongListener();
           return this.currentRoom;
         } catch (joinError: any) {
           // If room doesn't exist or is full, fall through to create
@@ -64,6 +70,7 @@ class ColyseusClientService {
 
       // Store reconnection info
       this.storeReconnectionData(this.currentRoom.roomId, userId);
+      this.registerPongListener();
 
       return this.currentRoom;
     } catch (error) {
@@ -135,6 +142,7 @@ class ColyseusClientService {
 
       // Store reconnection info
       this.storeReconnectionData(roomId, userId);
+      this.registerPongListener();
 
       return this.currentRoom;
     } catch (error) {
@@ -150,6 +158,7 @@ class ColyseusClientService {
   async leaveRoom(clearReconnect: boolean = true) {
     if (this.currentRoom) {
       try {
+        this.resetPongListener();
         await this.currentRoom.leave();
         console.log("👋 Left room");
         this.currentRoom = null;
@@ -228,6 +237,44 @@ class ColyseusClientService {
   }
 
   /**
+   * Register a single persistent pong listener on the current room.
+   * Idempotent — safe to call multiple times.
+   */
+  private registerPongListener() {
+    if (this.pongListenerRegistered || !this.currentRoom) return;
+
+    this.currentRoom.onMessage("pong", (message: { timestamp: number }) => {
+      if (this.pendingPingResolve) {
+        if (this.pendingPingTimeout) {
+          clearTimeout(this.pendingPingTimeout);
+          this.pendingPingTimeout = null;
+        }
+        const latency = Date.now() - message.timestamp;
+        this.pendingPingResolve(latency);
+        this.pendingPingResolve = null;
+        this.pendingPingReject = null;
+      }
+    });
+    this.pongListenerRegistered = true;
+  }
+
+  /**
+   * Reset pong listener state (call when room changes or is left).
+   */
+  private resetPongListener() {
+    if (this.pendingPingTimeout) {
+      clearTimeout(this.pendingPingTimeout);
+      this.pendingPingTimeout = null;
+    }
+    if (this.pendingPingReject) {
+      this.pendingPingReject(new Error("Room changed"));
+    }
+    this.pendingPingResolve = null;
+    this.pendingPingReject = null;
+    this.pongListenerRegistered = false;
+  }
+
+  /**
    * Send ping to measure latency
    * Returns a promise that resolves with the latency in ms
    */
@@ -236,20 +283,30 @@ class ColyseusClientService {
       return Promise.reject(new Error("No active room"));
     }
 
+    // Reject any in-flight ping
+    if (this.pendingPingReject) {
+      this.pendingPingReject(new Error("New ping started"));
+      this.pendingPingResolve = null;
+      this.pendingPingReject = null;
+    }
+    if (this.pendingPingTimeout) {
+      clearTimeout(this.pendingPingTimeout);
+      this.pendingPingTimeout = null;
+    }
+
+    this.registerPongListener();
+
     return new Promise((resolve, reject) => {
       const timestamp = Date.now();
-      const timeout = setTimeout(() => {
+      this.pendingPingResolve = resolve;
+      this.pendingPingReject = reject;
+      this.pendingPingTimeout = setTimeout(() => {
+        this.pendingPingResolve = null;
+        this.pendingPingReject = null;
+        this.pendingPingTimeout = null;
         reject(new Error("Ping timeout"));
       }, 5000);
 
-      const handlePong = (message: { timestamp: number }) => {
-        clearTimeout(timeout);
-        const latency = Date.now() - message.timestamp;
-        resolve(latency);
-      };
-
-      // Listen for pong response once
-      this.currentRoom!.onMessage("pong", handlePong);
       this.send("ping", { timestamp });
     });
   }
@@ -289,8 +346,10 @@ class ColyseusClientService {
     try {
       // Cast to any to handle different Colyseus versions
       const client = this.client as any;
+      this.resetPongListener();
       this.currentRoom = await client.reconnect(roomId, sessionId);
       console.log("✅ Reconnected to room:", roomId);
+      this.registerPongListener();
       return this.currentRoom!;
     } catch (error) {
       console.error("❌ Failed to reconnect:", error);
