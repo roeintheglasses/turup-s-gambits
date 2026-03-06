@@ -7,7 +7,7 @@ import { Trophy, Crown, Swords } from "lucide-react";
 import { playSoundEffect } from "@/hooks/use-sound-effects";
 
 interface CenterCard {
-  id: number;
+  id: number | string;
   suit: string;
   value: string;
   playedBy: string;

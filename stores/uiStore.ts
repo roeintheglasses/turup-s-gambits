@@ -10,10 +10,10 @@ interface UIState {
   // Loading states
   isLoading: boolean;
   cardPlayLoading: boolean;
-  playingCardId: number | null;
+  playingCardId: number | string | null;
 
   // Selected card
-  selectedCard: number | null;
+  selectedCard: number | string | null;
 
   // UI messages
   statusMessage: string | null;
@@ -27,9 +27,9 @@ interface UIState {
 
   setIsLoading: (isLoading: boolean) => void;
   setCardPlayLoading: (isLoading: boolean) => void;
-  setPlayingCardId: (cardId: number | null) => void;
+  setPlayingCardId: (cardId: number | string | null) => void;
 
-  setSelectedCard: (cardId: number | null) => void;
+  setSelectedCard: (cardId: number | string | null) => void;
 
   setStatusMessage: (message: string | null) => void;
   showToast: (

@@ -25,7 +25,7 @@ import type { ConnectionQuality } from "@/hooks/use-connection-quality";
 import { useTurnNotification } from "@/hooks/use-turn-notification";
 
 interface CenterCard {
-  id: number;
+  id: number | string;
   suit: string;
   value: string;
   playedBy: string;
@@ -149,6 +149,24 @@ export function GameBoard({
   );
 
   const getPlayerHand = useCallback(() => {
+    // Sort order: group by suit, then rank within each suit
+    const suitOrder: Record<string, number> = {
+      spades: 0,
+      hearts: 1,
+      diamonds: 2,
+      clubs: 3,
+    };
+    const rankOrder: Record<string, number> = {
+      "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+      "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
+    };
+    const sortHand = (cards: any[]) =>
+      [...cards].sort((a, b) => {
+        const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99);
+        if (suitDiff !== 0) return suitDiff;
+        return (rankOrder[a.value] ?? 0) - (rankOrder[b.value] ?? 0);
+      });
+
     if (colyseusPlayerHand !== undefined) {
       if (colyseusPlayerHand.length === 0) {
         return [];
@@ -159,7 +177,7 @@ export function GameBoard({
         value: card.rank || card.value,
         apiId: card.id,
       }));
-      return cards;
+      return sortHand(cards);
     }
 
     if (gameState && user) {
@@ -174,9 +192,10 @@ export function GameBoard({
           apiId: `${card.suit}-${card.rank || card.value}`,
         }));
         if (gameStatus === "playing") {
-          return cards;
+          return sortHand(cards);
         }
-        return initialCardsDeal ? cards.slice(0, 5) : cards;
+        const sliced = initialCardsDeal ? cards.slice(0, 5) : cards;
+        return sortHand(sliced);
       }
     }
 
@@ -188,11 +207,12 @@ export function GameBoard({
       { id: 4, suit: "clubs", value: "J", apiId: "clubs-J" },
       { id: 5, suit: "hearts", value: "10", apiId: "hearts-10" },
     ];
-    return gameStatus === "playing"
+    const fallback = gameStatus === "playing"
       ? mockHand
       : initialCardsDeal
       ? mockHand.slice(0, 5)
       : mockHand;
+    return sortHand(fallback);
   }, [gameState, user, gameStatus, initialCardsDeal, colyseusPlayerHand]);
 
   const isPlayingCardRef = useRef(false);
@@ -216,12 +236,8 @@ export function GameBoard({
       if (cardPlayLoading) return;
 
       isPlayingCardRef.current = true;
-      setSelectedCard(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
-      );
-      setPlayingCardId(
-        typeof cardId === "string" ? parseInt(cardId) || 0 : cardId
-      );
+      setSelectedCard(cardId);
+      setPlayingCardId(cardId);
       setCardPlayLoading(true);
 
       const card = playerHand.find((c: any) => c.id === cardId);
@@ -241,10 +257,7 @@ export function GameBoard({
 
       const playerName = user?.username || "You";
       const uiCard: CenterCard = {
-        id:
-          typeof cardId === "string"
-            ? parseInt(cardId.split("-")[1]) || 0
-            : cardId,
+        id: cardId,
         suit: card.suit,
         value: card.value,
         playedBy: playerName,
@@ -726,6 +739,7 @@ export function GameBoard({
       position: number;
       isConnected: boolean;
       isBot: boolean;
+      handSize: number;
     }> = [];
 
     if (gameState?.players && Array.isArray(gameState.players)) {
@@ -741,6 +755,7 @@ export function GameBoard({
                 : sortedPlayers.length,
             isConnected: p.isConnected !== false, // Default to true if not specified
             isBot: p.isBot === true,
+            handSize: p.hand?.length ?? 0,
           });
         }
       });
@@ -770,6 +785,7 @@ export function GameBoard({
         name: player?.name || `Player ${targetPosition + 1}`,
         isConnected: player?.isConnected ?? true,
         isBot: player?.isBot ?? false,
+        handSize: player?.handSize ?? 0,
       };
     };
 
@@ -915,14 +931,7 @@ export function GameBoard({
                   isConnected={
                     playerPositions.top.isBot || playerPositions.top.isConnected
                   }
-                  cardCount={
-                    gameStatus === "playing"
-                      ? Math.max(
-                          0,
-                          13 - (scores.royals + scores.rebels)
-                        )
-                      : 5
-                  }
+                  cardCount={playerPositions.top.handSize}
                 />
               )}
             </div>
@@ -946,14 +955,7 @@ export function GameBoard({
                       playerPositions.left.isBot ||
                       playerPositions.left.isConnected
                     }
-                    cardCount={
-                      gameStatus === "playing"
-                        ? Math.max(
-                            0,
-                            13 - (scores.royals + scores.rebels)
-                          )
-                        : 5
-                    }
+                    cardCount={playerPositions.left.handSize}
                   />
                 )}
               </div>
@@ -1029,14 +1031,7 @@ export function GameBoard({
                       playerPositions.right.isBot ||
                       playerPositions.right.isConnected
                     }
-                    cardCount={
-                      gameStatus === "playing"
-                        ? Math.max(
-                            0,
-                            13 - (scores.royals + scores.rebels)
-                          )
-                        : 5
-                    }
+                    cardCount={playerPositions.right.handSize}
                   />
                 )}
               </div>
