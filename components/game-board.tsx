@@ -719,6 +719,7 @@ export function GameBoard({
       position: number;
       isConnected: boolean;
       isBot: boolean;
+      handSize: number;
     }> = [];
 
     if (gameState?.players && Array.isArray(gameState.players)) {
@@ -734,6 +735,7 @@ export function GameBoard({
                 : sortedPlayers.length,
             isConnected: p.isConnected !== false, // Default to true if not specified
             isBot: p.isBot === true,
+            handSize: p.hand?.length ?? 0,
           });
         }
       });
@@ -763,6 +765,7 @@ export function GameBoard({
         name: player?.name || `Player ${targetPosition + 1}`,
         isConnected: player?.isConnected ?? true,
         isBot: player?.isBot ?? false,
+        handSize: player?.handSize ?? 0,
       };
     };
 
@@ -908,14 +911,7 @@ export function GameBoard({
                   isConnected={
                     playerPositions.top.isBot || playerPositions.top.isConnected
                   }
-                  cardCount={
-                    gameStatus === "playing"
-                      ? Math.max(
-                          0,
-                          13 - (scores.royals + scores.rebels)
-                        )
-                      : 5
-                  }
+                  cardCount={playerPositions.top.handSize}
                 />
               )}
             </div>
@@ -939,14 +935,7 @@ export function GameBoard({
                       playerPositions.left.isBot ||
                       playerPositions.left.isConnected
                     }
-                    cardCount={
-                      gameStatus === "playing"
-                        ? Math.max(
-                            0,
-                            13 - (scores.royals + scores.rebels)
-                          )
-                        : 5
-                    }
+                    cardCount={playerPositions.left.handSize}
                   />
                 )}
               </div>
@@ -1022,14 +1011,7 @@ export function GameBoard({
                       playerPositions.right.isBot ||
                       playerPositions.right.isConnected
                     }
-                    cardCount={
-                      gameStatus === "playing"
-                        ? Math.max(
-                            0,
-                            13 - (scores.royals + scores.rebels)
-                          )
-                        : 5
-                    }
+                    cardCount={playerPositions.right.handSize}
                   />
                 )}
               </div>
