@@ -61,12 +61,14 @@ export function TrumpSelectionPopup({
   });
   const [isHandLoading, setIsHandLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
 
   // Reset selected suit when popup opens or when user vote changes
   useEffect(() => {
     if (effectiveIsOpen) {
       setSelectedSuit(userVote || null);
       setIsClosing(false);
+      setShowAnnouncement(false);
     }
   }, [effectiveIsOpen, userVote]);
 
@@ -81,15 +83,24 @@ export function TrumpSelectionPopup({
     }
   }, [effectiveIsOpen, userVote]);
 
-  // Close the popup when voting is complete
+  // Show announcement then close when voting is complete
   useEffect(() => {
-    if (votingComplete && effectiveIsOpen) {
+    if (votingComplete && effectiveIsOpen && !showAnnouncement) {
+      // Show the announcement immediately when voting completes
+      setShowAnnouncement(true);
+      playSoundEffect("buttonClick", 0.6);
+    }
+  }, [votingComplete, effectiveIsOpen, showAnnouncement]);
+
+  // Auto-close after announcement has been shown
+  useEffect(() => {
+    if (showAnnouncement && effectiveIsOpen) {
       const timer = setTimeout(() => {
         handleClose();
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [votingComplete, effectiveIsOpen]);
+  }, [showAnnouncement, effectiveIsOpen]);
 
   // Analyze player hand when it changes
   useEffect(() => {
@@ -230,6 +241,42 @@ export function TrumpSelectionPopup({
             transition={{ duration: 0.3 }}
             className="bg-[hsl(var(--dark-panel))] backdrop-blur-md w-full max-w-xl p-4 rounded-xl border-4 border-[hsl(var(--warm-brown))] shadow-[0_20px_60px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col relative"
           >
+          {/* Trump Result Announcement Overlay */}
+          <AnimatePresence>
+            {showAnnouncement && getWinningSuit && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 rounded-xl flex items-center justify-center"
+              >
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", damping: 12, stiffness: 200 }}
+                  className="flex flex-col items-center text-center p-8"
+                >
+                  <motion.span
+                    className={`text-7xl sm:text-8xl mb-4 ${getSuitColor(getWinningSuit)}`}
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    {getSuitSymbol(getWinningSuit)}
+                  </motion.span>
+                  <h2 className="text-2xl sm:text-3xl font-cinzel font-bold text-[hsl(var(--amber-primary))] text-shadow-medieval mb-2">
+                    <span className="capitalize">{getWinningSuit}</span> is Trump!
+                  </h2>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 3, ease: "linear" }}
+                    className="h-1 bg-[hsl(var(--amber-primary))]/60 rounded-full mt-4 max-w-[200px]"
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Inline Loading Overlay for Voting */}
           {userVote && !votingComplete && (
             <motion.div
@@ -272,7 +319,7 @@ export function TrumpSelectionPopup({
           </div>
 
           {/* Scrollable content */}
-          <div className="overflow-y-auto flex-1 pr-2" style={{ scrollbarWidth: 'thin' }}>
+          <div className="overflow-y-auto flex-1 pr-2 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[hsl(var(--warm-brown))] [&::-webkit-scrollbar-thumb]:rounded-full">
 
             {/* HERO SECTION - The Hand */}
             <div className="mb-4">
@@ -285,8 +332,8 @@ export function TrumpSelectionPopup({
                 </p>
               </div>
 
-              {/* Fanned Cards Display - BIGGER CARDS */}
-              <div className="relative h-56 mb-3 flex items-center justify-center w-full overflow-visible">
+              {/* Fanned Cards Display - Responsive touch targets */}
+              <div className="relative h-44 sm:h-56 mb-3 flex items-center justify-center w-full overflow-visible">
                 {isHandLoading ? (
                   <div className="flex flex-col items-center justify-center">
                     <LoadingSpinner size="lg" variant="primary" />
@@ -295,25 +342,29 @@ export function TrumpSelectionPopup({
                     </p>
                   </div>
                 ) : (
-                  <div className="relative" style={{ width: '100%', height: '220px' }}>
+                  <div className="relative w-full h-[180px] sm:h-[220px]">
                     {effectivePlayerHand.map((card, index) => {
-                      // Calculate rotation and position for fan effect
+                      // Responsive fan: tighter on mobile for better touch targets
                       const totalCards = effectivePlayerHand.length;
                       const centerIndex = (totalCards - 1) / 2;
-                      const rotationDegree = (index - centerIndex) * 10; // 10 degrees per card
-                      const xOffset = (index - centerIndex) * 65; // 65px horizontal spacing for bigger cards
-                      const yOffset = Math.abs(index - centerIndex) * 15; // More pronounced arc
+                      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                      const spacing = isMobile ? 52 : 65; // Tighter on mobile
+                      const rotation = isMobile ? 7 : 10; // Less rotation on mobile
+                      const arcDepth = isMobile ? 10 : 15;
+                      const rotationDegree = (index - centerIndex) * rotation;
+                      const xOffset = (index - centerIndex) * spacing;
+                      const yOffset = Math.abs(index - centerIndex) * arcDepth;
                       const zIndex = card.suit === selectedSuit && !userVote ? 10 : index;
 
                       return (
                         <motion.div
                           key={card.id}
-                          className="absolute cursor-pointer"
+                          className="absolute cursor-pointer touch-manipulation"
                           style={{
                             left: '50%',
                             top: '50%',
-                            marginLeft: '-48px', // Half of larger card width (96px)
-                            marginTop: '-70px', // Half of larger card height (140px)
+                            marginLeft: '-40px',
+                            marginTop: '-56px',
                             zIndex: zIndex,
                           }}
                           initial={{
@@ -337,8 +388,8 @@ export function TrumpSelectionPopup({
                           transition={{ duration: 0.3 }}
                           onClick={() => !userVote && setSelectedSuit(card.suit)}
                         >
-                          {/* Larger Card - Custom size */}
-                          <div className="w-24 h-36 relative">
+                          {/* Card with responsive sizing - min 48px touch target */}
+                          <div className="w-20 h-28 sm:w-24 sm:h-36 relative min-w-[48px] min-h-[48px]">
                             <motion.button
                               className={`fantasy-card w-full h-full flex flex-col items-center justify-center ${
                                 userVote ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
@@ -347,11 +398,11 @@ export function TrumpSelectionPopup({
                               style={{ transformStyle: "preserve-3d" }}
                             >
                               <div className="absolute top-1 left-1 flex flex-col items-center" style={{ transform: "translateZ(5px)" }}>
-                                <span className={`text-base font-cinzel font-bold ${getSuitColor(card.suit)}`}>{card.value}</span>
-                                <span className={`text-base ${getSuitColor(card.suit)}`}>{getSuitSymbol(card.suit)}</span>
+                                <span className={`text-sm sm:text-base font-cinzel font-bold ${getSuitColor(card.suit)}`}>{card.value}</span>
+                                <span className={`text-sm sm:text-base ${getSuitColor(card.suit)}`}>{getSuitSymbol(card.suit)}</span>
                               </div>
 
-                              <span className={`text-4xl ${getSuitColor(card.suit)}`} style={{ transform: "translateZ(10px)" }}>
+                              <span className={`text-3xl sm:text-4xl ${getSuitColor(card.suit)}`} style={{ transform: "translateZ(10px)" }}>
                                 {getSuitSymbol(card.suit)}
                               </span>
 
@@ -359,8 +410,8 @@ export function TrumpSelectionPopup({
                                 className="absolute bottom-1 right-1 flex flex-col items-center rotate-180"
                                 style={{ transform: "translateZ(5px)" }}
                               >
-                                <span className={`text-base font-cinzel font-bold ${getSuitColor(card.suit)}`}>{card.value}</span>
-                                <span className={`text-base ${getSuitColor(card.suit)}`}>{getSuitSymbol(card.suit)}</span>
+                                <span className={`text-sm sm:text-base font-cinzel font-bold ${getSuitColor(card.suit)}`}>{card.value}</span>
+                                <span className={`text-sm sm:text-base ${getSuitColor(card.suit)}`}>{getSuitSymbol(card.suit)}</span>
                               </div>
                             </motion.button>
                           </div>
