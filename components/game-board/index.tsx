@@ -12,7 +12,6 @@
  * - Accessible color coding
  */
 
-export { GameInfoWidget } from "./game-info-widget";
 export { PlayerIndicator } from "./player-indicator";
 export { CenterTrickArea } from "./center-trick-area";
 export { PlayerHand } from "./player-hand";

@@ -16,7 +16,6 @@ import { TrumpSelectionPopup } from "@/components/trump-selection-popup";
 import { FrenzyPowers } from "@/components/frenzy-powers";
 
 // Phase 1: Redesigned components
-import { GameInfoWidget } from "@/components/game-board/game-info-widget";
 import { CenterTrickArea } from "@/components/game-board/center-trick-area";
 import { OpponentArea } from "@/components/game-board/opponent-area";
 import { PlayerHand } from "@/components/game-board/player-hand";
@@ -936,15 +935,6 @@ export function GameBoard({
   // Main game board render
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {/* Persistent Game Info Widget */}
-      {trumpSuit && gameStatus === "playing" && (
-        <GameInfoWidget
-          trumpSuit={trumpSuit}
-          royalsScore={scores.royals}
-          rebelsScore={scores.rebels}
-        />
-      )}
-
       {/* Played Cards Tracker */}
       {showCardTracker && gameStatus === "playing" && (
         <PlayedCardsTracker
