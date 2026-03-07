@@ -1,6 +1,13 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -122,24 +129,57 @@ export const PlayerHand = memo(function PlayerHand({
     [canPlay, playableCardIds, playingCardId, onCardClick]
   );
 
-  // Memoize gap style
-  const gapStyle = useMemo(
-    () => ({
-      gap: cards.length > 8 ? "-12px" : cards.length > 5 ? "-2px" : "2px",
-    }),
-    [cards.length]
-  );
+  // Track hovered card index for z-index management
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Dynamic overlap calculation based on card count and viewport
+  // Ensures every card has enough exposed area to be a click/tap target
+  const cardOverlap = useMemo(() => {
+    const total = cards.length;
+    if (total <= 1) return 0;
+
+    // Card widths at each breakpoint: mobile=48px, sm=56px, md+=64px
+    const cardWidth = isMobile ? 48 : 64;
+    // Minimum visible width per card for reliable tap targets
+    const minVisible = isMobile ? 22 : 28;
+    // Maximum container width we want to use (leave some padding)
+    const maxContainerWidth = isMobile ? 360 : 720;
+
+    // Calculate the ideal total width: first card full + remaining cards with minVisible
+    const idealWidth = cardWidth + (total - 1) * minVisible;
+
+    if (idealWidth <= maxContainerWidth) {
+      // All cards fit with minimum visible area -- use negative margin to center nicely
+      // overlap = cardWidth - visiblePerCard, but keep at least minVisible exposed
+      const availablePerCard = Math.min(
+        cardWidth,
+        (maxContainerWidth - cardWidth) / (total - 1)
+      );
+      return Math.max(0, cardWidth - availablePerCard);
+    }
+
+    // Cards would exceed container -- overlap as much as needed but cap at minVisible
+    return cardWidth - minVisible;
+  }, [cards.length, isMobile]);
 
   return (
     <div className="relative w-full flex justify-center items-end pb-2">
       {/* Cards container */}
-      <div className="flex justify-center items-end" style={gapStyle}>
+      <div className="flex justify-center items-end">
         <AnimatePresence mode="popLayout">
           {cards.map((card, index) => {
             const isPlayable = playableCardIds.has(card.id);
             const isSelected = selectedCard === card.id;
             const isBeingPlayed = playingCardId === card.id;
             const transform = cardTransforms[index] || { rotate: 0, y: 0 };
+
+            // z-index: hovered card and its neighbors get boosted
+            let zIndex = index;
+            if (hoveredIndex !== null) {
+              if (index === hoveredIndex) {
+                zIndex = 50;
+              }
+            }
 
             return (
               <motion.div
@@ -183,12 +223,19 @@ export const PlayerHand = memo(function PlayerHand({
                 whileHover={
                   canPlay && isPlayable
                     ? {
-                        y: -16,
-                        scale: 1.05,
-                        zIndex: 50,
+                        y: -20,
+                        scale: 1.08,
                         transition: { duration: 0.15 },
                       }
-                    : undefined
+                    : {
+                        y: -12,
+                        scale: 1.04,
+                        transition: { duration: 0.15 },
+                      }
+                }
+                onHoverStart={() => setHoveredIndex(index)}
+                onHoverEnd={() =>
+                  setHoveredIndex((prev) => (prev === index ? null : prev))
                 }
                 onClick={() => handleCardClick(card.id)}
                 className={`relative transition-[filter] duration-200 will-change-transform ${
@@ -202,7 +249,10 @@ export const PlayerHand = memo(function PlayerHand({
                     ? "brightness-50 saturate-50"
                     : ""
                 }`}
-                style={{ zIndex: index }}
+                style={{
+                  zIndex,
+                  marginLeft: index === 0 ? 0 : -cardOverlap,
+                }}
               >
                 {/* Playable card indicator - CSS glow instead of infinite animation */}
                 {canPlay && isPlayable && !isBeingPlayed && (
@@ -229,7 +279,9 @@ export const PlayerHand = memo(function PlayerHand({
                 {canPlay && !isPlayable && leadingSuit && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="bg-black/70 text-white text-[8px] sm:text-[10px] px-0.5 sm:px-1 py-0.5 rounded text-center leading-tight">
-                      <span className="hidden sm:inline">Must follow suit</span>
+                      <span className="hidden sm:inline">
+                        Must follow suit
+                      </span>
                       <span className="sm:hidden">Follow suit</span>
                     </div>
                   </div>
