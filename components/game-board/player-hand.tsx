@@ -163,9 +163,9 @@ export const PlayerHand = memo(function PlayerHand({
   }, [cards.length, isMobile]);
 
   return (
-    <div className="relative w-full flex justify-center items-end pb-2">
+    <div className="relative w-full flex justify-center items-end pb-2" role="region" aria-label={`Your hand, ${cards.length} cards${canPlay ? ", your turn" : ""}`}>
       {/* Cards container */}
-      <div className="flex justify-center items-end">
+      <div className="flex justify-center items-end" role="list" aria-label="Cards in hand">
         <AnimatePresence mode="popLayout">
           {cards.map((card, index) => {
             const isPlayable = playableCardIds.has(card.id);
@@ -184,6 +184,7 @@ export const PlayerHand = memo(function PlayerHand({
             return (
               <motion.div
                 key={card.id}
+                role="listitem"
                 layout
                 initial={{
                   opacity: 0,
@@ -294,7 +295,7 @@ export const PlayerHand = memo(function PlayerHand({
 
       {/* Empty hand indicator */}
       {cards.length === 0 && (
-        <div className="text-muted-foreground text-sm font-medieval py-8">
+        <div className="text-muted-foreground text-sm italic font-medieval py-8 px-6 text-center rounded-lg border border-white/10 bg-white/5">
           No cards in hand
         </div>
       )}

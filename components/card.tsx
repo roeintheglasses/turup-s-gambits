@@ -47,10 +47,12 @@ export const Card = memo(function Card({ suit, value, onClick, disabled = false,
 
   const symbol = getSuitSymbol(suit)
   const color = getSuitColor(suit)
+  const cardLabel = `${value} of ${suit}`
 
   if (is3D) {
     return (
       <motion.button
+        aria-label={cardLabel}
         className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} transition-all duration-200 group`}
         onClick={onClick}
         disabled={disabled}
@@ -91,6 +93,7 @@ export const Card = memo(function Card({ suit, value, onClick, disabled = false,
 
   return (
     <button
+      aria-label={cardLabel}
       className={`fantasy-card w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex flex-col items-center justify-center ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:shadow-[0_8px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1"} transition-all duration-200`}
       onClick={onClick}
       disabled={disabled}

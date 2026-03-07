@@ -35,7 +35,7 @@ const getSuitColor = (suit: string): string => {
       return "text-red-500";
     case "clubs":
     case "spades":
-      return "text-slate-100";
+      return "text-white";
     default:
       return "";
   }
@@ -48,7 +48,7 @@ const getSuitBg = (suit: string): string => {
       return "bg-red-500/10 border-red-500/30";
     case "clubs":
     case "spades":
-      return "bg-slate-500/10 border-slate-500/30";
+      return "bg-white/10 border-white/30";
     default:
       return "bg-muted/20 border-border/30";
   }
