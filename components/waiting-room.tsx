@@ -5,7 +5,7 @@ import { Share, Copy, Check, Users, Crown, Swords, Bot, User, Loader2, Wifi, Wif
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { GameRoom } from "@/app/types/game";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface WaitingRoomProps {
   roomId: string;
@@ -32,17 +32,20 @@ export function WaitingRoom({
   onStartGame,
 }: WaitingRoomProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomId);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   const getPlayerDetails = (playerName: string) => {
