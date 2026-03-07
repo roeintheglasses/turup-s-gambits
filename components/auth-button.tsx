@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
@@ -8,9 +8,24 @@ import { motion } from "framer-motion";
 import { syncCurrentUser } from "@/app/actions/sync-user";
 import { useAuthStore } from "@/stores/authStore";
 
+const LOADING_TIMEOUT_MS = 1500;
+
 export function AuthButton() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { setUser, clearUser, setLoading } = useAuthStore();
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+
+  // Timeout so the loading state doesn't persist indefinitely.
+  // After LOADING_TIMEOUT_MS, fall through to showing the Login button.
+  useEffect(() => {
+    if (isLoaded) return;
+
+    const timer = setTimeout(() => {
+      setLoadingTimedOut(true);
+    }, LOADING_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
 
   // Sync user to database and authStore when signed in
   useEffect(() => {
@@ -36,7 +51,9 @@ export function AuthButton() {
     }
   }, [isSignedIn, user, isLoaded, setUser, clearUser, setLoading]);
 
-  if (!isLoaded) {
+  // Show loading only briefly while Clerk initializes.
+  // If it takes too long, fall through to showing the Login button.
+  if (!isLoaded && !loadingTimedOut) {
     return (
       <motion.div
         initial={{ opacity: 0, y: -10 }}
