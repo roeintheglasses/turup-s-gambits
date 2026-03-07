@@ -115,7 +115,7 @@ export const LastTrickReview = memo(function LastTrickReview({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="relative z-10 bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-2 border-amber-500/30 rounded-2xl p-4 sm:p-6 shadow-2xl max-w-sm sm:max-w-lg mx-4"
+            className="relative z-10 bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-2 border-amber-500/30 rounded-2xl p-4 sm:p-6 shadow-2xl max-w-sm sm:max-w-lg max-h-[90vh] overflow-y-auto mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}

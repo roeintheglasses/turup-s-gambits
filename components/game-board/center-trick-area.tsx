@@ -267,7 +267,7 @@ export const CenterTrickArea = memo(function CenterTrickArea({
                     }}
                     transition={{
                       duration: 1.5,
-                      repeat: 2,
+                      repeat: Infinity,
                       ease: "easeInOut",
                     }}
                     className="absolute inset-0 rounded-lg pointer-events-none"
