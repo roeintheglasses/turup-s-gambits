@@ -86,7 +86,7 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`flex items-center gap-2 px-4 h-9 transition-all ${
+                    className={`flex items-center gap-2 px-4 h-9 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                       isActive(item.href)
                         ? "bg-primary/10 text-primary"
                         : "text-foreground/80 hover:text-primary hover:bg-primary/5"
@@ -114,7 +114,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`flex items-center gap-2 px-4 h-9 transition-all ${
+                  className={`flex items-center gap-2 px-4 h-9 transition-all focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                     showMusicControls
                       ? "bg-primary/10 text-primary"
                       : "text-foreground/80 hover:text-primary hover:bg-primary/5"
@@ -141,7 +141,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-9 w-9 ${showMusicControls ? "text-primary" : ""}`}
+                className={`h-9 w-9 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${showMusicControls ? "text-primary" : ""}`}
                 onClick={() => setShowMusicControls(!showMusicControls)}
               >
                 <Music className="w-5 h-5" />
@@ -149,7 +149,7 @@ export function Navbar() {
 
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none">
                     <Menu className="w-5 h-5" />
                   </Button>
                 </SheetTrigger>
@@ -181,7 +181,7 @@ export function Navbar() {
                       <SheetClose key={item.href} asChild>
                         <Button
                           variant="ghost"
-                          className={`w-full justify-start gap-3 h-12 text-base ${
+                          className={`w-full justify-start gap-3 h-12 text-base focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                             isActive(item.href)
                               ? "bg-primary/10 text-primary"
                               : "text-foreground/80 hover:text-primary hover:bg-primary/5"

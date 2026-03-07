@@ -101,7 +101,10 @@ export const OpponentArea = memo(function OpponentArea({
         <TeamIcon className="w-3 h-3 sm:w-4 sm:h-4" />
 
         <div className="flex flex-col">
-          <span className="text-[10px] sm:text-xs md:text-sm font-medieval text-white font-semibold leading-tight truncate max-w-[50px] sm:max-w-[80px] md:max-w-none">
+          <span
+            className="text-[10px] sm:text-xs md:text-sm font-medieval text-white font-semibold leading-tight truncate max-w-[80px] sm:max-w-[100px] md:max-w-none"
+            title={name}
+          >
             {name}
           </span>
           <div className="flex items-center gap-1 text-[8px] sm:text-[10px] text-white/70">
