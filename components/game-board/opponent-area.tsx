@@ -61,7 +61,7 @@ export const OpponentArea = memo(function OpponentArea({
   }), [position]);
 
   return (
-    <div className="flex flex-col items-center gap-2 animate-in fade-in duration-300">
+    <div className="flex flex-col items-center gap-2 animate-in fade-in duration-300" role="region" aria-label={`${name} - ${team} team, ${cardCount} cards${isCurrentTurn ? ", their turn" : ""}`}>
       {/* Card backs - using CSS animations */}
       <div className={`flex ${cardBacksLayout} items-center justify-center`}>
         {Array.from({ length: visibleCards }).map((_, i) => (
@@ -108,9 +108,9 @@ export const OpponentArea = memo(function OpponentArea({
             <span>{cardCount}</span>
             <span className="hidden sm:inline">cards</span>
             {isConnected ? (
-              <Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-400" />
+              <Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-400" aria-label={`${name} is connected`} role="img" />
             ) : (
-              <WifiOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400" />
+              <WifiOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400" aria-label={`${name} is disconnected`} role="img" />
             )}
           </div>
         </div>
