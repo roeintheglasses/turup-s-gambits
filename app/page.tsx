@@ -29,8 +29,8 @@ export default function HomePage() {
       </div>
 
       {/* Main Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-8">
-        <div className="z-10 text-center max-w-4xl mx-auto">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pt-20 pb-8">
+        <div className="relative z-10 text-center max-w-4xl mx-auto pointer-events-auto">
           {/* Logo */}
           <motion.div
             className="flex flex-col items-center mb-6"
@@ -60,7 +60,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <motion.p
-            className="text-lg sm:text-xl md:text-2xl mb-8 font-medieval text-foreground/80 max-w-2xl mx-auto leading-relaxed"
+            className="relative z-20 text-lg sm:text-xl md:text-2xl mb-8 font-medieval text-foreground/80 max-w-2xl mx-auto leading-relaxed"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
@@ -71,7 +71,7 @@ export default function HomePage() {
 
           {/* CTA Button */}
           <motion.div
-            className="flex flex-col items-center gap-4 mb-12"
+            className="relative z-20 flex flex-col items-center gap-4 mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
