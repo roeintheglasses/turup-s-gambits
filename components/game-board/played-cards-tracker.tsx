@@ -51,7 +51,7 @@ export const PlayedCardsTracker = memo(function PlayedCardsTracker({
       {/* Toggle Button - positioned on the right edge of the board */}
       <button
         onClick={onToggle}
-        className={`fixed top-20 right-4 z-50 sm:top-24 flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 transition-all duration-200 shadow-lg ${
+        className={`fixed top-20 right-4 z-30 sm:top-24 flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 transition-all duration-200 shadow-lg ${
           isOpen
             ? "bg-amber-900/90 border-amber-500/70 text-amber-200"
             : "bg-[hsl(var(--dark-panel))]/90 border-[hsl(var(--warm-brown))] text-white/80 hover:text-white hover:border-amber-500/50"
@@ -76,7 +76,7 @@ export const PlayedCardsTracker = memo(function PlayedCardsTracker({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-40 md:hidden"
+              className="fixed inset-0 bg-black/40 z-[35] md:hidden"
               onClick={onToggle}
             />
 
@@ -86,7 +86,7 @@ export const PlayedCardsTracker = memo(function PlayedCardsTracker({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-0 right-0 z-50 h-full w-72 sm:w-80 md:w-72 md:top-20 md:h-auto md:max-h-[calc(100vh-6rem)] md:rounded-l-xl md:right-0 overflow-hidden"
+              className="fixed top-0 right-0 z-40 h-full w-72 sm:w-80 md:w-72 md:top-20 md:h-auto md:max-h-[calc(100vh-6rem)] md:rounded-l-xl md:right-0 overflow-hidden"
             >
               <div className="h-full bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-l-2 md:border-2 border-[hsl(var(--warm-brown))] md:rounded-l-xl shadow-2xl flex flex-col">
                 {/* Header */}
