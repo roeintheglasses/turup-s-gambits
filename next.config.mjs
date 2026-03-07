@@ -135,11 +135,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
-  },
+  // experimental webpack workers removed - they cause intermittent
+  // "Cannot read properties of undefined (reading 'call')" errors
+  // during static page generation in Next.js 15.2.x
 };
 
 mergeConfig(nextConfig, userConfig);
