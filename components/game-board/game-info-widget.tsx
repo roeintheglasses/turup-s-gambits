@@ -74,9 +74,9 @@ export function GameInfoWidget({
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="fixed top-20 left-4 z-40 sm:top-24"
+      className="fixed top-20 left-4 z-30 sm:top-24 pointer-events-none"
     >
-      <div className="bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-2 border-[hsl(var(--warm-brown))] rounded-xl shadow-2xl overflow-hidden w-[140px] sm:w-[160px]">
+      <div className="pointer-events-auto bg-[hsl(var(--dark-panel))]/95 backdrop-blur-md border-2 border-[hsl(var(--warm-brown))] rounded-xl shadow-2xl overflow-hidden w-[120px] sm:w-[160px]">
         {/* Trump Suit Display */}
         {trumpSuit && (
           <div className={`px-3 py-2 border-b ${getSuitBg(trumpSuit)}`}>
