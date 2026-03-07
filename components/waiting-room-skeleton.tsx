@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 
 function PlayerSlotSkeleton({ delay, team }: { delay: number; team: "royals" | "rebels" }) {
   const teamColors = {
-    royals: "border-amber-600/20 bg-amber-950/20",
-    rebels: "border-blue-600/20 bg-blue-950/20"
+    royals: "border-amber-500/40 bg-amber-950/30",
+    rebels: "border-blue-500/40 bg-blue-950/30"
   };
 
   return (
@@ -35,7 +35,7 @@ export function WaitingRoomSkeleton() {
       className="w-full max-w-2xl mx-auto"
     >
       {/* Header Card */}
-      <div className="bg-card/90 backdrop-blur-md border-2 border-primary/30 rounded-xl p-6 mb-4">
+      <div className="bg-card/95 backdrop-blur-md border-2 border-primary/40 rounded-xl p-6 mb-4 shadow-lg shadow-primary/5">
         <div className="text-center mb-4">
           {/* Badge */}
           <motion.div
@@ -75,7 +75,7 @@ export function WaitingRoomSkeleton() {
           transition={{ delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4"
         >
-          <div className="bg-muted/50 rounded-lg px-6 py-3 border border-border">
+          <div className="bg-muted/60 rounded-lg px-6 py-3 border border-primary/20">
             <Skeleton shimmer className="h-3 w-16 mx-auto mb-2" />
             <Skeleton shimmer className="h-8 w-28" />
           </div>
@@ -100,7 +100,7 @@ export function WaitingRoomSkeleton() {
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.4 + i * 0.1 }}
               >
-                <Skeleton className="w-8 h-8 rounded-full border-2 border-card" />
+                <Skeleton className="w-8 h-8 rounded-full border-2 border-primary/20" />
               </motion.div>
             ))}
           </div>
@@ -115,10 +115,10 @@ export function WaitingRoomSkeleton() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-amber-950/40 backdrop-blur-sm border-2 border-amber-600/40 rounded-xl p-4"
+          className="bg-amber-950/50 backdrop-blur-sm border-2 border-amber-500/50 rounded-xl p-4 shadow-md shadow-amber-900/20"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Skeleton className="w-8 h-8 rounded-full bg-amber-600/20" />
+            <Skeleton className="w-8 h-8 rounded-full bg-amber-600/30 border border-amber-500/30" />
             <div>
               <Skeleton shimmer className="h-5 w-16 mb-1" />
               <Skeleton shimmer className="h-3 w-20" />
@@ -135,10 +135,10 @@ export function WaitingRoomSkeleton() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-blue-950/40 backdrop-blur-sm border-2 border-blue-600/40 rounded-xl p-4"
+          className="bg-blue-950/50 backdrop-blur-sm border-2 border-blue-500/50 rounded-xl p-4 shadow-md shadow-blue-900/20"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Skeleton className="w-8 h-8 rounded-full bg-blue-600/20" />
+            <Skeleton className="w-8 h-8 rounded-full bg-blue-600/30 border border-blue-500/30" />
             <div>
               <Skeleton shimmer className="h-5 w-16 mb-1" />
               <Skeleton shimmer className="h-3 w-20" />
@@ -156,7 +156,7 @@ export function WaitingRoomSkeleton() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
-        className="bg-card/90 backdrop-blur-md border-2 border-primary/30 rounded-xl p-4"
+        className="bg-card/95 backdrop-blur-md border-2 border-primary/40 rounded-xl p-4 shadow-lg shadow-primary/5"
       >
         <div className="flex flex-col sm:flex-row gap-3">
           <Skeleton shimmer className="flex-1 h-12 rounded-lg" />

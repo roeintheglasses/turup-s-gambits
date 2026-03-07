@@ -2,7 +2,7 @@
 
 import React, { Suspense, use, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { WaitingRoomSkeleton } from "@/components/waiting-room-skeleton";
+import { GameLoader } from "@/components/game-loader";
 import { VisualEffects } from "@/components/visual-effects";
 
 // Game room components
@@ -88,9 +88,7 @@ function TestGameRoomContentInner({ roomId }: { roomId: string }) {
       <div className="h-full flex items-center justify-center p-2 md:p-4">
         <VisualEffects enableGrain />
         <GameBackground />
-        <div className="w-full px-2 md:px-4">
-          <WaitingRoomSkeleton />
-        </div>
+        <GameLoader message="Preparing test session..." />
       </div>
     );
   }
@@ -123,9 +121,7 @@ function TestGameRoomContentInner({ roomId }: { roomId: string }) {
       <div className="h-full flex items-center justify-center p-2 md:p-4">
         <VisualEffects enableGrain />
         <GameBackground />
-        <div className="w-full px-2 md:px-4">
-          <WaitingRoomSkeleton />
-        </div>
+        <GameLoader message="Connecting to game server..." />
       </div>
     );
   }
@@ -237,9 +233,7 @@ function TestGameRoomContentInner({ roomId }: { roomId: string }) {
         <div className="h-full flex items-center justify-center p-2 md:p-4">
           <VisualEffects enableGrain />
           <GameBackground />
-          <div className="w-full px-2 md:px-4">
-            <WaitingRoomSkeleton />
-          </div>
+          <GameLoader message="Loading game..." />
         </div>
       );
   }
@@ -267,9 +261,7 @@ export default function TestGameRoomPage({ params }: TestGameRoomPageProps) {
         <div className="min-h-screen flex items-center justify-center p-4">
           <VisualEffects enableGrain />
           <GameBackground />
-          <div className="container mx-auto px-4 py-8">
-            <WaitingRoomSkeleton />
-          </div>
+          <GameLoader message="Loading game room..." />
         </div>
       }
     >
